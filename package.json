@@ -20,9 +20,11 @@
   "homepage": "https://github.com/diviatrix/ts-cms#readme",
   "dependencies": {
     "@types/sqlite3": "^3.1.11",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",

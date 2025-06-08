@@ -1,10 +1,10 @@
 export default {
     users: `
         CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY NOT NULL,
-            login TEXT NOT NULL,
-            email TEXT NOT NULL,
-            password_hash TEXT NOT NULL
+            id TEXT PRIMARY KEY UNIQUE NOT NULL,
+            login TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            passwordHash TEXT NOT NULL
         )`,
     records: `
         CREATE TABLE IF NOT EXISTS records (

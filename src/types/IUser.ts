@@ -1,4 +1,4 @@
-interface IUser {
+export interface IUser {
     id: string;
     login: string; // Unique login identifier for the user
     email: string;

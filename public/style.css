@@ -1,0 +1,79 @@
+body {
+    background-color: #333; /* Dark Gray background */
+    font-family: sans-serif;
+    display: flex;
+ flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Wrapper for side-by-side forms */
+.forms-wrapper {
+ display: flex;
+ flex-wrap: wrap;
+ justify-content: center;
+ gap: 20px; /* Space between the forms */
+ width: 100%;
+ max-width: 800px; /* Adjust as needed */
+}
+
+.form-container {
+    background-color: #444; /* Slightly darker gray for containers */
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3); /* Green neon shadow */
+    width: 100%;
+    max-width: 400px;
+    margin: 10px;
+ color: #fff; /* White text for labels */
+    border: 1px solid #555; /* Subtle border */
+}
+
+.form-container h3 {
+    text-align: center;
+    margin-bottom: 20px;
+ color: #00ff00; /* Green neon for headers */
+}
+.form-group {
+ margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+ border: 1px solid #555; /* Slightly lighter border */
+    border-radius: 4px;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+    background-color: #555; /* Input background */
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #00ff00; /* Green neon border on focus */
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+}
+
+.form-control::placeholder {
+ color: #bbb; /* Placeholder color */
+}
+
+.btn-neon {
+    background-color: transparent; /* Transparent background */
+    color: #00ff00; /* Green neon text */
+    border: 2px solid #00ff00; /* Green neon border */
+    border-radius: 4px;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}

@@ -99,11 +99,11 @@ export default class SQLiteAdapter {
         return new Promise((resolve, reject) => {
             this.db?.all(query, params, (err, rows) => {
                 if (err) {
-                    console.error(messages.sql_query_error, err);
-                    reject(err);
+                    reject(err.message);
                 } else {
                     resolve(rows);
                 }
+
             });
         });
     }
