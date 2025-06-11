@@ -54,7 +54,7 @@ export default {
         )`,
     user_profiles: `
         CREATE TABLE IF NOT EXISTS user_profiles (
-            id TEXT PRIMARY KEY NOT NULL,
+            user_id TEXT PRIMARY KEY UNIQUE NOT NULL,
             public_name TEXT NOT NULL,
             is_active BOOLEAN NOT NULL DEFAULT TRUE,
             roles TEXT NOT NULL DEFAULT '[]',
@@ -62,6 +62,15 @@ export default {
             bio TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id) REFERENCES users (id)
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )`
+    ,
+    sessions: `
+        CREATE TABLE IF NOT EXISTS sessions (
+            id TEXT PRIMARY KEY UNIQUE NOT NULL,
+            user_id TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
         )`
 };

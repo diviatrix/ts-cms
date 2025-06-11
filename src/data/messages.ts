@@ -24,5 +24,7 @@ export default {
     sql_table_updated: 'Table structure updated successfully', 
     sql_table_update_error: 'Error updating table structure',
     console_input: 'Console input: ',
-    console_input_error: 'Console input error',
+ console_input_error: 'Console input error',
+ profile_update_success: 'Profile updated successfully.',
+ profile_update_error: 'An error occurred while updating the profile.'
 };

@@ -5,4 +5,5 @@ export default {
     api_suffix: '/api',
     static_folder: 'public',
     db_path: './data/database.db',
+    jwt_secret: 'YOUR_JWT_SECRET',
 }
