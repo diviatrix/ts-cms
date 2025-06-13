@@ -1,7 +1,10 @@
 import database from '../db';
 import messages from '../data/messages';
+import IResolve from '../types/IResolve';
+import IUserProfile from '../types/IUserProfile';
+import prep from '../utils/prepare';
 
-export const updateProfile = async (userId: string, profileData: Partial<{ public_name: string, is_active: number, roles: string, profile_picture_url: string, bio: string }>): Promise<{ success: boolean; message: string }> => {
+export const updateProfile = async (userId: string, profileData: Partial<IUserProfile>): Promise<IResolve> => {
   console.log('updateProfile function called for user:', userId, 'with data:', profileData);
   try {
     // Check if profile exists
@@ -25,9 +28,9 @@ export const updateProfile = async (userId: string, profileData: Partial<{ publi
     await database.updateUserProfile(userId, profileData);
     console.log('User profile updated successfully for user:', userId);
 
-    return { success: true, message: messages.profile_update_success };
+    return prep.response(true, messages.profile_update_success);
   } catch (error) {
     console.error(messages.profile_update_error, error);
-    return { success: false, message: messages.profile_update_error };
+    return prep.response(false, messages.profile_update_error);
   }
 };

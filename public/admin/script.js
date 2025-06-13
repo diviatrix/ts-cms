@@ -20,25 +20,52 @@ document.addEventListener('DOMContentLoaded', function() {
   const adminEditBioTextarea = document.getElementById('admin_editBio');
 
 
-  // Function to fetch the list of users (placeholder - simulates backend)
+  // Function to fetch the list of users from the backend
   async function fetchUsers() {
     try {
-      console.log('Fetching users (simulated)...');
-      // Simulate a network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('Fetching users from backend...');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found. Cannot fetch users.');
+        adminMessageDiv.textContent = 'Not authenticated. Please log in.';
+        adminMessageDiv.classList.add('text-danger');
+        // Redirect to login if no token
+        window.location.href = '/login';
+        return;
+      }
 
-      const dummyUsers = [
-        { id: 'user1', public_name: 'Alice', is_active: true, roles: '[{"name":"user"}]', profile_picture_url: '/img/placeholder_square.png', bio: 'A regular user.' },
-        { id: 'user2', public_name: 'Bob', is_active: false, roles: '[{"name":"user"}, {"name":"editor"}]', profile_picture_url: '/img/placeholder_square.png', bio: 'An editor user.' },
-        { id: 'user3', public_name: 'Charlie', is_active: true, roles: '[{"name":"user"}, {"name":"admin"}]', profile_picture_url: '/img/placeholder_square.png', bio: 'An admin user.' },
-      ];
+      const response = await fetch('/api/users', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      console.log('Simulated users fetched:', dummyUsers);
-      displayUsers(dummyUsers);
+      console.log('Fetch users response received:', response);
+
+      if (response.status === 401) {
+        // Handle unauthorized access (e.g., token expired or invalid)
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching users:', response.status, errorData);
+        adminMessageDiv.textContent = `Error fetching users: ${errorData.message || response.status}`;
+        adminMessageDiv.classList.add('text-danger');
+        return;
+      }
+
+      const users = await response.json();
+      console.log('Users fetched from backend:', users);
+      displayUsers(users);
 
     } catch (error) {
-      console.error('Error fetching users (simulated):', error);
-      adminMessageDiv.textContent = 'Error fetching users (simulated).';
+      console.error('Error fetching users:', error);
+      adminMessageDiv.textContent = 'An error occurred while fetching users.';
       adminMessageDiv.classList.add('text-danger');
     }
   }
@@ -46,6 +73,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Function to display users in the list
   function displayUsers(users) {
     userList.innerHTML = ''; // Clear the current list
+    if (users.length === 0) {
+        userList.innerHTML = '<li class="list-group-item">No users found.</li>';
+        return;
+    }
     users.forEach(user => {
       const listItem = document.createElement('li');
       listItem.classList.add('list-group-item', 'list-group-item-action');
@@ -65,8 +96,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Populate the profile fields (read-only initially)
     adminProfileNameSpan.textContent = user.public_name || '';
     adminProfileActiveSpan.textContent = user.is_active ? 'Yes' : 'No';
-    const rolesArray = JSON.parse(user.roles || '[]');
-    adminProfileRolesSpan.textContent = rolesArray.map(role => role.name).join(', ');
+     try {
+         const rolesArray = JSON.parse(user.roles || '[]');
+         adminProfileRolesSpan.textContent = rolesArray.map(role => role.name).join(', ');
+     } catch (e) {
+         console.error('Error parsing roles JSON:', e);
+         adminProfileRolesSpan.textContent = 'Invalid roles format';
+     }
     adminProfilePictureImg.src = user.profile_picture_url || '';
     adminProfileBioSpan.textContent = user.bio || '';
 
@@ -167,41 +203,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
      try {
-       // We'll need a backend endpoint for updating user profiles as admin
-       // For now, let's simulate a successful update and re-fetch users
-       console.log('Updating user profile (simulated):', updatedProfileData);
-        adminMessageDiv.textContent = 'Profile updated successfully (simulated).';
-        adminMessageDiv.classList.remove('text-danger');
-        adminMessageDiv.classList.add('text-success');
-
-       // In a real application, you would send a fetch request here:
-       /*
        const token = localStorage.getItem('token');
        const response = await fetch('/api/admin/updateProfile', { // Example endpoint
          method: 'POST', // Or PUT
          headers: {
            'Content-Type': 'application/json',
-           'Authorization': `Bearer ${token}`,
+ 'Authorization': `Bearer ${token}`,
          },
          body: JSON.stringify(updatedProfileData),
        });
-
        const result = await response.json();
        if (result.success) {
          adminMessageDiv.textContent = result.message;
          adminMessageDiv.classList.remove('text-danger');
          adminMessageDiv.classList.add('text-success');
          // Re-fetch users to update the displayed list and profile
-         fetchUsers();
+         fetchUsers(); // Re-fetch users after a successful update
        } else {
          adminMessageDiv.textContent = 'Failed to update profile: ' + result.message;
          adminMessageDiv.classList.remove('text-success');
          adminMessageDiv.classList.add('text-danger');
        }
-       */
-
-        // Simulate re-fetching users after a short delay
-        setTimeout(fetchUsers, 1000); // Simulate network delay
      } catch (error) {
        console.error('Error updating user profile:', error);
        adminMessageDiv.textContent = 'An error occurred while updating profile.';

@@ -24,7 +24,12 @@ export default {
     sql_table_updated: 'Table structure updated successfully', 
     sql_table_update_error: 'Error updating table structure',
     console_input: 'Console input: ',
- console_input_error: 'Console input error',
- profile_update_success: 'Profile updated successfully.',
- profile_update_error: 'An error occurred while updating the profile.'
+    console_input_error: 'Console input error',
+    profile_update_success: 'Profile updated successfully.',
+    profile_update_error: 'An error occurred while updating the profile.',
+    requirement_login: 'Login is required.',
+    requirement_password: 'Password is required',
+    nothing_to_do: 'Nothing to do',
+    invalid_password: 'Invalid password',
+    invalid_login: 'Invalid login'
 };

@@ -2,6 +2,8 @@ import * as sqlite3 from 'sqlite3';
 import config from '../data/config';
 import schemas from './sql-schemas';
 import messages from '../data/messages';
+import IResolve from '../types/IResolve';
+import prep from '../utils/prepare'
 
 // For more detailed logs from the sqlite3 driver, you can uncomment the next line:
 // const sqlite = sqlite3.verbose();
@@ -33,57 +35,65 @@ export default class SQLiteAdapter {
             }
         });
     }
-    public async checkTables(): Promise<string> {
+
+    public async checkTables(): Promise<IResolve> {
         if (!this.db) {
             console.error(messages.sql_connect_error);
-            return messages.sql_connect_error;
+            return prep.response(false, messages.sql_connect_error);
         }
 
-        const tables = await this.getTables();
-        const missingTables = Object.keys(schemas).filter((table) => !tables.includes(table));
+        const tablesResult = await this.getTables();
+        
+        if (!tablesResult.success || !Array.isArray(tablesResult.data)) {
+            console.error("Failed to get table list from database:", tablesResult.message);
+            return prep.response(false, "Failed to check tables due to a database error.");
+        }
+
+        const existingTables = tablesResult.data as string[]; // Cast the data to string[]
+        const missingTables = Object.keys(schemas).filter((table) => !existingTables.includes(table));
 
         if (missingTables.length > 0) {
             console.log(messages.sql_missing_tables, missingTables);
             await this.createTables(missingTables);
-            return `Tables created: ${missingTables.join(', ')}`;
+            return prep.response(true, `Tables created: ${missingTables.join(', ')}`);
         } else {
-            return messages.sql_all_tables_exist;
+            return prep.response(true, messages.sql_all_tables_exist);
         }
     }
-    public async getTables(): Promise<string[]> {
-        return new Promise((resolve, reject) => {
-            this.db?.all("SELECT name FROM sqlite_master WHERE type='table'", (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve((rows as Array<{ name: string }>).map(row => row.name));
-                }
-            });
-        });
+
+    public async getTables(): Promise<IResolve> {
+        const query = "SELECT name FROM sqlite_master WHERE type='table'";
+        const result = await this.executeQuery(query);
+
+        if (result.success && Array.isArray(result.data)) {
+            const tableNames = (result.data as Array<{ name: string }>).map(row => row.name);
+            return prep.response(true, messages.sql_query_success, tableNames);
+        }
+        return result; // Return the original error result from executeQuery
     }
-    public async createTables(tables: string[]) {
+
+    public async createTables(tables: string[]): Promise<IResolve> {
         for (const table of tables) {
             const schema = schemas[table as keyof typeof schemas];
             if (schema) {
-                await this.createTable(table, schema);
+                const response = await this.executeQuery(schema);
+                if (response.success) {
+                    console.log(messages.sql_create_table_success, table);
+                } else {
+                    console.error(messages.sql_create_table_error, table, response.message);
+                }                
             } else {
                 console.error(messages.sql_schema_not_found, table);
             }
         }
+
+        return prep.response(true, messages.success, tables);
     }
-    public async createTable(table: string, schema: string) {
-        return new Promise((resolve, reject) => {
-            this.db?.run(schema, (err) => {
-                if (err) {
-                    console.error(messages.sql_create_table_error, table, err);
-                    reject(err);
-                } else {
-                    console.log(messages.sql_create_table_success, table);
-                    resolve(true);
-                }
-            });
-        });
+    public async createTable(schema: string): Promise<IResolve> {
+        const response = await this.executeQuery(schema);
+        return prep.response(response.success, response.message, response.data);
     }
+
     public async close() {
         if (this.db) {
             this.db.close((err) => {
@@ -95,37 +105,38 @@ export default class SQLiteAdapter {
             });
         }
     }
-    public async executeQuery(query: string, params: any[] = []): Promise<any[]> {
-        return new Promise((resolve, reject) => {
-            this.db?.all(query, params, (err, rows) => {
-                if (err) {
-                    reject(err.message);
-                } else {
-                    resolve(rows);
-                }
 
+    public async executeQuery(query: string, params: any[] = []): Promise<IResolve> {
+        return new Promise((resolve) => {
+            this.db?.all(query, params, (err, rows: any[]) => {
+                if (err) {
+                    resolve(prep.response(false, messages.sql_query_error, err));
+                } else {
+                    resolve(prep.response(true, messages.sql_query_success, rows));
+                }
             });
         });
     }
-    public async getByTableColValue(table: string, col: string, value: any): Promise<any> {
-        return new Promise((resolve, reject) => {
+
+    public async getByTableColValue(table: string, col: string, value: any): Promise<IResolve> {
+        return new Promise((resolve) => {
             this.db?.get(`SELECT * FROM ${table} WHERE ${col} = ?`, [value], (err, row) => {
                 if (err) {
-                    console.error(messages.sql_query_error, err);
-                    reject(err);
+                    resolve(prep.response(false, messages.sql_query_error, err));
                 } else {
-                    resolve(row);
+                    resolve(prep.response(true, messages.sql_query_success, row));
                 }
             });
         });
     }
-    public async getStatus(): Promise<string> {
-        return new Promise((resolve, reject) => {
+
+    public async getStatus(): Promise<IResolve> {
+        return new Promise((resolve) => {
             this.db?.get("SELECT sqlite_version() AS version", (err, row: { version: string }) => {
                 if (err) {
-                    reject(messages.sql_connect_error + " " + err);
+                    resolve(prep.response(false, messages.sql_connect_error, err));
                 } else {
-                    resolve(messages.sql_connect_success + " " + row.version);
+                    resolve(prep.response(true, messages.sql_connect_success, row.version));
                 }
             });
         });

@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import config from './data/config';
 import messages from './data/messages';
 import cors from 'cors';
@@ -8,6 +8,7 @@ import { loginUser } from './functions/login';
 import database from './db';
 import { updateProfile } from './functions/updateProfile';
 import { authenticateToken } from './utils/jwt';
+import { getAllBaseUsers } from './functions/users';
 
 export default function createExpressApp(): express.Application {
     // Create an Express application
@@ -37,16 +38,11 @@ export default function createExpressApp(): express.Application {
     app.post('/api/register', async (req: Request, res: Response) => {
         const userData = req.body; // Assuming the user data is sent in the request body
 
-        try {
-            const result = await registerUser(userData);
+        const result = await registerUser(userData);
+        if (result) {
             res.status(201).json(result); // Respond with success status and result
-        } catch (error) {
-            console.error("Registration failed:", error);
-            if (error && typeof error === 'object' && 'success' in error && error.success === false) {
-                res.status(400).json({ status: 'error', message: (error as unknown as { message: string }).message });
-            } else {
-                res.status(500).json({ status: 'error', message: 'An unexpected error occurred during registration.' });
-            }
+        } else {
+            res.status(400).json({ status: 'error', message: 'Registration failed.' }); // Respond with a 400 Bad Request
         }
     });
 
@@ -59,7 +55,7 @@ export default function createExpressApp(): express.Application {
             if (result.success) {
                 res.status(200).json({
                     success: true,
-                    token: result.token // Include the token in the response
+                    token: result.data.token // Include the token in the response
                 }); // Respond with success status and result
             } else {
                 res.status(401).json(result); // Respond with unauthorized status and result on failure
@@ -78,14 +74,12 @@ export default function createExpressApp(): express.Application {
 
             if (!(req as any).user || !(req as any).user.id) {
                 console.error('Error: User object or user ID is missing from the request after authentication.');
- res.status(400).json({ status: 'error', message: 'User information not available.' });
- }
+                res.status(400).json({ status: 'error', message: 'User information not available.' });
+            }
 
- console.log('Reached try block in GET /api/profile handler'); // Debug log
- console.log('Request object:', req); // Debug log for entire request object
- console.log('Request user object:', (req as any).user); // Debug log for user object
- 
-
+            console.log('Reached try block in GET /api/profile handler'); // Debug log
+            console.log('Request object:', req); // Debug log for entire request object
+            console.log('Request user object:', (req as any).user); // Debug log for user object 
 
             const userId = (req as any).user.id; // Get the user ID from the authenticated token
             let profile = await database.getUserProfile(userId);
@@ -122,6 +116,51 @@ export default function createExpressApp(): express.Application {
             console.error("Failed to update user profile:", error);
             res.status(500).json({ status: 'error', message: 'Failed to update user profile.' });
         }
+    });
+
+    // Add the endpoint for admin profile updates
+    app.post('/api/admin/updateProfile', authenticateToken, async (req: Request, res: Response) => {
+        console.log('POST /api/admin/updateProfile endpoint reached'); // Debug log
+        // TODO: Add authorization check to ensure the user is an administrator
+
+        const { userId, profileData } = req.body; // Get the target user ID and updated profile data
+        console.log(`Admin attempting to update profile for userId: ${userId} with data:`, profileData); // Debug log
+
+        try {
+            // Call a database function to update the user's profile
+            await database.adminUpdateUserProfile(userId, profileData); // We will implement this in db.ts
+            console.log(`Profile updated successfully for userId: ${userId}`); // Debug log
+            res.status(200).json({ success: true, message: 'User profile updated successfully.' });
+        } catch (error) {
+            console.error("Failed to update user profile as admin:", error);
+            res.status(500).json({ status: 'error', message: 'Failed to update user profile.' });
+        }
+    });
+
+
+    // Add the endpoint to get all users (for admin)
+    app.get('/api/users', authenticateToken, async (req: Request, res: Response) => {
+        console.log('GET /api/users endpoint reached'); // Debug log
+        try {
+             // Check if the authenticated user has admin role (you'll need to add this check)
+            // For now, we'll just proceed, but this is a security vulnerability
+            // if you don't restrict this endpoint to admins.
+
+            console.log('Calling getAllUsers function...'); // Added log
+            const users = await getAllBaseUsers(); // Fetch all users using the new function
+            res.status(200).json(users); // Return the list of users
+        } catch (error) {
+            console.error("Failed to fetch users:", error);
+            res.status(500).json({ status: 'error', message: 'Failed to fetch users.' });
+        }
+    });
+
+    app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+        console.error('Async error caught by middleware:', err);
+        if (res.headersSent) {
+            return next(err); // Let default error handler close the connection if headers already sent
+        }
+        res.status(500).json({ status: 'error', message: 'An unexpected asynchronous error occurred.' });
     });
 
     // Start the server on the specified port and address

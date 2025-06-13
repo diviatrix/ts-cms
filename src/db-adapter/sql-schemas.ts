@@ -4,7 +4,7 @@ export default {
             id TEXT PRIMARY KEY UNIQUE NOT NULL,
             login TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
-            passwordHash TEXT NOT NULL
+            password_hash TEXT NOT NULL
         )`,
     records: `
         CREATE TABLE IF NOT EXISTS records (
