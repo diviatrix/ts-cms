@@ -1,6 +1,6 @@
-import database from '/home/user/ts-cms/src/db';
-import IUser from '/home/user/ts-cms/src/types/IUser';
-import IUserProfile from '/home/user/ts-cms/src/types/IUserProfile';
+import database from '../db';
+import IUser from '../types/IUser';
+import IUserProfile from '../types/IUserProfile';
 
 
 // Define an interface that combines necessary user and profile properties for the admin view
