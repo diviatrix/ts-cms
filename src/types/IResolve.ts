@@ -1,5 +1,5 @@
-export default interface IResolve {
+export default interface IResolve<T> {
     success: boolean,
     message: string,
-    data: any | null   
+    data: T | null   
 }

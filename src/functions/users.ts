@@ -1,29 +1,30 @@
+import messages from '../data/messages';
 import database from '../db';
+import IResolve from '../types/IResolve';
 import IUser from '../types/IUser';
 import IUserProfile from '../types/IUserProfile';
+import prep from '../utils/prepare';
 
-
-// Define an interface that combines necessary user and profile properties for the admin view
-export interface IUserAdminView {
-  base: IUser;
-  profile: IUserProfile;
-}
-
-export async function getAllBaseUsers(): Promise<IUserAdminView[]> {
+export async function getAllBaseUsers(): Promise<IResolve<Array<{ base: IUser; profile: IUserProfile }> | null>> {
   try {
-    // database.getAllUsersWithProfiles now returns objects matching IUserAdminView
-    const users = (await database.getAllBaseUsers()).data;
-    const adminViewUsers: IUserAdminView[] = [];
+    const usersResult = await database.getAllBaseUsers();
+    if (!usersResult.success || !usersResult.data) {
+      return prep.response(false, usersResult.message, null);
+    }
+    const users = usersResult.data;
+    const adminViewUsers: { base: IUser; profile: IUserProfile }[] = [];
 
     for (const user of users) {
-      const profile = (await database.getUserProfile(user.id)).data;
-      if (profile) {
-        adminViewUsers.push({ base: user, profile });
+      let profile = (await database.getUserProfile(user.id)).data;
+      if (!profile) {
+        await database.createUserProfile(user.id);
+        profile = (await database.getUserProfile(user.id)).data;
       }
+      adminViewUsers.push({ base: user, profile: profile ? profile : {} as IUserProfile });
     }
- return adminViewUsers;
+    return prep.response(true, messages.success, adminViewUsers);
   } catch (error) {
     console.error('Error in getAllUsers:', error);
-    throw error; // Re-throw the error
+    throw error;
   }
 }

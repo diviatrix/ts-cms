@@ -1,4 +1,4 @@
-interface IUploadFile {
+export default interface IUploadFile {
     id: string; // Unique identifier for the file
     name: string; // Original name of the file
     size: number; // Size of the file in bytes

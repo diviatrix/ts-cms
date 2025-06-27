@@ -1,5 +1,3 @@
-import config from "./config";
-
 export default {
     status: "Server status",
     start: "Start server",

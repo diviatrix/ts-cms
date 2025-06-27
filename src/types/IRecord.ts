@@ -1,4 +1,4 @@
-interface IRecord {
+export default interface IRecord {
     id: string;
     title: string;
     description: string;

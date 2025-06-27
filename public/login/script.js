@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       })
       .catch((error) => {
+        console.error('Error during registration:', error);
         messageDiv.textContent = 'An error occurred during registration.';
         messageDiv.classList.remove('text-success');
         messageDiv.classList.add('text-danger');
@@ -98,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       })
       .catch((error) => {
+        console.error('Error during login:', error);
         messageDiv.textContent = 'An error occurred during login.';
         messageDiv.classList.remove('text-success');
         messageDiv.classList.add('text-danger');
