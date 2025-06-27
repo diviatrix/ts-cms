@@ -55,7 +55,7 @@ export default function createExpressApp(): express.Application {
             if (result.success) {
                 res.status(200).json({
                     success: true,
-                    token: result.data.token // Include the token in the response
+                    token: result.data?.token // Include the token in the response
                 }); // Respond with success status and result
             } else {
                 res.status(401).json(result); // Respond with unauthorized status and result on failure

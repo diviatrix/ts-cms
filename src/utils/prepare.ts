@@ -2,21 +2,21 @@ import IResolve from '../types/IResolve';
 
 export default class prep {
   // Overload signature for accepting an IResolve object with optional callerInfo
-  public static response(result: IResolve, callerInfo?: string): IResolve;
+  public static response<T>(result: IResolve<T>, callerInfo?: string): IResolve<T>;
 
   // Implementation signature for accepting individual parameters with optional callerInfo
-  public static response(success: boolean, message: string, data?: any | IResolve): IResolve;
+  public static response<T>(success: boolean, message: string, data?: T): IResolve<T>;
 
   // Actual implementation that handles both cases
-  public static response(arg1: boolean | IResolve, message?: string, data?: any | IResolve, callerInfo?: string): IResolve {
-    let result: IResolve;
+  public static response<T>(arg1: boolean | IResolve<T>, message?: string, data?: T, callerInfo?: string): IResolve<T> {
+    let result: IResolve<T>;
 
     if (typeof arg1 === 'boolean') {
       // Case 1: Called with individual parameters
       result = {
         success: arg1,
         message: message as string, // Cast message as it's required in this case
-        data: data
+        data: data || undefined // Use data if provided, otherwise undefined
       };
     } else {
       // Case 2: Called with an IResolve object

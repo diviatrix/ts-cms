@@ -4,7 +4,7 @@ import IResolve from '../types/IResolve';
 import IUserProfile from '../types/IUserProfile';
 import prep from '../utils/prepare';
 
-export const updateProfile = async (userId: string, profileData: Partial<IUserProfile>): Promise<IResolve> => {
+export const updateProfile = async (userId: string, profileData: Partial<IUserProfile>): Promise<IResolve<IUserProfile>> => {
   console.log('updateProfile function called for user:', userId, 'with data:', profileData);
   try {
     // Check if profile exists

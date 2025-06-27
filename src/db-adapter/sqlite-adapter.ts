@@ -36,7 +36,7 @@ export default class SQLiteAdapter {
         });
     }
 
-    public async checkTables(): Promise<IResolve> {
+    public async checkTables(): Promise<IResolve<string[]>> {
         if (!this.db) {
             console.error(messages.sql_connect_error);
             return prep.response(false, messages.sql_connect_error);
@@ -61,18 +61,19 @@ export default class SQLiteAdapter {
         }
     }
 
-    public async getTables(): Promise<IResolve> {
+    public async getTables(): Promise<IResolve<string[]>> {
         const query = "SELECT name FROM sqlite_master WHERE type='table'";
         const result = await this.executeQuery(query);
 
         if (result.success && Array.isArray(result.data)) {
-            const tableNames = (result.data as Array<{ name: string }>).map(row => row.name);
+            const rows = result.data as unknown[];
+            const tableNames = (rows as Array<{ name: string }>).map(row => row.name);
             return prep.response(true, messages.sql_query_success, tableNames);
         }
-        return result; // Return the original error result from executeQuery
+        return prep.response(result.success, result.message, []); // Return the original error result from executeQuery
     }
 
-    public async createTables(tables: string[]): Promise<IResolve> {
+    public async createTables(tables: string[]): Promise<IResolve<string[]>> {
         for (const table of tables) {
             const schema = schemas[table as keyof typeof schemas];
             if (schema) {
@@ -89,7 +90,8 @@ export default class SQLiteAdapter {
 
         return prep.response(true, messages.success, tables);
     }
-    public async createTable(schema: string): Promise<IResolve> {
+
+    public async createTable(schema: string): Promise<IResolve<string[]>> {
         const response = await this.executeQuery(schema);
         return prep.response(response.success, response.message, response.data);
     }
@@ -106,11 +108,11 @@ export default class SQLiteAdapter {
         }
     }
 
-    public async executeQuery(query: string, params: any[] = []): Promise<IResolve> {
+    public async executeQuery(query: string, params: any[] = []): Promise<IResolve<string[]>> {
         return new Promise((resolve) => {
             this.db?.all(query, params, (err, rows: any[]) => {
                 if (err) {
-                    resolve(prep.response(false, messages.sql_query_error, err));
+                    resolve(prep.response(false, messages.sql_query_error, [err.toString()]));
                 } else {
                     resolve(prep.response(true, messages.sql_query_success, rows));
                 }
@@ -118,23 +120,23 @@ export default class SQLiteAdapter {
         });
     }
 
-    public async getByTableColValue(table: string, col: string, value: any): Promise<IResolve> {
+    public async getByTableColValue(table: string, col: string, value: any): Promise<IResolve<string>> {
         return new Promise((resolve) => {
             this.db?.get(`SELECT * FROM ${table} WHERE ${col} = ?`, [value], (err, row) => {
                 if (err) {
-                    resolve(prep.response(false, messages.sql_query_error, err));
-                } else {
-                    resolve(prep.response(true, messages.sql_query_success, row));
+                    resolve(prep.response(false, messages.sql_query_error, err.toString()));
+                } else  {
+                    resolve(prep.response(true, messages.sql_query_success, row as unknown as string));
                 }
             });
         });
     }
 
-    public async getStatus(): Promise<IResolve> {
+    public async getStatus(): Promise<IResolve<string>> {
         return new Promise((resolve) => {
             this.db?.get("SELECT sqlite_version() AS version", (err, row: { version: string }) => {
                 if (err) {
-                    resolve(prep.response(false, messages.sql_connect_error, err));
+                    resolve(prep.response(false, messages.sql_connect_error, err.toString()));
                 } else {
                     resolve(prep.response(true, messages.sql_connect_success, row.version));
                 }
