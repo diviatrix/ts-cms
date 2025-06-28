@@ -1,6 +1,6 @@
 import IUser from '../types/IUser';
 import database from '../db';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../utils/password';
 import { generateGuid } from '../utils/guid';
 
 export async function registerUser(user: IUser): Promise<{ success: boolean; message?: string }> {
@@ -29,7 +29,7 @@ export async function registerUser(user: IUser): Promise<{ success: boolean; mes
 
     // Assign a new GUID to the user ID
     // Hash the password
-    const hashedPassword = await bcrypt.hash(user.password_hash, 10); // 10 is the number of salt rounds
+    const hashedPassword = await hashPassword(user.password_hash);
     user.password_hash = hashedPassword;
     user.id = generateGuid();
 

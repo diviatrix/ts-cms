@@ -35,9 +35,7 @@ document.addEventListener('navigationLoaded', function() {
     if (profileLink) {
       profileLink.classList.remove('d-none');
     }
-     if (adminLink) {
-      adminLink.classList.remove('d-none');
-    }
+     
     if (signOutButton) {
       signOutButton.classList.remove('d-none');
       signOutButton.addEventListener('click', function() {

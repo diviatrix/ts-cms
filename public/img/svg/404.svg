@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Text -->
+  <text x="50%" y="60" text-anchor="middle" font-size="48" font-family="monospace" fill="white">1337+404</text>
+
+<!-- Nyan Cat Body -->
+<g>
+    <!-- Body (rectangle) -->
+    <rect x="180" y="120" width="150" height="80" rx="20" fill="#ffb6c1" stroke="#e75480" stroke-width="4"/>
+    <!-- Sprinkles on body -->
+    <circle cx="200" cy="140" r="4" fill="#fff"/>
+    <circle cx="220" cy="160" r="3" fill="#87ceeb"/>
+    <circle cx="250" cy="150" r="3" fill="#fffacd"/>
+    <circle cx="270" cy="170" r="3" fill="#90ee90"/>
+    <circle cx="300" cy="140" r="3" fill="#dda0dd"/>
+    <!-- Head -->
+    <ellipse cx="340" cy="120" rx="32" ry="28" fill="#b0b0b0" stroke="#888" stroke-width="3"/>
+    <!-- Ears -->
+    <polygon points="325,95 335,80 345,95" fill="#b0b0b0" stroke="#888" stroke-width="2"/>
+    <polygon points="355,95 365,80 375,95" fill="#b0b0b0" stroke="#888" stroke-width="2"/>
+    <!-- Face -->
+    <ellipse cx="332" cy="120" rx="4" ry="6" fill="#222"/>
+    <ellipse cx="348" cy="120" rx="4" ry="6" fill="#222"/>
+    <ellipse cx="340" cy="132" rx="7" ry="4" fill="#ff69b4"/>
+    <!-- Cheeks -->
+    <ellipse cx="328" cy="128" rx="3" ry="2" fill="#ffb6c1"/>
+    <ellipse cx="352" cy="128" rx="3" ry="2" fill="#ffb6c1"/>
+    <!-- Legs -->
+    <rect x="195" y="195" width="12" height="25" rx="5" fill="#b0b0b0" stroke="#888" stroke-width="2"/>
+    <rect x="225" y="195" width="12" height="25" rx="5" fill="#b0b0b0" stroke="#888" stroke-width="2"/>
+    <rect x="270" y="195" width="12" height="25" rx="5" fill="#b0b0b0" stroke="#888" stroke-width="2"/>
+    <rect x="300" y="195" width="12" height="25" rx="5" fill="#b0b0b0" stroke="#888" stroke-width="2"/>
+    <!-- Tail -->
+    <polyline points="180,160 160,170 170,180 150,190" fill="none" stroke="#b0b0b0" stroke-width="8" stroke-linecap="round"/>
+</g>
+<!-- Rainbow Trail -->
+<g>
+    <rect x="80" y="130" width="100" height="10" fill="#ff0000"/>
+    <rect x="80" y="140" width="100" height="10" fill="#ffa500"/>
+    <rect x="80" y="150" width="100" height="10" fill="#ffff00"/>
+    <rect x="80" y="160" width="100" height="10" fill="#00ff00"/>
+    <rect x="80" y="170" width="100" height="10" fill="#0000ff"/>
+    <rect x="80" y="180" width="100" height="10" fill="#8b00ff"/>
+</g>
+</svg>

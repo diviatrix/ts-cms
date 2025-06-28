@@ -1,3 +1,5 @@
+import { jwtDecode } from './js/jwt-decode.js';
+
 console.log('include-nav.js script started.');
 
 fetch('/nav/index.html')
@@ -15,6 +17,27 @@ fetch('/nav/index.html')
     if (navPlaceholder) {
       navPlaceholder.innerHTML = html;
       console.log('Navigation HTML inserted into navPlaceholder.');
+
+      // Check user roles and hide admin link if not admin
+      const token = localStorage.getItem('token');
+      const adminLink = document.getElementById('adminLink');
+
+      if (token && adminLink) {
+        try {
+          const decodedToken = jwtDecode(token);
+          if (decodedToken && decodedToken.roles && decodedToken.roles.includes('admin')) {
+            adminLink.classList.remove('d-none');
+          } else {
+            adminLink.classList.add('d-none');
+          }
+        } catch (error) {
+          console.error('Error decoding token:', error);
+          adminLink.classList.add('d-none'); // Hide if token is invalid
+        }
+      } else if (adminLink) {
+        adminLink.classList.add('d-none'); // Hide if no token
+      }
+
       // Dispatch a custom event after inserting the navigation
       const event = new CustomEvent('navigationLoaded');
       document.dispatchEvent(event);

@@ -36,16 +36,16 @@ class Database {
         return prep.response(response.success, response.message, user);
     }
 
-    public async saveSession(sessionId: string, userId: string, token: string): Promise<IResolve<null>>  {
+    public async saveSession(sessionId: string, userId: string, token: string): Promise<IResolve<string>>  {
         const sessionQuery = `INSERT INTO sessions (id, user_id, token) VALUES (?, ?, ?)`;
         const response = await this.db.executeQuery(sessionQuery, [sessionId, userId, token]);
-        return prep.response(response.success, response.message, null);
+        return prep.response(response.success, response.message, sessionId);
     }
 
-    public async deleteSessionByUserId(userId: string): Promise<IResolve<null>> {
+    public async deleteSessionByUserId(userId: string): Promise<IResolve<string>> {
         const query = `DELETE FROM sessions WHERE user_id = ?`;
         const response = await this.db.executeQuery(query, [userId]);
-        return prep.response(response.success, response.message, null);
+        return prep.response(response.success, response.message, userId);
     }
 
     public async getUserProfile(userId: string): Promise<IResolve<IUserProfile | undefined>> {
@@ -86,9 +86,7 @@ class Database {
             // If successful, return the defaultProfile as the created profile
             return prep.response(true, messages.success, defaultProfile);
         } else {
-            // If there was an error, return an error response
-            // Return a dummy object or null cast as IUserProfile to satisfy the type
-            return prep.response(false, messages.failure, null as unknown as IUserProfile);
+            return prep.response(false, messages.failure, undefined as unknown as IUserProfile);
         }
     }
 
@@ -96,6 +94,12 @@ class Database {
 
     public async findUserByLogin(login: string): Promise<IResolve<IUser | undefined>> {
         const response = await this.db.executeQuery(`SELECT * FROM users WHERE login = ? OR email = ?`, [login, login]);
+        const data = response.data && response.data.length > 0 ? (response.data[0] as unknown as IUser) : undefined;
+        return prep.response(response.success, response.message, data);
+    }
+
+    public async getUser(id: string): Promise<IResolve<IUser | undefined>> {
+        const response = await this.db.executeQuery(`SELECT * FROM users WHERE id = ?`, [id]);
         const data = response.data && response.data.length > 0 ? (response.data[0] as unknown as IUser) : undefined;
         return prep.response(response.success, response.message, data);
     }

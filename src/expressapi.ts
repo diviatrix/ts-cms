@@ -9,7 +9,9 @@ import database from './db';
 import { updateProfile } from './functions/updateProfile';
 import { authenticateToken } from './utils/jwt';
 import { getAllBaseUsers } from './functions/users';
+import { getUser, getUserProfile, setPassword } from './functions/user';
 import { RoleCheck } from './functions/roleCheck';
+import { UserRoles } from './data/groups';
 
 export default function createExpressApp(): express.Application {
     // Create an Express application
@@ -83,16 +85,7 @@ export default function createExpressApp(): express.Application {
             console.log('Request user object:', (req as any).user); // Debug log for user object 
 
             const userId = (req as any).user.id; // Get the user ID from the authenticated token
-            let profile = await database.getUserProfile(userId);
-
-            if (!profile) {
-                console.log('No profile found, creating one for user:', userId); // Debug log before create
-                profile = await database.createUserProfile(userId); // Assign the newly created profile
-                console.log('User profile created and fetched.'); // Debug log after create
-            }
-
-            console.log('Fetching profile for user ID:', userId); // Debug log before database call
-            console.log('Database returned for user ID:', userId, ':', profile); // Debug log after database call
+            const profile = await getUserProfile(userId);
 
             res.status(200).json(profile); // Return the user profile
         } catch (error) {
@@ -104,14 +97,31 @@ export default function createExpressApp(): express.Application {
     // Add the profile update endpoint
     app.post('/api/profile', authenticateToken, async (req: Request, res: Response) => {
         console.log('POST /api/profile endpoint reached'); // Debug log
-        const user_id = (req as any).user.id; // Get the user ID from the authenticated token
-        const profileData = req.body; // Get the updated profile data from the request body
+        const authenticatedUserId = (req as any).user.id;
+        const isAuthenticatedUserAdmin = (req as any).user.roles && RoleCheck.hasRole((req as any).user.roles, UserRoles.ADMIN);
+
+        let targetUserId = authenticatedUserId;
+        if (isAuthenticatedUserAdmin && req.body.user_id) {
+            targetUserId = req.body.user_id;
+        }
+
+        const profileData = req.body.profile || {}; // Get the updated profile data from the request body, default to empty object
+        const baseData = req.body.base || {}; // Get the updated base user data, default to empty object
 
         try {
             console.log('Received profile update data:', profileData); // Log received data
+            console.log('Received base user data:', baseData); // Log received data
 
-            await updateProfile(user_id, profileData);
-            res.status(200).json({ success: true, message: 'User profile updated successfully.' });
+            // Update user profile
+            await database.updateUserProfile(targetUserId, profileData);
+
+            // Update base user data (only for admins)
+            if (isAuthenticatedUserAdmin) {
+                await database.updateUser(targetUserId, baseData);
+                res.status(200).json({ success: true, message: 'User profile and base data updated successfully.' });
+            } else {
+                res.status(200).json({ success: true, message: 'User profile updated successfully.' });
+            }
         } catch (error) {
             console.error("Failed to update user profile:", error);
             res.status(500).json({ status: 'error', message: 'Failed to update user profile.' });
@@ -119,28 +129,44 @@ export default function createExpressApp(): express.Application {
     });
 
     // Add the endpoint for admin profile updates
-    app.post('/api/admin/updateProfile', authenticateToken, RoleCheck.adminAuth, async (req: Request, res: Response) => {
-        console.log('POST /api/admin/updateProfile endpoint reached'); // Debug log
-        // TODO: Add authorization check to ensure the user is an administrator
-
-        const userId = req.body.profile.user_id; // Get the target user ID from the profile object
-        const profileData = req.body.profile; // Get the updated profile data from the profile object
-        console.log(`Admin attempting to update profile for userId: ${userId} with data:`, profileData); // Debug log
+    // Add the endpoint to set user password
+    app.post('/api/profile/password/set', authenticateToken, async (req: Request, res: Response) => {
+        const { userId, newPassword } = req.body; // userId is optional, newPassword is required
+        const authenticatedUserId = (req as any).user.id;
+        const isAuthenticatedUserAdmin = (req as any).user.roles && RoleCheck.hasRole((req as any).user.roles, UserRoles.ADMIN);
 
         try {
-            // Call a database function to update the user's profile
-            await database.updateUserProfile(userId, profileData); // We will implement this in db.ts
-            console.log(`Profile updated successfully for userId: ${userId}`); // Debug log
-            res.status(200).json({ success: true, message: 'User profile updated successfully.' });
+            let targetUserId = userId;
+
+            // If userId is not provided, or if the authenticated user is not an admin,
+            // they can only change their own password.
+            if (!targetUserId || !isAuthenticatedUserAdmin) {
+                targetUserId = authenticatedUserId;
+            }
+
+            // If an admin tries to change a password for a user that doesn't exist
+            if (isAuthenticatedUserAdmin && userId && targetUserId !== userId) {
+                res.status(400).json({ success: false, message: 'Invalid target user ID for admin password change.' });
+                return;
+            }
+
+            // Call a function to handle password update (will be implemented in user.ts)
+            const result = await setPassword(targetUserId, newPassword);
+
+            if (result.success) {
+                res.status(200).json({ success: true, message: 'Password updated successfully.' });
+            } else {
+                res.status(400).json({ success: false, message: result.message });
+            }
         } catch (error) {
-            console.error("Failed to update user profile as admin:", error);
-            res.status(500).json({ status: 'error', message: 'Failed to update user profile.' });
+            console.error("Failed to set user password:", error);
+            res.status(500).json({ success: false, message: 'Failed to set user password.' });
         }
     });
 
 
     // Add the endpoint to get all users (for admin)
-    app.get('/api/users', authenticateToken, async (req: Request, res: Response) => {
+    app.get('/api/admin/users', authenticateToken, RoleCheck.adminAuth, async (req: Request, res: Response) => {
         console.log('GET /api/users endpoint reached'); // Debug log
         try {
              // Check if the authenticated user has admin role (you'll need to add this check)
@@ -153,6 +179,17 @@ export default function createExpressApp(): express.Application {
         } catch (error) {
             console.error("Failed to fetch users:", error);
             res.status(500).json({ status: 'error', message: 'Failed to fetch users.' });
+        }
+    });
+
+    app.get('/api/profile/:id', authenticateToken, RoleCheck.adminAuth, async (req: Request, res: Response) => {
+        try {
+            const userId = req.params.id;
+            const user = await getUser(userId);
+            res.status(200).json(user);
+        } catch (error) {
+            console.error("Failed to fetch user profile:", error);
+            res.status(500).json({ status: 'error', message: 'Failed to fetch user profile.' });
         }
     });
 

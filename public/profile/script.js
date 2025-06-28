@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const profileBlock = document.getElementById('profileBlock');
   const responseBox = document.getElementById('responseBox');
   const fetchButton = document.getElementById('fetchButton');
+  const saveButton = document.getElementById('saveButton');
 
   // Check for token on page load
   const token = localStorage.getItem('token');
@@ -30,9 +31,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      const data = await response.json();
-      responseBox.value = JSON.stringify(data, null, 2);
-      messageDiv.textContent = '';
+      const responseData = await response.json();
+      if (responseData.success && responseData.data) {
+        responseBox.value = JSON.stringify(responseData.data, null, 2);
+      } else {
+        messageDiv.textContent = responseData.message || 'Failed to fetch profile data.';
+        messageDiv.classList.remove('text-success');
+        messageDiv.classList.add('text-danger');
+      }
+      // messageDiv.textContent = ''; // Removed this line
     } catch (error) {
       console.error('Error fetching profile:', error);
       messageDiv.textContent = 'An error occurred while fetching profile.';
@@ -49,6 +56,50 @@ document.addEventListener('DOMContentLoaded', function() {
   if (fetchButton) {
     fetchButton.addEventListener('click', function() {
       fetchProfile(token);
+    });
+  }
+
+  // Save button: send textarea value to server
+  if (saveButton) {
+    saveButton.addEventListener('click', async function() {
+      let updatedData;
+      try {
+        updatedData = JSON.parse(responseBox.value);
+      } catch (e) {
+        console.error('Invalid JSON format:', e);
+        messageDiv.textContent = 'Invalid JSON format.';
+        messageDiv.classList.remove('text-success');
+        messageDiv.classList.add('text-danger');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ profile: updatedData }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          messageDiv.textContent = result.message;
+          messageDiv.classList.remove('text-danger');
+          messageDiv.classList.add('text-success');
+          fetchProfile(token); // Refresh profile after successful update
+        } else {
+          messageDiv.textContent = 'Failed to update profile: ' + result.message;
+          messageDiv.classList.remove('text-success');
+          messageDiv.classList.add('text-danger');
+        }
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        messageDiv.textContent = 'An error occurred while updating profile.';
+        messageDiv.classList.remove('text-success');
+        messageDiv.classList.add('text-danger');
+      }
     });
   }
 });

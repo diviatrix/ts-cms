@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      const response = await fetch('/api/users', {
+      const response = await fetch('/api/admin/users', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -66,12 +66,51 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Function to display selected user's profile (just show server answer)
-  function displayUserProfile(user) {
+  async function displayUserProfile(user) {
+    console.log('displayUserProfile: user object:', user); // Added log
     profileEditTab.classList.remove('d-none');
     adminServerAnswerTextarea.value = JSON.stringify(user, null, 2);
-    adminProfileInfo.dataset.currentUserId = user.id;
+    adminProfileInfo.dataset.currentUserId = user.base.id; // Use user.base.id
     adminMessageDiv.textContent = '';
     adminMessageDiv.classList.remove('text-success', 'text-danger');
+  }
+
+  // Function to fetch and display a single user's profile
+  async function fetchUserProfile(userId) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/profile/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        adminMessageDiv.textContent = `Error fetching user profile: ${errorData.message || response.status}`;
+        adminMessageDiv.classList.add('text-danger');
+        return;
+      }
+
+      const responseData = await response.json();
+      console.log('fetchUserProfile: responseData object:', responseData); // Added log
+      const user = responseData.data; // Extract the actual user data
+      adminServerAnswerTextarea.value = JSON.stringify(user, null, 2);
+      adminProfileInfo.dataset.currentUserId = user.base.id;
+
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      adminMessageDiv.textContent = 'An error occurred while fetching user profile.';
+      adminMessageDiv.classList.add('text-danger');
+    }
   }
 
   // Save button: send textarea value to server, show server answer in textarea
@@ -84,9 +123,14 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    let updatedProfileData;
+    let updatedData;
     try {
-      updatedProfileData = JSON.parse(adminServerAnswerTextarea.value);
+      const parsedData = JSON.parse(adminServerAnswerTextarea.value);
+      updatedData = {
+        user_id: userIdToUpdate,
+        base: parsedData.base,
+        profile: parsedData.profile
+      };
     } catch (e) {
       console.error('Invalid JSON format:', e);
       adminMessageDiv.textContent = 'Invalid JSON format.';
@@ -96,21 +140,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/updateProfile', {
+      const response = await fetch('/api/profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(updatedProfileData),
+        body: JSON.stringify(updatedData),
       });
       const result = await response.json();
+      console.log('adminSaveButton: result object:', result); // Added log
       adminServerAnswerTextarea.value = JSON.stringify(result, null, 2);
       if (result.success) {
         adminMessageDiv.textContent = result.message;
         adminMessageDiv.classList.remove('text-danger');
         adminMessageDiv.classList.add('text-success');
-        fetchUsers();
+        // Instead of re-fetching all users, fetch only the updated user
+        fetchUserProfile(userIdToUpdate);
       } else {
         adminMessageDiv.textContent = 'Failed to update profile: ' + result.message;
         adminMessageDiv.classList.remove('text-success');

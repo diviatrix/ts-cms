@@ -1,11 +1,29 @@
-<div id="menuBlock" class="card mt-3">
-  <div class="card-body text-center">
-    <!-- Links for logged-out users -->
-    <a href="/login" id="loginLink" class="btn btn-outline-primary me-2 d-none">Login/Register</a>
-
-    <!-- Links for logged-in users -->
-    <a href="/profile" id="profileLink" class="btn btn-outline-primary me-2 d-none">Profile</a>
-    <a href="/admin" id="adminLink" class="btn btn-outline-secondary me-2 d-none">Admin</a>
-    <button id="signOutButton" class="btn btn-outline-secondary d-none">Sign Out</button>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top navbar-custom">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">
+      <span class="logo">1337+</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/" id="frontpageLink">Frontpage</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-none" href="/login" id="loginLink">Login/Register</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-none" href="/profile" id="profileLink">Profile</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-none" href="/admin" id="adminLink">Admin</a>
+        </li>
+        <li class="nav-item">
+          <button id="signOutButton" class="btn btn-link nav-link d-none">Sign Out</button>
+        </li>
+      </ul>
+    </div>
   </div>
-</div>
+</nav>
