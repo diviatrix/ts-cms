@@ -6,15 +6,25 @@ import IUserProfile from './types/IUserProfile';
 import IResolve from './types/IResolve';
 import prep from './utils/prepare'
 
-const db = new adapter();
 class Database {
-    // connect to the database or create it if it doesn't exist
-    constructor() {
+    private static instance: Database;
+    private db: adapter;
+
+    private constructor() {
+        console.log('Database constructor called.');
+        this.db = new adapter();
         this.initialize();
     }
 
+    public static getInstance(): Database {
+        if (!Database.instance) {
+            Database.instance = new Database();
+        }
+        return Database.instance;
+    }
+
     private async initialize() {
-        console.log(await db.checkTables());
+        console.log(await this.db.checkTables());
     }
 
     public async registerUser(user: IUser): Promise<IResolve<IUser>> {
@@ -22,28 +32,36 @@ class Database {
         const placeholders = Object.keys(user).map(() => '?').join(', ');
         const values = Object.values(user);
         const query = `INSERT INTO users (${columns}) VALUES (${placeholders})`;
-        const response = await db.executeQuery(query, values);
+        const response = await this.db.executeQuery(query, values);
         return prep.response(response.success, response.message, user);
     }
 
     public async saveSession(sessionId: string, userId: string, token: string): Promise<IResolve<null>>  {
         const sessionQuery = `INSERT INTO sessions (id, user_id, token) VALUES (?, ?, ?)`;
-        const response = await db.executeQuery(sessionQuery, [sessionId, userId, token]);
+        const response = await this.db.executeQuery(sessionQuery, [sessionId, userId, token]);
         return prep.response(response.success, response.message, null);
     }
 
     public async deleteSessionByUserId(userId: string): Promise<IResolve<null>> {
         const query = `DELETE FROM sessions WHERE user_id = ?`;
-        const response = await db.executeQuery(query, [userId]);
+        const response = await this.db.executeQuery(query, [userId]);
         return prep.response(response.success, response.message, null);
     }
 
-    public async getUserProfile(userId: string): Promise<IResolve<IUserProfile | null>> {
+    public async getUserProfile(userId: string): Promise<IResolve<IUserProfile | undefined>> {
         const query = `SELECT * FROM user_profiles WHERE user_id = ?`;
-        const response = await db.executeQuery(query, [userId]);
+        const response = await this.db.executeQuery(query, [userId]);
         const data = (response.data && response.data.length > 0)
             ? (response.data[0] as unknown as IUserProfile)
             : undefined;
+        if (data && typeof data.roles === 'string') {
+            try {
+                data.roles = JSON.parse(data.roles);
+            } catch (e) {
+                console.error("Error parsing roles from database:", e);
+                data.roles = []; // Default to empty array on parse error
+            }
+        }
         return prep.response(response.success, response.message, data);
     }
 
@@ -63,48 +81,49 @@ class Database {
         const placeholders = Object.keys(defaultProfile).map(() => '?').join(', ');
         const values = Object.values(defaultProfile).map(value => typeof value === 'object' ? JSON.stringify(value) : value); // Stringify roles array
         const query = `INSERT INTO user_profiles (${columns}) VALUES (${placeholders})`;
-        const response = await db.executeQuery(query, values);
-        return prep.response(response.success, response.message, defaultProfile);
-    }
-
-    public async updateUserProfile(userId: string, profile: Partial<IUserProfile>): Promise<IResolve<IUserProfile>> {
-        const fieldsToUpdate = Object.keys(profile).filter(key => (profile as any)[key] !== undefined);
-        if (fieldsToUpdate.length === 0) {
-            return prep.response(true, messages.nothing_to_do, null as unknown as IUserProfile); // Nothing to update
+        const response = await this.db.executeQuery(query, values);
+        if (response.success) {
+            // If successful, return the defaultProfile as the created profile
+            return prep.response(true, messages.success, defaultProfile);
+        } else {
+            // If there was an error, return an error response
+            // Return a dummy object or null cast as IUserProfile to satisfy the type
+            return prep.response(false, messages.failure, null as unknown as IUserProfile);
         }
-        const setClauses = fieldsToUpdate.map(field => `${field} = ?`).join(', ');
-        const values = fieldsToUpdate.map(field => (profile as any)[field]);
-        values.push(userId);
-
-        const query = `UPDATE user_profiles SET ${setClauses} WHERE user_id = ?`;
-        const response = await db.executeQuery(query, values);
-        return prep.response(response.success, response.message, response.data as unknown as IUserProfile);
     }
+
+    
 
     public async findUserByLogin(login: string): Promise<IResolve<IUser | undefined>> {
-        const response = await db.executeQuery(`SELECT * FROM users WHERE login = ? OR email = ?`, [login, login]);
+        const response = await this.db.executeQuery(`SELECT * FROM users WHERE login = ? OR email = ?`, [login, login]);
         const data = response.data && response.data.length > 0 ? (response.data[0] as unknown as IUser) : undefined;
         return prep.response(response.success, response.message, data);
     }
 
     public async getAllBaseUsers(): Promise<IResolve<IUser[] | undefined>> {
-        const response = await db.executeQuery("SELECT * FROM users", []);
+        const response = await this.db.executeQuery("SELECT * FROM users", []);
         const users = Array.isArray(response.data) ? (response.data as unknown as IUser[]) : undefined;
         return prep.response(response.success, response.message, users);
     }
 
     public async getUserProfileById(userId: string): Promise<IResolve<IUserProfile>> {
-        const response = await db.executeQuery("SELECT * FROM user_profiles WHERE user_id = ?", [userId]);
+        const response = await this.db.executeQuery("SELECT * FROM user_profiles WHERE user_id = ?", [userId]);
         const data = response.data && response.data.length > 0 ? (response.data[0] as unknown as IUserProfile) : undefined;
+        if (data && typeof data.roles === 'string') {
+            try {
+                data.roles = JSON.parse(data.roles);
+            } catch (e) {
+                console.error("Error parsing roles from database:", e);
+                data.roles = []; // Default to empty array on parse error
+            }
+        }
         return prep.response(response.success, response.message, data);
     }
 
-    public async adminUpdateUserProfile(userId: string, profile: Partial<IUserProfile>): Promise<IResolve<IUserProfile | undefined>> {
-        console.log('Database: adminUpdateUserProfile called for userId:', userId, 'with profile data:', profile);
+    public async updateUserProfile(userId: string, profile: Partial<IUserProfile>): Promise<IResolve<IUserProfile | undefined>> {
         const fieldsToUpdate = Object.keys(profile).filter(key => (profile as any)[key] !== undefined);
         
         if (fieldsToUpdate.length === 0) {
-            console.log('Database: No fields to update in adminUpdateUserProfile.');
             return prep.response(true, messages.success, undefined); // Nothing to update
         }
 
@@ -125,12 +144,29 @@ class Database {
         values.push(userId);
 
         const query = `UPDATE user_profiles SET ${setClauses} WHERE user_id = ?`;
-        console.log('Database: Executing adminUpdateUserProfile query:', query, 'with values:', values);
-        const response = await db.executeQuery(query, values);
+        const response = await this.db.executeQuery(query, values);
+        return prep.response(response.success, response.message, undefined);
+    }
+
+    public async updateUser(userId: string, userData: Partial<IUser>): Promise<IResolve<IUser | undefined>> {
+        console.log('Database: updateUser called for userId:', userId, 'with user data:', userData);
+        const fieldsToUpdate = Object.keys(userData).filter(key => (userData as any)[key] !== undefined);
+
+        if (fieldsToUpdate.length === 0) {
+            console.log('Database: No fields to update in updateUser.');
+            return prep.response(true, messages.success, undefined); // Nothing to update
+        }
+
+        const setClauses = fieldsToUpdate.map(field => `${field} = ?`).join(', ');
+        const values = fieldsToUpdate.map(field => (userData as any)[field]);
+        values.push(userId);
+
+        const query = `UPDATE users SET ${setClauses} WHERE id = ?`;
+        console.log('Database: Executing updateUser query:', query, 'with values:', values);
+        const response = await this.db.executeQuery(query, values);
         return prep.response(response.success, response.message, undefined);
     }
     
-};
+}
 
-const database = new Database();
-export default database;
+export default Database.getInstance();

@@ -1,9 +1,12 @@
+import { fail } from "assert";
+
 export default {
     ok: 'OK',
     welcome: 'Welcome to the API',
     error: 'An error occurred',
     not_found: 'Resource not found',
     success: 'Operation successful',
+    failure: 'Operation failed',
     unauthorized: 'Unauthorized access',
     forbidden: 'Access forbidden',
     bad_request: 'Bad request',
@@ -12,6 +15,7 @@ export default {
     sql_connect_error: 'Error connecting to SQLite database',
     sql_connect_success: 'Connected to SQLite database',
     sql_query_error: 'Error executing SQL query',
+    sql_query_request: 'Executing SQL query: ',
     sql_query_success: 'SQL query executed successfully',
     sql_close_success: 'SQLite database connection closed',
     sql_close_error: 'Error closing SQLite database connection',

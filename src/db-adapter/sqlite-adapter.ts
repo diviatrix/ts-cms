@@ -12,6 +12,7 @@ export default class SQLiteAdapter {
     private db: sqlite3.Database | null = null;
 
     constructor() {
+        console.log('SQLiteAdapter constructor called.');
         this.connect();
     }
 
@@ -29,9 +30,7 @@ export default class SQLiteAdapter {
             if (err) {
                 console.error(messages.sql_connect_error, err);
             } else {
-                this.getStatus().then(status => {
-                    console.log(status);
-                });
+                console.log(messages.sql_connect_success + ': ' + config.db_path);
             }
         });
     }
@@ -109,6 +108,11 @@ export default class SQLiteAdapter {
     }
 
     public async executeQuery(query: string, params: any[] = []): Promise<IResolve<string[]>> {
+        if (query.trim() === '') {
+            return prep.response(false, messages.sql_query_error, ["Query cannot be empty."]);
+        } else {
+            // Removed console.log here to prevent duplicate logging
+        }
         return new Promise((resolve) => {
             this.db?.all(query, params, (err, rows: any[]) => {
                 if (err) {

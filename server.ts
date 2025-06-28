@@ -1,5 +1,4 @@
 import app from "./src/expressapi.ts";
-import './src/db';
 
 // Add global error handlers
 process.on('uncaughtException', (err) => {

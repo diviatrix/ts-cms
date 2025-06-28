@@ -3,7 +3,7 @@ import config from '../data/config';
 
 export async function generateToken(user: any): Promise<string> {
   return new Promise((resolve, reject) => {
-    jwt.sign({ id: user.id }, config.jwt_secret, { expiresIn: '1h' }, (err, token) => {
+    jwt.sign(user, config.jwt_secret, { expiresIn: '1h' }, (err, token) => {
             if (err) { // Change '1h' to '5m' for 5 minutes
         reject(err);
       } else if (token) {

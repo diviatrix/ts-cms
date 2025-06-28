@@ -9,18 +9,12 @@ export const updateProfile = async (userId: string, profileData: Partial<IUserPr
   try {
     // Check if profile exists
     console.log('Attempting to get user profile for user:', userId);
-    const existingProfile = await database.getUserProfile(userId);    
-    console.log('getUserProfile result:', existingProfile);
-
     // If profile doesn't exist, create it
+    const existingProfile = await database.getUserProfile(userId);
     if (!existingProfile) {
       console.log('No profile found, creating one for user:', userId);
       await database.createUserProfile(userId);
       console.log('User profile created.');
-      // Fetch the profile again after creation
-      console.log('Fetching profile again after creation.');
-      const createdProfile = await database.getUserProfile(userId);
-      console.log('getUserProfile result after creation:', createdProfile);
     }
 
     // Update the profile with the provided data

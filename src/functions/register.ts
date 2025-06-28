@@ -1,5 +1,5 @@
 import IUser from '../types/IUser';
-import database from '../db'; // Import the single instance
+import database from '../db';
 import bcrypt from 'bcryptjs';
 import { generateGuid } from '../utils/guid';
 

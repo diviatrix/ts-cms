@@ -32,8 +32,9 @@ export async function loginUser(login: string, password: string): Promise<IResol
       await database.deleteSessionByUserId(user.id);
 
       const sessionId = generateGuid();
-      const sessionQuery = `INSERT INTO sessions (id, user_id, token) VALUES (?, ?, ?)`;
-      const token = await generateToken({ id: user.id, sessionId: sessionId });
+      const userProfile = await database.getUserProfile(user.id);
+      const roles = userProfile.data?.roles || [];
+      const token = await generateToken({ id: user.id, sessionId: sessionId, roles: roles });
       await database.saveSession(sessionId, user.id, token);
 
       const { password_hash, ...userWithoutPasswordHash } = user;

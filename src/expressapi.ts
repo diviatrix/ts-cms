@@ -9,6 +9,7 @@ import database from './db';
 import { updateProfile } from './functions/updateProfile';
 import { authenticateToken } from './utils/jwt';
 import { getAllBaseUsers } from './functions/users';
+import { RoleCheck } from './functions/roleCheck';
 
 export default function createExpressApp(): express.Application {
     // Create an Express application
@@ -78,7 +79,7 @@ export default function createExpressApp(): express.Application {
             }
 
             console.log('Reached try block in GET /api/profile handler'); // Debug log
-            console.log('Request object:', req); // Debug log for entire request object
+            //console.log('Request object:', req); // Debug log for entire request object
             console.log('Request user object:', (req as any).user); // Debug log for user object 
 
             const userId = (req as any).user.id; // Get the user ID from the authenticated token
@@ -86,9 +87,8 @@ export default function createExpressApp(): express.Application {
 
             if (!profile) {
                 console.log('No profile found, creating one for user:', userId); // Debug log before create
-                await database.createUserProfile(userId);
-                console.log('User profile created.'); // Debug log after create
-                profile = await database.getUserProfile(userId); // Fetch the profile again after creation
+                profile = await database.createUserProfile(userId); // Assign the newly created profile
+                console.log('User profile created and fetched.'); // Debug log after create
             }
 
             console.log('Fetching profile for user ID:', userId); // Debug log before database call
@@ -119,16 +119,17 @@ export default function createExpressApp(): express.Application {
     });
 
     // Add the endpoint for admin profile updates
-    app.post('/api/admin/updateProfile', authenticateToken, async (req: Request, res: Response) => {
+    app.post('/api/admin/updateProfile', authenticateToken, RoleCheck.adminAuth, async (req: Request, res: Response) => {
         console.log('POST /api/admin/updateProfile endpoint reached'); // Debug log
         // TODO: Add authorization check to ensure the user is an administrator
 
-        const { userId, profileData } = req.body; // Get the target user ID and updated profile data
+        const userId = req.body.profile.user_id; // Get the target user ID from the profile object
+        const profileData = req.body.profile; // Get the updated profile data from the profile object
         console.log(`Admin attempting to update profile for userId: ${userId} with data:`, profileData); // Debug log
 
         try {
             // Call a database function to update the user's profile
-            await database.adminUpdateUserProfile(userId, profileData); // We will implement this in db.ts
+            await database.updateUserProfile(userId, profileData); // We will implement this in db.ts
             console.log(`Profile updated successfully for userId: ${userId}`); // Debug log
             res.status(200).json({ success: true, message: 'User profile updated successfully.' });
         } catch (error) {
