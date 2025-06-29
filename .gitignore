@@ -136,5 +136,26 @@ dist
 .pnp.*
 data/database.db
 
-#project specific
-*.db
+# Project specific
+database.db
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Development environment files
+.idx/
+
+# Build artifacts
+/build/
+
+# Temporary files
+*.tmp
+*~
+*.bak
