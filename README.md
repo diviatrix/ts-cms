@@ -1,4 +1,4 @@
-![TypeScript Lightweight CMS](public/promo/index.png)
+![TypeScript Lightweight CMS](public/img/promo/index.png)
 
 # ts-cms
 
