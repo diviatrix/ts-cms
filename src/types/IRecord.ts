@@ -3,10 +3,10 @@ export default interface IRecord {
     title: string;
     description: string;
     content: string;
-    authorId: string;
+    user_id: string;
     tags: string[];
     categories: string[];
-    isPublished: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+    is_published: boolean;
+    created_at: Date;
+    updated_at: Date;
 }

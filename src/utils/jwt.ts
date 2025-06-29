@@ -22,8 +22,9 @@ export async function authenticateToken(req: any, res: any, next: any) {
   console.log('Received token:', token); // Add this line
 
   if (token == null) {
-    console.log('No token provided. Sending 401.'); // Add this line
-    return res.sendStatus(401); // if there isn\'t any token
+    console.log('No token provided. Proceeding as unauthenticated.');
+    req.user = undefined; // Ensure req.user is undefined if no token
+    return next();
   }
 
   try {
@@ -31,9 +32,10 @@ export async function authenticateToken(req: any, res: any, next: any) {
     console.log('Token verified. User:', user); // Add this line
     req.user = user; // Moved inside try block
   } catch (err) {
- return res.status(401).json({ status: 'error', message: 'Token invalid or expired.' }); // Send 401 and JSON error
+    console.warn('Token invalid or expired. Proceeding as unauthenticated.', err);
+    req.user = undefined; // Ensure req.user is undefined if token is invalid
   }
-  next(); // Call next only if authentication is successful
+  next(); // Always call next to proceed
 }
 
 export async function verifyToken(token: string): Promise<any> {

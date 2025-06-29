@@ -22,11 +22,6 @@ document.addEventListener('navigationLoaded', function() {
     if (signOutButton) {
       signOutButton.classList.add('d-none');
     }
-    // Optionally hide the whole menu block if only login/register is shown
-    // if (menuBlock) {
-    //   menuBlock.classList.add('d-none');
-    // }
-
   } else {
     // If token exists, show profile, admin, and sign out links and hide login/register
     if (loginLink) {
@@ -43,6 +38,7 @@ document.addEventListener('navigationLoaded', function() {
         window.location.href = '/login'; // Redirect to login page
       });
     }
+
     // Ensure menu block is visible if any logged-in links are shown
      if (menuBlock) {
         menuBlock.classList.remove('d-none');

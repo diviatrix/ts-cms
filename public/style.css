@@ -174,3 +174,7 @@ body {
 .container {
   margin-top: 20px; /* Add some top margin to the main container */
 }
+
+.neon-green-text {
+  color: var(--neon-green);
+}

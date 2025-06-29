@@ -1,72 +1,48 @@
 document.addEventListener('DOMContentLoaded', function() {
   const postsGrid = document.getElementById('postsGrid');
 
-  const dummyPosts = [
-    {
-      title: 'Comprehensive Test Cases',
-      content: 'Design test cases that cover not only happy paths but also edge cases, negative scenarios, and boundary conditions for robust testing.',
-      image: '/img/cat/5d82da80-01a8-4a8b-b9d4-87109cd14f95.png'
-    },
-    {
-      title: 'Automate Repetitive Tests',
-      content: 'Automate regression tests and other repetitive checks to speed up feedback cycles and free up manual testers for exploratory testing.',
-      image: '/img/cat/angry.png'
-    },
-    {
-      title: 'User Experience Testing',
-      content: 'Beyond functionality, focus on user experience (UX) testing to ensure the application is intuitive, accessible, and enjoyable to use.',
-      image: '/img/cat/arrogant.png'
-    },
-    {
-      title: 'Performance Testing',
-      content: 'Don\'t overlook performance. Conduct load, stress, and scalability tests to ensure the application handles expected (and unexpected) user volumes.',
-      image: '/img/cat/back.png'
-    },
-    {
-      title: 'Security Testing Basics',
-      content: 'Incorporate basic security testing, such as input validation and authentication checks, to identify common vulnerabilities early.',
-      image: '/img/cat/bday.png'
-    },
-    {
-      title: 'Clear Bug Reporting',
-      content: 'Write clear, concise, and reproducible bug reports. Include steps to reproduce, expected vs. actual results, and environmental details.',
-      image: '/img/cat/box.png'
-    },
-    {
-      title: 'Continuous Integration',
-      content: 'Integrate testing into your CI/CD pipeline. Run automated tests with every code commit to catch issues immediately.',
-      image: '/img/cat/eat.png'
-    },
-    {
-      title: 'Collaboration with Developers',
-      content: 'Foster strong collaboration between QA and development teams. Early and frequent communication prevents misunderstandings and speeds up fixes.',
-      image: '/img/cat/fish.png'
-    },
-    {
-      title: 'Exploratory Testing',
-      content: 'Encourage exploratory testing to uncover unexpected bugs and usability issues that might be missed by scripted tests.',
-      image: '/img/cat/jump.png'
-    },
-    {
-      title: 'Exploratory Testing',
-      content: 'Encourage exploratory testing to uncover unexpected bugs and usability issues that might be missed by scripted tests.',
-      image: '/img/cat/lick.png'
+  async function fetchAndRenderRecords() {
+    try {
+      const response = await fetch('/api/records');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const records = await response.json();
+      renderRecords(records);
+    } catch (error) {
+      console.error('Error fetching records:', error);
+      postsGrid.innerHTML = '<p class="text-danger">Failed to load posts. Please try again later.</p>';
     }
-  ];
+  }
 
-  function renderPosts() {
+  function renderRecords(records) {
     postsGrid.innerHTML = ''; // Clear existing posts
-    dummyPosts.forEach(post => {
+    if (records.length === 0) {
+      postsGrid.innerHTML = '<p>No posts available yet.</p>';
+      return;
+    }
+
+    // Adjust postsGrid class based on number of records
+    if (records.length < 6) {
+      postsGrid.className = 'row g-4 mt-4 justify-content-center'; // Center the single column
+    } else {
+      postsGrid.className = 'row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mt-4'; // Default grid
+    }
+
+    const colClass = records.length < 6 ? 'col-12 col-md-8 col-lg-6' : 'col'; // Use 'col' for multi-column to let row-cols handle it
+
+    records.forEach(record => {
       const postCard = `
-        <div class="col">
+        <div class="${colClass} mb-4">
           <div class="card h-100">
-            <img src="${post.image}" class="card-img-top" alt="${post.title}">
             <div class="card-body">
-              <h5 class="card-title">${post.title}</h5>
-              <p class="card-text">${post.content}</p>
+              <h5 class="card-title">${record.title}</h5>
+              <h6 class="card-subtitle mb-2 text-muted">${record.description}</h6>
+              <p class="card-text">${record.content.substring(0, 150)}...</p>
             </div>
-            <div class="card-footer">
-              <small class="text-muted">Dummy Post</small>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+              <small class="neon-green-text">By ${record.public_name} on ${new Date(record.created_at).toLocaleDateString()}</small>
+              <a href="/record/index.html?id=${record.id}" class="btn btn-primary btn-sm">Read</a>
             </div>
           </div>
         </div>
@@ -75,5 +51,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  renderPosts();
+  fetchAndRenderRecords();
 });

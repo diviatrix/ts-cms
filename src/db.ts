@@ -5,6 +5,7 @@ import IUser from './types/IUser';
 import IUserProfile from './types/IUserProfile';
 import IResolve from './types/IResolve';
 import prep from './utils/prepare'
+import IRecord from './types/IRecord';
 
 class Database {
     private static instance: Database;
@@ -169,6 +170,108 @@ class Database {
         console.log('Database: Executing updateUser query:', query, 'with values:', values);
         const response = await this.db.executeQuery(query, values);
         return prep.response(response.success, response.message, undefined);
+    }
+
+    public async createRecord(record: IRecord): Promise<IResolve<IRecord>> {
+        const columns = ['id', 'title', 'description', 'content', 'user_id', 'tags', 'categories', 'is_published', 'created_at', 'updated_at'].join(', ');
+        const placeholders = ['?', '?', '?', '?', '?', '?', '?', '?', '?', '?'].join(', ');
+        const values = [
+            record.id,
+            record.title,
+            record.description,
+            record.content,
+            record.user_id,
+            JSON.stringify(record.tags),
+            JSON.stringify(record.categories),
+            record.is_published ? 1 : 0,
+            record.created_at.toISOString(),
+            record.updated_at.toISOString(),
+        ];
+        const query = `INSERT INTO records (${columns}) VALUES (${placeholders})`;
+        const response = await this.db.executeQuery(query, values);
+        return prep.response(response.success, response.message, record);
+    }
+
+    public async getRecordById(id: string, publishedOnly: boolean = false): Promise<IResolve<IRecord | undefined>> {
+        let query = `SELECT * FROM records WHERE id = ?`;
+        const params = [id];
+        if (publishedOnly) {
+            query += ` AND is_published = 1`;
+        }
+        const response = await this.db.executeQuery(query, params);
+        const data = response.data && response.data.length > 0 ? (response.data[0] as unknown as IRecord) : undefined;
+        if (data) {
+            data.tags = JSON.parse(data.tags as unknown as string);
+            data.categories = JSON.parse(data.categories as unknown as string);
+            data.is_published = Boolean(data.is_published);
+            data.created_at = new Date(data.created_at);
+            data.updated_at = new Date(data.updated_at);
+        }
+        return prep.response(response.success, response.message, data);
+    }
+
+    public async updateRecord(id: string, updates: Partial<IRecord>): Promise<IResolve<IRecord | undefined>> {
+        const fieldsToUpdate = Object.keys(updates).filter(key => (updates as any)[key] !== undefined);
+
+        if (fieldsToUpdate.length === 0) {
+            return prep.response(true, messages.success, undefined); // Nothing to update
+        }
+
+        const setClauses = fieldsToUpdate.map(field => {
+            if (field === 'tags' || field === 'categories') {
+                return `${field} = ?`;
+            } else if (field === 'is_published') {
+                return `${field} = ?`;
+            } else if (field === 'created_at' || field === 'updated_at') {
+                return `${field} = ?`;
+            }
+            return `${field} = ?`;
+        }).join(', ');
+
+        const values = fieldsToUpdate.map(field => {
+            if (field === 'tags' || field === 'categories') return JSON.stringify((updates as any)[field]);
+            if (field === 'is_published') return (updates as any)[field] ? 1 : 0;
+            if (field === 'created_at' || field === 'updated_at') return (updates as any)[field].toISOString();
+            return (updates as any)[field];
+        });
+        values.push(id);
+
+        const query = `UPDATE records SET ${setClauses} WHERE id = ?`;
+        const response = await this.db.executeQuery(query, values);
+        return prep.response(response.success, response.message, undefined);
+    }
+
+    public async deleteRecord(id: string): Promise<IResolve<boolean>> {
+        const query = `DELETE FROM records WHERE id = ?`;
+        const response = await this.db.executeQuery(query, [id]);
+        return prep.response(response.success, response.message, response.success);
+    }
+
+    public async getAllRecords(publishedOnly: boolean = false): Promise<IResolve<(IRecord & { public_name: string })[] | undefined>> {
+        let query = `
+            SELECT
+                r.id, r.title, r.description, r.content, r.user_id,
+                r.tags, r.categories, r.is_published, r.created_at, r.updated_at,
+                COALESCE(up.public_name, 'Admin') as public_name
+            FROM records r
+            LEFT JOIN user_profiles up ON r.user_id = up.user_id
+        `;
+        const params: any[] = [];
+        if (publishedOnly) {
+            query += ` WHERE r.is_published = 1`;
+        }
+        const response = await this.db.executeQuery(query, params);
+        const data = Array.isArray(response.data) ? (response.data as unknown as (IRecord & { public_name: string })[]) : undefined;
+        if (data) {
+            data.forEach(record => {
+                record.tags = JSON.parse(record.tags as unknown as string);
+                record.categories = JSON.parse(record.categories as unknown as string);
+                record.is_published = Boolean(record.is_published);
+                record.created_at = new Date(record.created_at);
+                record.updated_at = new Date(record.updated_at);
+            });
+        }
+        return prep.response(response.success, response.message, data);
     }
     
 }

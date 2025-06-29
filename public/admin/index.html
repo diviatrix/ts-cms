@@ -19,23 +19,75 @@
 
           <h1 class="mt-4">Admin Panel</h1>
 
-          <div class="row mt-4">
-            <div class="col-md-4">
-              <h2>Users</h2>
-              <ul id="userList" class="list-group">
-                <!-- User list will be populated by JavaScript -->
-              </ul>
-            </div>
-            <div class="col-md-8">
-              <div id="profileEditTab" class="card d-none">
-                <div class="card-body">
-                  <h2 class="card-title text-center">Edit User Profile</h2>
-                  <div id="adminProfileInfo" data-current-user-id="">
-                    <label for="adminServerAnswerTextarea" class="form-label">Server Answer (editable JSON):</label>
-                    <textarea id="adminServerAnswerTextarea" class="form-control" rows="16"></textarea>
+          <ul class="nav nav-tabs" id="adminTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="true">Users</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="records-tab" data-bs-toggle="tab" data-bs-target="#records" type="button" role="tab" aria-controls="records" aria-selected="false">Records</button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="adminTabContent">
+            <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="users-tab">
+              <div class="row mt-4">
+                <div class="col-md-4">
+                  <h2>Users</h2>
+                  <ul id="userList" class="list-group">
+                    <!-- User list will be populated by JavaScript -->
+                  </ul>
+                </div>
+                <div class="col-md-8">
+                  <div id="profileEditTab" class="card d-none">
+                    <div class="card-body">
+                      <h2 class="card-title text-center">Edit User Profile</h2>
+                      <div id="adminProfileInfo" data-current-user-id="">
+                        <label for="adminServerAnswerTextarea" class="form-label">Server Answer (editable JSON):</label>
+                        <textarea id="adminServerAnswerTextarea" class="form-control" rows="16"></textarea>
+                      </div>
+                      <button id="adminSaveButton" class="btn btn-success btn-sm mt-3">Save Changes</button>
+                      <div id="adminMessageDiv" class="mt-3 text-center"></div>
+                    </div>
                   </div>
-                  <button id="adminSaveButton" class="btn btn-success btn-sm mt-3">Save Changes</button>
-                  <div id="adminMessageDiv" class="mt-3 text-center"></div>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="records" role="tabpanel" aria-labelledby="records-tab">
+              <div class="row mt-4">
+                <div class="col-md-4">
+                  <h2>Records</h2>
+                  <button id="newRecordButton" class="btn btn-primary mb-3">Create New Record</button>
+                  <ul id="recordList" class="list-group">
+                    <!-- Record list will be populated by JavaScript -->
+                  </ul>
+                </div>
+                <div class="col-md-8">
+                  <div id="recordEditTab" class="card d-none">
+                    <div class="card-body">
+                      <h2 class="card-title text-center">Edit Record</h2>
+                      <div id="recordInfo" data-current-record-id="">
+                        <label for="recordTitle" class="form-label">Title:</label>
+                        <input type="text" id="recordTitle" class="form-control mb-2">
+                        <label for="recordDescription" class="form-label">Description:</label>
+                        <input type="text" id="recordDescription" class="form-control mb-2">
+                        <label for="recordContent" class="form-label">Content (Markdown):</label>
+                        <textarea id="recordContent" class="form-control mb-2" rows="10"></textarea>
+                        <label for="recordTags" class="form-label">Tags (comma-separated):</label>
+                        <input type="text" id="recordTags" class="form-control mb-2">
+                        <label for="recordCategories" class="form-label">Categories (comma-separated):</label>
+                        <input type="text" id="recordCategories" class="form-control mb-2">
+                        <div class="form-check mb-3">
+                          <input class="form-check-input" type="checkbox" id="recordIsPublished">
+                          <label class="form-check-label" for="recordIsPublished">
+                            Published
+                          </label>
+                        </div>
+                      </div>
+                      <button id="recordSaveButton" class="btn btn-success btn-sm mt-3">Save Record</button>
+                      <button id="recordDeleteButton" class="btn btn-danger btn-sm mt-3 ms-2">Delete Record</button>
+                      <div id="recordMessageDiv" class="mt-3 text-center"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

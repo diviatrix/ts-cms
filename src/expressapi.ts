@@ -12,6 +12,8 @@ import { getAllBaseUsers } from './functions/users';
 import { getUser, getUserProfile, setPassword } from './functions/user';
 import { RoleCheck } from './functions/roleCheck';
 import { UserRoles } from './data/groups';
+import { createRecord, getRecordById, updateRecord, deleteRecord } from './functions/record';
+import { getAllRecords } from './functions/records';
 
 export default function createExpressApp(): express.Application {
     // Create an Express application
@@ -190,6 +192,71 @@ export default function createExpressApp(): express.Application {
         } catch (error) {
             console.error("Failed to fetch user profile:", error);
             res.status(500).json({ status: 'error', message: 'Failed to fetch user profile.' });
+        }
+    });
+
+    // Record API Endpoints
+    app.post('/api/records', authenticateToken, RoleCheck.adminAuth, async (req: Request, res: Response) => {
+        try {
+            const newRecord = await createRecord(req.body, (req as any).user.id);
+            res.status(201).json(newRecord);
+        } catch (error) {
+            console.error("Failed to create record:", error);
+            res.status(500).json({ status: 'error', message: 'Failed to create record.' });
+        }
+    });
+
+    app.get('/api/records/:id', async (req: Request, res: Response) => {
+        try {
+            const isAuthenticatedUserAdmin = (req as any).user && RoleCheck.hasRole((req as any).user.roles, UserRoles.ADMIN);
+            const record = await getRecordById(req.params.id, !isAuthenticatedUserAdmin);
+            if (record) {
+                res.status(200).json(record);
+            } else {
+                res.status(404).json({ status: 'error', message: 'Record not found or not published.' });
+            }
+        } catch (error) {
+            console.error("Failed to fetch record:", error);
+            res.status(500).json({ status: 'error', message: 'Failed to fetch record.' });
+        }
+    });
+
+    app.put('/api/records/:id', authenticateToken, RoleCheck.adminAuth, async (req: Request, res: Response) => {
+        try {
+            const updatedRecord = await updateRecord(req.params.id, req.body);
+            if (updatedRecord) {
+                res.status(200).json(updatedRecord);
+            } else {
+                res.status(404).json({ status: 'error', message: 'Record not found.' });
+            }
+        } catch (error) {
+            console.error("Failed to update record:", error);
+            res.status(500).json({ status: 'error', message: 'Failed to update record.' });
+        }
+    });
+
+    app.delete('/api/records/:id', authenticateToken, RoleCheck.adminAuth, async (req: Request, res: Response) => {
+        try {
+            const success = await deleteRecord(req.params.id);
+            if (success) {
+                res.status(204).send(); // No Content
+            } else {
+                res.status(404).json({ status: 'error', message: 'Record not found.' });
+            }
+        } catch (error) {
+            console.error("Failed to delete record:", error);
+            res.status(500).json({ status: 'error', message: 'Failed to delete record.' });
+        }
+    });
+
+    app.get('/api/records', authenticateToken, async (req: Request, res: Response) => {
+        try {
+            const isAuthenticatedUserAdmin = (req as any).user && RoleCheck.hasRole((req as any).user.roles, UserRoles.ADMIN);
+            const records = await getAllRecords(!isAuthenticatedUserAdmin);
+            res.status(200).json(records);
+        } catch (error) {
+            console.error("Failed to fetch all records:", error);
+            res.status(500).json({ status: 'error', message: 'Failed to fetch all records.' });
         }
     });
 

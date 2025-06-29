@@ -12,13 +12,13 @@ export default {
             title TEXT NOT NULL,
             description TEXT NOT NULL,
             content TEXT NOT NULL,
-            author_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
             tags TEXT NOT NULL DEFAULT '[]',
             categories TEXT NOT NULL DEFAULT '[]',
             is_published BOOLEAN NOT NULL DEFAULT FALSE,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (author_id) REFERENCES users (id)
+            FOREIGN KEY (user_id) REFERENCES users (id)
         )`,
     stats:`
         CREATE TABLE IF NOT EXISTS stats (

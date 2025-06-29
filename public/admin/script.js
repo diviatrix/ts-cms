@@ -5,6 +5,32 @@ document.addEventListener('DOMContentLoaded', function() {
   const adminMessageDiv = document.getElementById('adminMessageDiv');
   const adminServerAnswerTextarea = document.getElementById('adminServerAnswerTextarea');
 
+  const recordList = document.getElementById('recordList');
+  const recordEditTab = document.getElementById('recordEditTab');
+  const recordInfo = document.getElementById('recordInfo');
+  const recordTitle = document.getElementById('recordTitle');
+  const recordDescription = document.getElementById('recordDescription');
+  const recordContent = document.getElementById('recordContent');
+  const recordTags = document.getElementById('recordTags');
+  const recordCategories = document.getElementById('recordCategories');
+  const recordIsPublished = document.getElementById('recordIsPublished');
+  const recordMessageDiv = document.getElementById('recordMessageDiv');
+  const newRecordButton = document.getElementById('newRecordButton');
+  const recordSaveButton = document.getElementById('recordSaveButton');
+  const recordDeleteButton = document.getElementById('recordDeleteButton');
+
+  // Tab switching logic
+  const usersTabBtn = document.getElementById('users-tab');
+  const recordsTabBtn = document.getElementById('records-tab');
+
+  usersTabBtn.addEventListener('shown.bs.tab', function (event) {
+    fetchUsers();
+  });
+
+  recordsTabBtn.addEventListener('shown.bs.tab', function (event) {
+    fetchRecords();
+  });
+
   // Function to fetch the list of users from the backend
   async function fetchUsers() {
     try {
@@ -170,5 +196,205 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // Record functions
+  async function fetchRecords() {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        recordMessageDiv.textContent = 'Not authenticated. Please log in.';
+        recordMessageDiv.classList.add('text-danger');
+        window.location.href = '/login';
+        return;
+      }
+
+      const response = await fetch('/api/records', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        recordMessageDiv.textContent = `Error fetching records: ${errorData.message || response.status}`;
+        recordMessageDiv.classList.add('text-danger');
+        return;
+      }
+
+      const records = await response.json();
+      displayRecords(records);
+
+    } catch (error) {
+      console.error('Error fetching records:', error);
+      recordMessageDiv.textContent = 'An error occurred while fetching records.';
+      recordMessageDiv.classList.add('text-danger');
+    }
+  }
+
+  function displayRecords(records) {
+    recordList.innerHTML = '';
+    if (records.length === 0) {
+      recordList.innerHTML = '<li class="list-group-item">No records found.</li>';
+      return;
+    }
+    records.forEach(record => {
+      const listItem = document.createElement('li');
+      listItem.classList.add('list-group-item', 'list-group-item-action');
+      listItem.textContent = record.title;
+      listItem.dataset.recordId = record.id;
+      listItem.addEventListener('click', () => displayRecordForEdit(record));
+      recordList.appendChild(listItem);
+    });
+  }
+
+  function displayRecordForEdit(record) {
+    recordEditTab.classList.remove('d-none');
+    recordInfo.dataset.currentRecordId = record.id || '';
+    recordTitle.value = record.title || '';
+    recordDescription.value = record.description || '';
+    recordContent.value = record.content || '';
+    recordTags.value = (record.tags && record.tags.join(', ')) || '';
+    recordCategories.value = (record.categories && record.categories.join(', ')) || '';
+    recordIsPublished.checked = record.is_published || false;
+    recordMessageDiv.textContent = '';
+    recordMessageDiv.classList.remove('text-success', 'text-danger');
+  }
+
+  newRecordButton.addEventListener('click', () => {
+    recordEditTab.classList.remove('d-none');
+    recordInfo.dataset.currentRecordId = ''; // Clear ID for new record
+    recordTitle.value = '';
+    recordDescription.value = '';
+    recordContent.value = '';
+    recordTags.value = '';
+    recordCategories.value = '';
+    recordIsPublished.checked = false;
+    recordMessageDiv.textContent = '';
+    recordMessageDiv.classList.remove('text-success', 'text-danger');
+  });
+
+  recordSaveButton.addEventListener('click', async () => {
+    const recordId = recordInfo.dataset.currentRecordId;
+    const token = localStorage.getItem('token');
+    if (!token) {
+      recordMessageDiv.textContent = 'Not authenticated. Please log in.';
+      recordMessageDiv.classList.add('text-danger');
+      window.location.href = '/login';
+      return;
+    }
+
+    const recordData = {
+      title: recordTitle.value,
+      description: recordDescription.value,
+      content: recordContent.value,
+      tags: recordTags.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+      categories: recordCategories.value.split(',').map(cat => cat.trim()).filter(cat => cat.length > 0),
+      is_published: recordIsPublished.checked,
+      // authorId will be set on the backend based on the authenticated user
+    };
+
+    try {
+      let response;
+      if (recordId) {
+        // Update existing record
+        response = await fetch(`/api/records/${recordId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(recordData),
+        });
+      } else {
+        // Create new record
+        response = await fetch('/api/records', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(recordData),
+        });
+      }
+
+      const result = await response.json();
+      if (response.ok) {
+        recordMessageDiv.textContent = `Record saved successfully!`;
+        recordMessageDiv.classList.remove('text-danger');
+        recordMessageDiv.classList.add('text-success');
+        fetchRecords(); // Refresh the list
+        if (!recordId && result.id) { // If new record, set its ID for further edits
+          recordInfo.dataset.currentRecordId = result.id;
+        }
+      } else {
+        recordMessageDiv.textContent = `Failed to save record: ${result.message || response.statusText}`;
+        recordMessageDiv.classList.remove('text-success');
+        recordMessageDiv.classList.add('text-danger');
+      }
+    } catch (error) {
+      console.error('Error saving record:', error);
+      recordMessageDiv.textContent = 'An error occurred while saving the record.';
+      recordMessageDiv.classList.remove('text-success');
+      recordMessageDiv.classList.add('text-danger');
+    }
+  });
+
+  recordDeleteButton.addEventListener('click', async () => {
+    const recordId = recordInfo.dataset.currentRecordId;
+    if (!recordId) {
+      recordMessageDiv.textContent = 'No record selected for deletion.';
+      recordMessageDiv.classList.add('text-danger');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this record?')) {
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      recordMessageDiv.textContent = 'Not authenticated. Please log in.';
+      recordMessageDiv.classList.add('text-danger');
+      window.location.href = '/login';
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/records/${recordId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        recordMessageDiv.textContent = 'Record deleted successfully!';
+        recordMessageDiv.classList.remove('text-danger');
+        recordMessageDiv.classList.add('text-success');
+        recordEditTab.classList.add('d-none'); // Hide edit form
+        fetchRecords(); // Refresh the list
+      } else {
+        const errorData = await response.json();
+        recordMessageDiv.textContent = `Failed to delete record: ${errorData.message || response.statusText}`;
+        recordMessageDiv.classList.remove('text-success');
+        recordMessageDiv.classList.add('text-danger');
+      }
+    } catch (error) {
+      console.error('Error deleting record:', error);
+      recordMessageDiv.textContent = 'An error occurred while deleting the record.';
+      recordMessageDiv.classList.remove('text-success');
+      recordMessageDiv.classList.add('text-danger');
+    }
+  });
+
+  // Initial fetches based on active tab
+  // This assumes the users tab is active by default
   fetchUsers();
 });
