@@ -17,15 +17,15 @@ __Feel free to open issues or pull requests if you have suggestions or improveme
 
 ## Features
 
--   **User Authentication**: Secure user registration, login, and profile management.
--   **Role-Based Access Control**: Differentiate user permissions, including an admin role for privileged operations.
+-   **User Authentication**: "Secure" user registration, login, and profile management. At least JWT and salted.
+-   **Role-Based Access Control**:  For now only user / admin permissions for privileged operations, or unauth.
 -   **Markdown-based Records**: Create, read, update, and delete (CRUD) content records stored as Markdown.
--   **Content Publishing**: Records can be marked as published or unpublished, controlling their visibility on the frontend.
--   **Admin Panel**: A dedicated interface for administrators to manage users and all content records (published and unpublished).
+-   **Content Publishing**: Records can be marked as published or unpublished, controlling their visibility on the frontend, only admins can see unpublished by API.
+-   **Admin Panel**: A dedicated interface for group 'admin' to manage users and all content records (published and unpublished).
 -   **Dynamic Frontpage**: Displays published records with author information and excerpts, adapting its layout based on the number of records.
 -   **Single Record View**: Dedicated pages for viewing full record content with Markdown rendering.
--   **SQLite Database**: Lightweight and file-based database for easy setup and portability.
--   **Frontend**: Built with plain JavaScript and Bootstrap for a responsive and functional user interface.
+-   **SQLite Database**: Lightweight and file-based database. We dont need that much data.
+-   **Frontend**: Built with plain JavaScript and Bootstrap for keeping at simple and controllable for anyone. 
 
 ## Prerequisites
 
