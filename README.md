@@ -18,7 +18,7 @@ __Feel free to open issues or pull requests if you have suggestions or improveme
 ## Features
 
 -   **User Authentication**: "Secure" user registration, login, and profile management. At least JWT and salted.
--   **Role-Based Access Control**: Differentiate user permissions, including an admin role for privileged operations.
+-   **Role-Based Access Control**:  For now only user / admin permissions for privileged operations, or unauth.
 -   **Markdown-based Records**: Create, read, update, and delete (CRUD) content records stored as Markdown.
 -   **Content Publishing**: Records can be marked as published or unpublished, controlling their visibility on the frontend, only admins can see unpublished by API.
 -   **Admin Panel**: A dedicated interface for group 'admin' to manage users and all content records (published and unpublished).
