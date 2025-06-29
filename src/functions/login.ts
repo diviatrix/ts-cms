@@ -7,7 +7,7 @@ import IResolve from '../types/IResolve';
 import prep from '../utils/prepare';
 import messages from '../data/messages';
 
-export async function loginUser(login: string, password: string): Promise<IResolve<{ user: IUser; token: string }>> {
+export async function loginUser(login: string, password: string): Promise<IResolve<{ user: IUser; token: string } | undefined>> {
   try {
     if (!login || login.trim() === '') {
       return prep.response(false, messages.requirement_login);
@@ -34,7 +34,11 @@ export async function loginUser(login: string, password: string): Promise<IResol
       const sessionId = generateGuid();
       const userProfile = await database.getUserProfile(user.id);
       const roles = userProfile.data?.roles || [];
-      const token = await generateToken({ id: user.id, sessionId: sessionId, roles: roles });
+      const tokenResult = await generateToken({ id: user.id, sessionId: sessionId, roles: roles });
+      if (!tokenResult.success || !tokenResult.data) {
+        return prep.response(false, messages.failure, undefined);
+      }
+      const token = tokenResult.data;
       await database.saveSession(sessionId, user.id, token);
 
       const { password_hash, ...userWithoutPasswordHash } = user;

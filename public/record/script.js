@@ -1,7 +1,9 @@
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
+import { jwtDecode } from '../js/jwt-decode.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
   const recordTitle = document.getElementById('recordTitle');
+  const editRecordButton = document.getElementById('editRecordButton');
   const recordDescription = document.getElementById('recordDescription');
   const recordContent = document.getElementById('recordContent');
   const recordAuthor = document.getElementById('recordAuthor');
@@ -33,8 +35,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     recordTitle.textContent = record.title;
     recordDescription.textContent = record.description;
     recordContent.innerHTML = marked.parse(record.content);
-    recordAuthor.textContent = record.user_id; // Assuming user_id is enough for now, or fetch user details
+    recordAuthor.textContent = record.public_name; // Use public_name from backend
     recordDate.textContent = new Date(record.created_at).toLocaleDateString();
+
+    // Check if user is admin to show edit button
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        if (decodedToken && decodedToken.roles && decodedToken.roles.includes('admin')) {
+          editRecordButton.classList.remove('d-none');
+          editRecordButton.addEventListener('click', () => {
+            window.location.href = `/admin#records?editRecordId=${record.id}`;
+          });
+        }
+      } catch (error) {
+        console.error('Error decoding token for admin check:', error);
+      }
+    }
 
   } catch (error) {
     console.error('Error fetching record:', error);

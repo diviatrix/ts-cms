@@ -1,3 +1,5 @@
+import { jwtDecode } from '../js/jwt-decode.js';
+
 document.addEventListener('DOMContentLoaded', function() {
   const postsGrid = document.getElementById('postsGrid');
 
@@ -31,8 +33,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const colClass = records.length < 6 ? 'col-12 col-md-8 col-lg-6' : 'col'; // Use 'col' for multi-column to let row-cols handle it
 
+    const token = localStorage.getItem('token');
+    let isAdmin = false;
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        if (decodedToken && decodedToken.roles && decodedToken.roles.includes('admin')) {
+          isAdmin = true;
+        }
+      } catch (error) {
+        console.error('Error decoding token for admin check:', error);
+      }
+    }
+
     records.forEach(record => {
-      const postCard = `
+      const postCardHtml = `
         <div class="${colClass} mb-4">
           <div class="card h-100">
             <div class="card-body">
@@ -42,13 +57,26 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="card-footer d-flex justify-content-between align-items-center">
               <small class="neon-green-text">By ${record.public_name} on ${new Date(record.created_at).toLocaleDateString()}</small>
-              <a href="/record/index.html?id=${record.id}" class="btn btn-primary btn-sm">Read</a>
+              <div class="d-flex">
+                <a href="/record/index.html?id=${record.id}" class="btn btn-primary btn-sm">Read</a>
+                <button class="btn btn-warning btn-sm ms-2 edit-record-btn ${isAdmin ? '' : 'd-none'}" data-record-id="${record.id}">Edit</button>
+              </div>
             </div>
           </div>
         </div>
       `;
-      postsGrid.innerHTML += postCard;
+      postsGrid.insertAdjacentHTML('beforeend', postCardHtml);
     });
+
+    // Add event listeners to edit buttons after they are added to the DOM
+    if (isAdmin) {
+      document.querySelectorAll('.edit-record-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          const recordId = button.dataset.recordId;
+          window.location.href = `/admin#records?editRecordId=${recordId}`;
+        });
+      });
+    }
   }
 
   fetchAndRenderRecords();

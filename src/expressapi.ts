@@ -73,27 +73,28 @@ export default function createExpressApp(): express.Application {
 
     // Add the profile endpoint
     app.get('/api/profile', authenticateToken, async (req: Request, res: Response): Promise<void> => {
-        console.log('Attempting to get userId from request'); // Debug log before getting userId
-        try {
-            console.log('Entering GET /api/profile try block'); // Debug log
+        console.log('Entering GET /api/profile try block'); // Debug log
 
             if (!(req as any).user || !(req as any).user.id) {
                 console.error('Error: User object or user ID is missing from the request after authentication.');
-                res.status(400).json({ status: 'error', message: 'User information not available.' });
+                res.status(401).json({ status: 'error', message: 'User information not available.' });
+                return;
             }
 
             console.log('Reached try block in GET /api/profile handler'); // Debug log
             //console.log('Request object:', req); // Debug log for entire request object
             console.log('Request user object:', (req as any).user); // Debug log for user object 
 
-            const userId = (req as any).user.id; // Get the user ID from the authenticated token
+            const userId = (req as any).user?.id || undefined; // Get the user ID from the authenticated token
+
+            if (userId === undefined) {
+                console.log('Error: User ID is not available in the request.');
+                res.status(401).json({ status: 'error', message: 'User ID not found.' });
+                return;
+            }
             const profile = await getUserProfile(userId);
 
             res.status(200).json(profile); // Return the user profile
-        } catch (error) {
-            console.error("Failed to fetch user profile:", error);
-            res.status(500).json({ status: 'error', message: 'Failed to fetch user profile.' });
-        }
     });
 
     // Add the profile update endpoint

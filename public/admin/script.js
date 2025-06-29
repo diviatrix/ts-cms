@@ -1,3 +1,5 @@
+import { handleAuthError } from '../js/auth-redirect.js';
+
 document.addEventListener('DOMContentLoaded', function() {
   const userList = document.getElementById('userList');
   const profileEditTab = document.getElementById('profileEditTab');
@@ -50,11 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
       });
 
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        return;
-      }
+      if (handleAuthError(response)) return; // Centralized error handling
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -113,11 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
       });
 
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        return;
-      }
+      if (handleAuthError(response)) return;
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -215,11 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
       });
 
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        return;
-      }
+      if (handleAuthError(response)) return;
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -397,4 +387,36 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initial fetches based on active tab
   // This assumes the users tab is active by default
   fetchUsers();
+
+  // Function to check URL for record ID and open for edit
+  async function checkUrlForRecordId() {
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.substring(hash.indexOf('?') + 1));
+    const editRecordId = params.get('editRecordId');
+
+    if (editRecordId) {
+      // Activate the records tab
+      const recordsTab = new bootstrap.Tab(recordsTabBtn);
+      recordsTab.show();
+
+      // Wait for the tab content to be shown before fetching the record
+      recordsTabBtn.addEventListener('shown.bs.tab', async () => {
+        try {
+          const response = await fetch(`/api/records/${editRecordId}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const record = await response.json();
+          displayRecordForEdit(record);
+        } catch (error) {
+          console.error('Error fetching record for edit:', error);
+          recordMessageDiv.textContent = 'Failed to load record for editing.';
+          recordMessageDiv.classList.add('text-danger');
+        }
+      }, { once: true }); // Use { once: true } to remove the listener after it fires
+    }
+  }
+
+  // Call the function on page load
+  checkUrlForRecordId();
 });

@@ -1,15 +1,18 @@
 import jwt from 'jsonwebtoken';
 import config from '../data/config';
+import IJwtPayload from '../types/IJwtPayload';
+import IResolve from '../types/IResolve';
+import prep from '../utils/prepare';
 
-export async function generateToken(user: any): Promise<string> {
-  return new Promise((resolve, reject) => {
+export async function generateToken(user: IJwtPayload): Promise<IResolve<string>> {
+  return new Promise((resolve) => {
     jwt.sign(user, config.jwt_secret, { expiresIn: '1h' }, (err, token) => {
-            if (err) { // Change '1h' to '5m' for 5 minutes
-        reject(err);
+      if (err) {
+        resolve(prep.response(false, 'Token generation failed', "undefined"));
       } else if (token) {
-        resolve(token);
+        resolve(prep.response(true, 'Token generated successfully', token));
       } else {
-        reject(new Error('Token generation failed: token is undefined'));
+        resolve(prep.response(false, 'Token generation failed: token is undefined', "undefined"));
       }
     });
   });
@@ -19,35 +22,28 @@ export async function authenticateToken(req: any, res: any, next: any) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('Received token:', token); // Add this line
-
   if (token == null) {
-    console.log('No token provided. Proceeding as unauthenticated.');
     req.user = undefined; // Ensure req.user is undefined if no token
     return next();
   }
 
-  try {
-    const user = await verifyToken(token); // Moved inside try block
-    console.log('Token verified. User:', user); // Add this line
-    req.user = user; // Moved inside try block
-  } catch (err) {
-    console.warn('Token invalid or expired. Proceeding as unauthenticated.', err);
-    req.user = undefined; // Ensure req.user is undefined if token is invalid
+  const verificationResult = await verifyToken(token);
+
+  if (verificationResult.success && verificationResult.data) {
+    req.user = verificationResult.data; // Set req.user if token is valid
+  } else {
+    req.user = undefined; // Ensure req.user is undefined if token is invalid or expired
   }
   next(); // Always call next to proceed
 }
 
-export async function verifyToken(token: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    console.log('Verifying token:', token); // Add this line
+export async function verifyToken(token: string): Promise<IResolve<IJwtPayload | undefined>> {
+  return new Promise((resolve) => {
     jwt.verify(token, config.jwt_secret, (err, decoded) => {
       if (err) {
-        console.error('jwt.verify error:', err); // Add this line
-        reject(err);
+        resolve(prep.response(false, 'Token verification failed', undefined));
       } else {
-        console.log('jwt.verify successful. Decoded:', decoded); // Add this line
-        resolve(decoded);
+        resolve(prep.response(true, 'Token verified successfully', decoded as IJwtPayload));
       }
     });
   });

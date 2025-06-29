@@ -1,3 +1,5 @@
+import { handleAuthError } from '../js/auth-redirect.js';
+
 document.addEventListener('DOMContentLoaded', function() {
   const messageDiv = document.getElementById('messageDiv');
   const profileBlock = document.getElementById('profileBlock');
@@ -25,11 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
       });
 
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        return;
-      }
+      if (handleAuthError(response)) return;
 
       const responseData = await response.json();
       if (responseData.success && responseData.data) {
