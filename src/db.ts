@@ -55,14 +55,7 @@ class Database {
         const data = (response.data && response.data.length > 0)
             ? (response.data[0] as unknown as IUserProfile)
             : undefined;
-        if (data && typeof data.roles === 'string') {
-            try {
-                data.roles = JSON.parse(data.roles);
-            } catch (e) {
-                console.error("Error parsing roles from database:", e);
-                data.roles = []; // Default to empty array on parse error
-            }
-        }
+        // Roles are now fetched separately
         return prep.response(response.success, response.message, data);
     }
 
@@ -72,7 +65,6 @@ class Database {
             user_id: userId,
             public_name: 'User', // Default public name
             is_active: true, // true (SQLite boolean equivalent)
-            roles: ['user'], // Default role
             profile_picture_url: '/img/placeholder-square.png',
             bio: 'Я родился', // Default empty bio
             created_at: new Date(),
@@ -84,6 +76,8 @@ class Database {
         const query = `INSERT INTO user_profiles (${columns}) VALUES (${placeholders})`;
         const response = await this.db.executeQuery(query, values);
         if (response.success) {
+            // Add user to default 'user' group
+            await this.addUserToGroup(userId, 'user');
             // If successful, return the defaultProfile as the created profile
             return prep.response(true, messages.success, defaultProfile);
         } else {
@@ -114,15 +108,30 @@ class Database {
     public async getUserProfileById(userId: string): Promise<IResolve<IUserProfile>> {
         const response = await this.db.executeQuery("SELECT * FROM user_profiles WHERE user_id = ?", [userId]);
         const data = response.data && response.data.length > 0 ? (response.data[0] as unknown as IUserProfile) : undefined;
-        if (data && typeof data.roles === 'string') {
-            try {
-                data.roles = JSON.parse(data.roles);
-            } catch (e) {
-                console.error("Error parsing roles from database:", e);
-                data.roles = []; // Default to empty array on parse error
-            }
-        }
+        // Roles are now fetched separately
         return prep.response(response.success, response.message, data);
+    }
+
+    public async getUserRoles(userId: string): Promise<IResolve<string[]>> {
+        const query = `SELECT group_id FROM user_groups WHERE user_id = ?`;
+        const response = await this.db.executeQuery(query, [userId]);
+        if (response.success && Array.isArray(response.data)) {
+            const roles = response.data.map((row: any) => row.group_id);
+            return prep.response(true, messages.success, roles);
+        }
+        return prep.response(false, messages.failure, []);
+    }
+
+    public async addUserToGroup(userId: string, groupId: string): Promise<IResolve<boolean>> {
+        const query = `INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)`;
+        const response = await this.db.executeQuery(query, [userId, groupId]);
+        return prep.response(response.success, response.message, response.success);
+    }
+
+    public async removeUserFromGroup(userId: string, groupId: string): Promise<IResolve<boolean>> {
+        const query = `DELETE FROM user_groups WHERE user_id = ? AND group_id = ?`;
+        const response = await this.db.executeQuery(query, [userId, groupId]);
+        return prep.response(response.success, response.message, response.success);
     }
 
     public async updateUserProfile(userId: string, profile: Partial<IUserProfile>): Promise<IResolve<IUserProfile | undefined>> {
@@ -135,15 +144,12 @@ class Database {
         const setClauses = fieldsToUpdate.map(field => {
             if (field === 'is_active') {
                 return `${field} = ?`; // Handle boolean conversion below
-            } else if (field === 'roles') {
-                return `${field} = ?`; // Handle JSON string conversion below
             }
             return `${field} = ?`;
         }).join(', ');
 
         const values = fieldsToUpdate.map(field => {
             if (field === 'is_active') return profile[field] ? 1 : 0; // Convert boolean to SQLite integer
-            if (field === 'roles') return JSON.stringify(profile[field]); // Convert array to JSON string
             return (profile as any)[field];
         });
         values.push(userId);

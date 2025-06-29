@@ -110,6 +110,8 @@ export default function createExpressApp(): express.Application {
 
         const profileData = req.body.profile || {}; // Get the updated profile data from the request body, default to empty object
         const baseData = req.body.base || {}; // Get the updated base user data, default to empty object
+        const incomingRoles = profileData.roles; // Extract roles from incoming profile data
+        delete profileData.roles; // Remove roles from profileData before passing to updateUserProfile
 
         try {
             console.log('Received profile update data:', profileData); // Log received data
@@ -117,6 +119,26 @@ export default function createExpressApp(): express.Application {
 
             // Update user profile
             await database.updateUserProfile(targetUserId, profileData);
+
+            // Handle role updates (admin only)
+            if (isAuthenticatedUserAdmin && incomingRoles !== undefined) {
+                const currentRolesResult = await database.getUserRoles(targetUserId);
+                const currentRoles = currentRolesResult.success && currentRolesResult.data ? currentRolesResult.data : [UserRoles.GUEST];
+
+                // Roles to add
+                for (const role of incomingRoles) {
+                    if (!currentRoles.includes(role)) {
+                        await database.addUserToGroup(targetUserId, role);
+                    }
+                }
+
+                // Roles to remove
+                for (const role of currentRoles) {
+                    if (!incomingRoles.includes(role)) {
+                        await database.removeUserFromGroup(targetUserId, role);
+                    }
+                }
+            }
 
             // Update base user data (only for admins)
             if (isAuthenticatedUserAdmin) {

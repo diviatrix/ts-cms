@@ -6,6 +6,7 @@ import { generateGuid } from '../utils/guid';
 import IResolve from '../types/IResolve';
 import prep from '../utils/prepare';
 import messages from '../data/messages';
+import { UserRoles } from '../data/groups';
 
 export async function loginUser(login: string, password: string): Promise<IResolve<{ user: IUser; token: string } | undefined>> {
   try {
@@ -32,8 +33,8 @@ export async function loginUser(login: string, password: string): Promise<IResol
       await database.deleteSessionByUserId(user.id);
 
       const sessionId = generateGuid();
-      const userProfile = await database.getUserProfile(user.id);
-      const roles = userProfile.data?.roles || [];
+      const userRolesResult = await database.getUserRoles(user.id);
+      const roles = userRolesResult.success && userRolesResult.data ? userRolesResult.data : [UserRoles.USER];
       const tokenResult = await generateToken({ id: user.id, sessionId: sessionId, roles: roles });
       if (!tokenResult.success || !tokenResult.data) {
         return prep.response(false, messages.failure, undefined);

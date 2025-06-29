@@ -57,12 +57,20 @@ export default {
             user_id TEXT PRIMARY KEY UNIQUE NOT NULL,
             public_name TEXT NOT NULL,
             is_active BOOLEAN NOT NULL DEFAULT TRUE,
-            roles TEXT NOT NULL DEFAULT '[]',
             profile_picture_url TEXT,
             bio TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
+        )`
+    ,
+    user_groups: `
+        CREATE TABLE IF NOT EXISTS user_groups (
+            user_id TEXT NOT NULL,
+            group_id TEXT NOT NULL,
+            PRIMARY KEY (user_id, group_id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (group_id) REFERENCES roles(id) ON DELETE CASCADE
         )`
     ,
     sessions: `

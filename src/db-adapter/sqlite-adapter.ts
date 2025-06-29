@@ -79,6 +79,10 @@ export default class SQLiteAdapter {
                 const response = await this.executeQuery(schema);
                 if (response.success) {
                     console.log(messages.sql_create_table_success, table);
+                    // If roles table was just created, insert default roles
+                    if (table === 'roles') {
+                        await this.insertDefaultRoles();
+                    }
                 } else {
                     console.error(messages.sql_create_table_error, table, response.message);
                 }                
@@ -88,6 +92,20 @@ export default class SQLiteAdapter {
         }
 
         return prep.response(true, messages.success, tables);
+    }
+
+    private async insertDefaultRoles(): Promise<void> {
+        const defaultRoles = [
+            { id: 'user', name: 'User', description: 'Standard user role', weight: 10, perms: '[]' },
+            { id: 'admin', name: 'Admin', description: 'Administrator role with full access', weight: 100, perms: '[]' },
+            { id: 'guest', name: 'Guest', description: 'Guest user role with limited access', weight: 0, perms: '[]' },
+        ];
+
+        for (const role of defaultRoles) {
+            const query = `INSERT OR IGNORE INTO roles (id, name, description, weight, perms) VALUES (?, ?, ?, ?, ?)`;
+            await this.executeQuery(query, [role.id, role.name, role.description, role.weight, role.perms]);
+            console.log(`Inserted default role: ${role.name}`);
+        }
     }
 
     public async createTable(schema: string): Promise<IResolve<string[]>> {

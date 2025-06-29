@@ -63,7 +63,7 @@ The server will typically run on `http://localhost:7331` (check your console for
 
 ### Important Considerations
 
--   **Database Schema Management**: Database tables are automatically created and checked on application launch based on the schemas defined in `src/db-adapter/sql-schemas.ts`. However, there is currently no automated migration mechanism. If you modify existing table fields in the code, you might need to manually adjust your `database.db` or delete it to recreate tables on next launch.
+
 -   **Admin Role Validation**: The `admin` role is crucial for accessing privileged sections (like the admin panel and certain API endpoints). This role validation is strictly enforced on the backend.
 -   **Non-Authorized Access**: While admin-specific features are protected, certain API endpoints (e.g., fetching published records) are accessible without authentication, allowing non-authorized (anonymous) users to view public content.
 
@@ -71,21 +71,28 @@ The server will typically run on `http://localhost:7331` (check your console for
 
 -   **Frontpage**: Open your web browser and navigate to `http://localhost:7331`.
     -   You will see all published records. Unpublished records are not visible to anonymous users.
+    -   Register your user and change own profile.
 -   **Admin Panel**: Navigate to `http://localhost:7331/admin`.
     -   To access the admin panel, you need to log in with a user that has the `admin` role.
     -   **Setting up an Admin User**:
         1.  Register a new user through the login/register page (`http://localhost:7331/login`).
-        2.  Access the database directly (e.g., using a SQLite browser) and modify the `user_profiles` table for your registered user. Set the `roles` column to `["user", "admin"]` (as a JSON string).
-        3.  Alternatively, if you have an existing admin user, you can log in with them and use the admin panel's user management section to assign the `admin` role to other users.
+        2.  Access the database directly (e.g., using a SQLite browser or vscode plugin etc) and insert a record into the `user_groups` table. You will need the `user_id` of the registered user and the `group_id` of the 'admin' role (which is 'admin').
+            ```sql
+            INSERT INTO user_groups (user_id, group_id) VALUES ('YOUR_USER_ID', 'admin');
+            ```
+            (Note: The `roles` column in the `user_profiles` table is no longer used for role assignment and can be ignored.)
+        3.  Alternatively, if you have an existing admin user, you can log in with them and use the admin panel's user management section to assign the `admin` role to other users (once that functionality is implemented).
     -   From the admin panel, you can manage users and records. Only published records are visible on the frontpage and public record pages.
 
 ### Database
 
-The CMS uses SQLite, and the database file (`database.db`) will be created in the `data/` directory in the project root upon first startup if it doesn't already exist. Dummy user and record data are automatically inserted during the initial database setup.
+The CMS uses SQLite, and the database file (`database.db`) will be created in the `data/` directory in the project root upon first startup if it doesn't already exist. 
+
+Database tables are automatically created and checked on application launch based on the schemas defined in `src/db-adapter/sql-schemas.ts`. However, there is currently no automated migration mechanism. If you modify existing table fields in the code, you might need to manually adjust your `database.db` or delete it to recreate tables on next launch.
 
 ## Project Structure
 
-The frontend of this CMS is located within the `public/` directory. These static assets (HTML, CSS, JavaScript, images) are served directly by the Express.js backend.
+The frontend of this CMS is located within the `public/` directory. Everything in this directory (static assets (HTML, CSS, JS, images)) are served directly by the Express.js backend.
 
 ```
 . (project root)
@@ -124,12 +131,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Future Plans
 
-Key areas for future development and necessary improvements include:
-
 1.  **Security Hole Fix: Role Assignment**: Currently, users can self-assign roles in profile settings, **thats why you should not use this in production yet!**
     -   I need to move user-group assignments to a dedicated `user_groups` table (`user_id`, `[group_id, group_id, ... ]`) and rework a bit of logic.
     -   Optional: Implement permission scheme where groups are assigned specific permissions (e.g., `records.all`, `users.read.profile`). For example, an `admin` group would have `*` (full access), while an `editor` group could have `records.*` (full record management) and `users.read.profile` (read-only access to user profiles, excluding sensitive data). I just like how it work in Minecraft. 
     - And probably it will help to simplify functions to check permissions, like `hasPermission(user, 'records.all')` and not groups, like it is now. Also, now some api return different data based on user group, like `getRecordsByAuthorId` returns all records for admin, but only published for other users. This could be simplified with permissions.
+
 2.  **Customization**: Develop simple theming system for the frontpage. 
     -   Colors, google fonts, favicon, logo, footer, and menu links configurable, should be enough for start.
     -   Will try to make it as theme to be easily customizable with your own CSS and HTML.
