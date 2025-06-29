@@ -116,12 +116,30 @@ This project leverages several key Node.js modules to provide its functionality:
 -   **jsonwebtoken**: For implementing JSON Web Tokens (JWTs) to handle user sessions and authentication.
 -   **uuid**: Generates unique identifiers (UUIDs) for records and other entities.
 -   **marked**: A Markdown parser used on the frontend to render record content.
--   **gray-matter**: (Backend) Parses front-matter from Markdown files, though currently content is stored directly in the database.
+
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+## Future Plans
+
+Key areas for future development and necessary improvements include:
+
+1.  **Security Hole Fix: Role Assignment**: Currently, users can self-assign roles in profile settings, **thats why you should not use this in production yet!**
+    -   I need to move user-group assignments to a dedicated `user_groups` table (`user_id`, `[group_id, group_id, ... ]`) and rework a bit of logic.
+    -   Optional: Implement permission scheme where groups are assigned specific permissions (e.g., `records.all`, `users.read.profile`). For example, an `admin` group would have `*` (full access), while an `editor` group could have `records.*` (full record management) and `users.read.profile` (read-only access to user profiles, excluding sensitive data). I just like how it work in Minecraft. 
+    - And probably it will help to simplify functions to check permissions, like `hasPermission(user, 'records.all')` and not groups, like it is now. Also, now some api return different data based on user group, like `getRecordsByAuthorId` returns all records for admin, but only published for other users. This could be simplified with permissions.
+2.  **Customization**: Develop simple theming system for the frontpage. 
+    -   Colors, google fonts, favicon, logo, footer, and menu links configurable, should be enough for start.
+    -   Will try to make it as theme to be easily customizable with your own CSS and HTML.
+3.  **File Manager**: 
+    -   To avoid going directly to server every time you simply need to add pic to records, I want to make a simple file manager for upload/delete files.
+4.  **Comments**: 
+    -   Thinking about a basic integrated system (what to use for anti-spam?) or provide fields for setting up third-parties like Disqus.
+
 ## License
 
-This project is licensed under the MIT License - see the `LICENSE` file for details.
+Basically, you can do whatever you want with it, but don't sell as yours, and if you are grateful enough - please keep the original license and credit me if you use this code in your projects.
+
+This project is licensed under [this](LICENSE).
