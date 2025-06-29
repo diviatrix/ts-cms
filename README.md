@@ -2,6 +2,17 @@
 
 A simple, TypeScript-based Content Management System (CMS) built with Node.js, Express.js, and SQLite. Content in markdown.
 
+# IDEA
+
+I made this project as an alternative to the big, complex CMS systems which i am too tired to use. I wanted something simple, lightweight, and easy to set up, while still providing essential CMS features like user management, content creation, and a clean frontend. 
+
+Also this project is part of my learning journey with TypeScript, Node.js, and Express.js, so it serves as a practical example of how to build a RESTful API and a simple frontend.
+
+LLM was used, but not extensively. The code is mostly written by me, with some help from LLM for specific tasks like generating SQL queries and basic CRUD operations. I'll continue to improve the codebase quality to refactor and simplfy code where possible. 
+
+New features will be added as needed, but the focus will remain on keeping the system lightweight and easy to use.
+__Feel free to open issues or pull requests if you have suggestions or improvements!__
+
 ## Features
 
 -   **User Authentication**: Secure user registration, login, and profile management.
