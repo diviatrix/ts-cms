@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const response = await ProfileAPI.get();
       
       if (!response.success) {
-        ErrorHandler.handleApiError(response, message);
+        errorHandler.handleApiError(response, message);
         responseBox.value = '';
         return;
       }
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
       responseBox.value = JSON.stringify(response.data, null, 2);
     } catch (error) {
       console.error('Error fetching profile:', error);
-      ErrorHandler.handleNetworkError(error, message);
+      errorHandler.handleNetworkError(error, message);
       responseBox.value = '';
     } finally {
       loadingManager.setLoading(fetchButton, false);
@@ -58,20 +58,35 @@ document.addEventListener('DOMContentLoaded', function() {
   // Save button: send textarea value to server
   if (saveButton) {
     saveButton.addEventListener('click', async function() {
-      let updatedData;
+      let parsedData;
       try {
-        updatedData = JSON.parse(responseBox.value);
+        parsedData = JSON.parse(responseBox.value);
       } catch (e) {
         console.error('Invalid JSON format:', e);
         message.showError('Invalid JSON format.');
         return;
       }
 
+      console.log('Profile save - parsedData:', parsedData);
+      console.log('Profile save - parsedData keys:', Object.keys(parsedData));
+      
+      // Extract the profile data from the API response format
+      const profileData = parsedData.data || parsedData;
+      console.log('Profile save - profileData:', profileData);
+
+      // Structure the data correctly for the ProfileAPI - just send the profile data directly
+      const updatedData = {
+        profile: profileData
+      };
+
+      console.log('Profile save - updatedData:', updatedData);
+
       try {
         loadingManager.setLoading(saveButton, true, 'Saving...');
         
-        const response = await ProfileAPI.update({ profile: updatedData });
+        const response = await ProfileAPI.update(updatedData);
         
+        console.log('Profile save - response:', response);
         message.showApiResponse(response);
         
         if (response.success) {
@@ -79,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       } catch (error) {
         console.error('Error updating profile:', error);
-        ErrorHandler.handleNetworkError(error, message);
+        errorHandler.handleNetworkError(error, message);
       } finally {
         loadingManager.setLoading(saveButton, false);
       }
