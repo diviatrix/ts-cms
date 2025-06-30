@@ -494,21 +494,21 @@ class AdminController {
             this.loadInitialData();
         }, 'Refresh all data');
 
-        // Navigation shortcuts
-        keyboardShortcuts.register('ctrl+1', () => {
+        // Navigation shortcuts (using Alt+key to avoid browser conflicts)
+        keyboardShortcuts.register('alt+u', () => {
             document.querySelector('[data-bs-target="#users"]')?.click();
-        }, 'Switch to Users tab');
+        }, 'Switch to Users tab (Alt+U)');
 
-        keyboardShortcuts.register('ctrl+2', () => {
+        keyboardShortcuts.register('alt+r', () => {
             document.querySelector('[data-bs-target="#records"]')?.click();
-        }, 'Switch to Records tab');
+        }, 'Switch to Records tab (Alt+R)');
 
-        keyboardShortcuts.register('ctrl+3', () => {
+        keyboardShortcuts.register('alt+p', () => {
             document.querySelector('[data-bs-target="#profile"]')?.click();
-        }, 'Switch to Profile tab');
+        }, 'Switch to Profile tab (Alt+P)');
 
-        // Help shortcut
-        keyboardShortcuts.register('f1', () => {
+        // Help shortcut (using a non-conflicting key combination)
+        keyboardShortcuts.register('ctrl+shift+h', () => {
             keyboardShortcuts.showHelp();
         }, 'Show keyboard shortcuts help');
 
