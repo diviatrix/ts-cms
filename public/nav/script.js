@@ -1,3 +1,5 @@
+import { AuthAPI } from '../js/api-client.js';
+
 document.addEventListener('navigationLoaded', function() {
   console.log('nav/script.js received navigationLoaded event.');
   const signOutButton = document.getElementById('signOutButton');
@@ -6,9 +8,7 @@ document.addEventListener('navigationLoaded', function() {
   const loginLink = document.getElementById('loginLink');
   const menuBlock = document.getElementById('menuBlock');
 
-  const token = localStorage.getItem('token');
-
-  if (!token) {
+  if (!AuthAPI.isAuthenticated()) {
     // If no token, show login/register link and hide others
     if (loginLink) {
       loginLink.classList.remove('d-none');
@@ -34,8 +34,7 @@ document.addEventListener('navigationLoaded', function() {
     if (signOutButton) {
       signOutButton.classList.remove('d-none');
       signOutButton.addEventListener('click', function() {
-        localStorage.removeItem('token'); // Remove the token from local storage
-        window.location.href = '/login'; // Redirect to login page
+        AuthAPI.logout(); // Use AuthAPI logout method
       });
     }
 

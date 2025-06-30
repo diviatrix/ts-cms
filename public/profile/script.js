@@ -1,4 +1,5 @@
-import { handleAuthError } from '../js/auth-redirect.js';
+import { ProfileAPI, AuthAPI } from '../js/api-client.js';
+import { MessageDisplay, loadingManager, ErrorHandler } from '../js/ui-utils.js';
 
 document.addEventListener('DOMContentLoaded', function() {
   const messageDiv = document.getElementById('messageDiv');
@@ -7,53 +8,47 @@ document.addEventListener('DOMContentLoaded', function() {
   const fetchButton = document.getElementById('fetchButton');
   const saveButton = document.getElementById('saveButton');
 
+  // Create message display
+  const message = new MessageDisplay(messageDiv);
+
   // Check for token on page load
-  const token = localStorage.getItem('token');
-  if (!token) {
+  if (!AuthAPI.isAuthenticated()) {
     window.location.href = '/login';
     return;
   }
   profileBlock.classList.remove('d-none');
 
   // Fetch and display JSON server answer in textbox
-  async function fetchProfile(token) {
+  async function fetchProfile() {
     try {
-      const response = await fetch('/api/profile', {
-        method: 'GET',
-        cache: 'no-cache',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (handleAuthError(response)) return;
-
-      const responseData = await response.json();
-      if (responseData.success && responseData.data) {
-        responseBox.value = JSON.stringify(responseData.data, null, 2);
-      } else {
-        messageDiv.textContent = responseData.message || 'Failed to fetch profile data.';
-        messageDiv.classList.remove('text-success');
-        messageDiv.classList.add('text-danger');
+      message.hide();
+      loadingManager.setLoading(fetchButton, true, 'Loading...');
+      
+      const response = await ProfileAPI.get();
+      
+      if (!response.success) {
+        ErrorHandler.handleApiError(response, message);
+        responseBox.value = '';
+        return;
       }
-      // messageDiv.textContent = ''; // Removed this line
+
+      responseBox.value = JSON.stringify(response.data, null, 2);
     } catch (error) {
       console.error('Error fetching profile:', error);
-      messageDiv.textContent = 'An error occurred while fetching profile.';
-      messageDiv.classList.remove('text-success');
-      messageDiv.classList.add('text-danger');
+      ErrorHandler.handleNetworkError(error, message);
       responseBox.value = '';
+    } finally {
+      loadingManager.setLoading(fetchButton, false);
     }
   }
 
   // Fetch on load
-  fetchProfile(token);
+  fetchProfile();
 
   // Optional: Add a button to re-fetch
   if (fetchButton) {
     fetchButton.addEventListener('click', function() {
-      fetchProfile(token);
+      fetchProfile();
     });
   }
 
@@ -65,38 +60,25 @@ document.addEventListener('DOMContentLoaded', function() {
         updatedData = JSON.parse(responseBox.value);
       } catch (e) {
         console.error('Invalid JSON format:', e);
-        messageDiv.textContent = 'Invalid JSON format.';
-        messageDiv.classList.remove('text-success');
-        messageDiv.classList.add('text-danger');
+        message.showError('Invalid JSON format.');
         return;
       }
 
       try {
-        const response = await fetch('/api/profile', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ profile: updatedData }),
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          messageDiv.textContent = result.message;
-          messageDiv.classList.remove('text-danger');
-          messageDiv.classList.add('text-success');
-          fetchProfile(token); // Refresh profile after successful update
-        } else {
-          messageDiv.textContent = 'Failed to update profile: ' + result.message;
-          messageDiv.classList.remove('text-success');
-          messageDiv.classList.add('text-danger');
+        loadingManager.setLoading(saveButton, true, 'Saving...');
+        
+        const response = await ProfileAPI.update({ profile: updatedData });
+        
+        message.showApiResponse(response);
+        
+        if (response.success) {
+          fetchProfile(); // Refresh profile after successful update
         }
       } catch (error) {
         console.error('Error updating profile:', error);
-        messageDiv.textContent = 'An error occurred while updating profile.';
-        messageDiv.classList.remove('text-success');
-        messageDiv.classList.add('text-danger');
+        ErrorHandler.handleNetworkError(error, message);
+      } finally {
+        loadingManager.setLoading(saveButton, false);
       }
     });
   }

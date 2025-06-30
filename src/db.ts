@@ -279,6 +279,22 @@ class Database {
         }
         return prep.response(response.success, response.message, data);
     }
+
+    // Transaction management methods
+    public async beginTransaction(): Promise<IResolve<boolean>> {
+        const response = await this.db.executeQuery('BEGIN TRANSACTION', []);
+        return prep.response(response.success, response.message, response.success);
+    }
+
+    public async commitTransaction(): Promise<IResolve<boolean>> {
+        const response = await this.db.executeQuery('COMMIT', []);
+        return prep.response(response.success, response.message, response.success);
+    }
+
+    public async rollbackTransaction(): Promise<IResolve<boolean>> {
+        const response = await this.db.executeQuery('ROLLBACK', []);
+        return prep.response(response.success, response.message, response.success);
+    }
     
 }
 

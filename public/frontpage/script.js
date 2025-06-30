@@ -1,3 +1,4 @@
+import { RecordsAPI, AuthAPI } from '../js/api-client.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -5,12 +6,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function fetchAndRenderRecords() {
     try {
-      const response = await fetch('/api/records');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await RecordsAPI.getAll();
+      
+      if (!response.success) {
+        console.error('Error fetching records:', response);
+        postsGrid.innerHTML = '<p class="text-danger">Failed to load posts. Please try again later.</p>';
+        return;
       }
-      const records = await response.json();
-      renderRecords(records);
+      
+      renderRecords(response.data || []);
     } catch (error) {
       console.error('Error fetching records:', error);
       postsGrid.innerHTML = '<p class="text-danger">Failed to load posts. Please try again later.</p>';
@@ -33,10 +37,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const colClass = records.length < 6 ? 'col-12 col-md-8 col-lg-6' : 'col'; // Use 'col' for multi-column to let row-cols handle it
 
-    const token = localStorage.getItem('token');
     let isAdmin = false;
-    if (token) {
+    if (AuthAPI.isAuthenticated()) {
       try {
+        const token = localStorage.getItem('token');
         const decodedToken = jwtDecode(token);
         if (decodedToken && decodedToken.roles && decodedToken.roles.includes('admin')) {
           isAdmin = true;

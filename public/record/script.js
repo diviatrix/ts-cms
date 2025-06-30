@@ -1,4 +1,5 @@
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
+import { RecordsAPI, AuthAPI } from '../js/api-client.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -19,18 +20,20 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   try {
-    const response = await fetch(`/api/records/${recordId}`);
-    if (!response.ok) {
-      if (response.status === 404) {
+    const response = await RecordsAPI.getById(recordId);
+    
+    if (!response.success) {
+      if (response.errors?.some(err => err.includes('not found'))) {
         recordTitle.textContent = 'Record Not Found';
         recordDescription.textContent = 'The requested record does not exist.';
       } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        recordTitle.textContent = 'Error Loading Record';
+        recordDescription.textContent = response.message || 'An error occurred while loading the record.';
       }
       return;
     }
 
-    const record = await response.json();
+    const record = response.data;
 
     recordTitle.textContent = record.title;
     recordDescription.textContent = record.description;
@@ -39,9 +42,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     recordDate.textContent = new Date(record.created_at).toLocaleDateString();
 
     // Check if user is admin to show edit button
-    const token = localStorage.getItem('token');
-    if (token) {
+    if (AuthAPI.isAuthenticated()) {
       try {
+        const token = localStorage.getItem('token');
         const decodedToken = jwtDecode(token);
         if (decodedToken && decodedToken.roles && decodedToken.roles.includes('admin')) {
           editRecordButton.classList.remove('d-none');

@@ -1,10 +1,15 @@
+import { ProfileAPI, AuthAPI } from '../js/api-client.js';
+import { MessageDisplay, FormValidator, loadingManager, ErrorHandler } from '../js/ui-utils.js';
+
 document.addEventListener('DOMContentLoaded', function() {
   const newPasswordInput = document.getElementById('newPassword');
   const savePasswordButton = document.getElementById('savePasswordButton');
   const passwordMessageDiv = document.getElementById('passwordMessage');
 
-  const token = localStorage.getItem('token');
-  if (!token) {
+  // Create message display
+  const message = new MessageDisplay(passwordMessageDiv);
+
+  if (!AuthAPI.isAuthenticated()) {
     // Redirect to login if no token
     window.location.href = '/login';
     return;
@@ -25,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  const token = localStorage.getItem('token');
   const decodedToken = decodeJwt(token);
   const authenticatedUserId = decodedToken ? decodedToken.id : null;
   const isAdmin = decodedToken && decodedToken.roles && decodedToken.roles.includes('admin');
@@ -47,38 +53,38 @@ document.addEventListener('DOMContentLoaded', function() {
   savePasswordButton.addEventListener('click', async function() {
     const newPassword = newPasswordInput.value;
 
-    if (!newPassword) {
-      passwordMessageDiv.textContent = 'Password cannot be empty.';
-      passwordMessageDiv.className = 'text-danger';
+    // Validate password
+    const requiredErrors = FormValidator.validateRequired([
+      { element: newPasswordInput, name: 'Password' }
+    ]);
+    const passwordErrors = FormValidator.validatePassword(newPasswordInput);
+    
+    const allErrors = [...requiredErrors, ...passwordErrors];
+    
+    if (allErrors.length > 0) {
+      message.showError(allErrors.join(', '));
       return;
     }
 
     try {
-      const response = await fetch('/api/profile/password/set', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId: targetUserId, // Send targetUserId if admin, otherwise it will be authenticatedUserId
-          newPassword: newPassword
-        }),
+      loadingManager.setLoading(savePasswordButton, true, 'Saving...');
+      
+      const response = await ProfileAPI.updatePassword({
+        userId: targetUserId, // Send targetUserId if admin, otherwise it will be authenticatedUserId
+        newPassword: newPassword
       });
 
-      const result = await response.json();
-      if (result.success) {
-        passwordMessageDiv.textContent = result.message;
-        passwordMessageDiv.className = 'text-success';
+      message.showApiResponse(response);
+      
+      if (response.success) {
         newPasswordInput.value = ''; // Clear password field on success
-      } else {
-        passwordMessageDiv.textContent = result.message || 'Failed to change password.';
-        passwordMessageDiv.className = 'text-danger';
+        FormValidator.removeErrorClass(newPasswordInput);
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      passwordMessageDiv.textContent = 'An error occurred while changing password.';
-      passwordMessageDiv.className = 'text-danger';
+      ErrorHandler.handleNetworkError(error, message);
+    } finally {
+      loadingManager.setLoading(savePasswordButton, false);
     }
   });
 });

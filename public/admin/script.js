@@ -1,4 +1,5 @@
-import { handleAuthError } from '../js/auth-redirect.js';
+import { AdminAPI, ProfileAPI, RecordsAPI, AuthAPI } from '../js/api-client.js';
+import { MessageDisplay, loadingManager, ErrorHandler } from '../js/ui-utils.js';
 
 document.addEventListener('DOMContentLoaded', function() {
   const userList = document.getElementById('userList');
@@ -21,6 +22,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const recordSaveButton = document.getElementById('recordSaveButton');
   const recordDeleteButton = document.getElementById('recordDeleteButton');
 
+  // Create message displays
+  const adminMessage = new MessageDisplay(adminMessageDiv);
+  const recordMessage = new MessageDisplay(recordMessageDiv);
+
   // Tab switching logic
   const usersTabBtn = document.getElementById('users-tab');
   const recordsTabBtn = document.getElementById('records-tab');
@@ -36,39 +41,27 @@ document.addEventListener('DOMContentLoaded', function() {
   // Function to fetch the list of users from the backend
   async function fetchUsers() {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        adminMessageDiv.textContent = 'Not authenticated. Please log in.';
-        adminMessageDiv.classList.add('text-danger');
+      // Check authentication
+      if (!AuthAPI.isAuthenticated()) {
+        adminMessage.showError('Not authenticated. Please log in.');
         window.location.href = '/login';
         return;
       }
 
-      const response = await fetch('/api/admin/users', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      adminMessage.hide();
+      const response = await AdminAPI.getUsers();
 
-      if (handleAuthError(response)) return; // Centralized error handling
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        adminMessageDiv.textContent = `Error fetching users: ${errorData.message || response.status}`;
-        adminMessageDiv.classList.add('text-danger');
+      if (!response.success) {
+        ErrorHandler.handleApiError(response, adminMessage);
         return;
       }
 
-      const answer = await response.json();
-      const users = answer.data || [];
+      const users = response.data || [];
       displayUsers(users);
 
     } catch (error) {
       console.error('Error fetching users:', error);
-      adminMessageDiv.textContent = 'An error occurred while fetching users.';
-      adminMessageDiv.classList.add('text-danger');
+      ErrorHandler.handleNetworkError(error, adminMessage);
     }
   }
 
@@ -102,34 +95,22 @@ document.addEventListener('DOMContentLoaded', function() {
   // Function to fetch and display a single user's profile
   async function fetchUserProfile(userId) {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/profile/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      adminMessage.hide();
+      const response = await AdminAPI.getUserProfile(userId);
 
-      if (handleAuthError(response)) return;
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        adminMessageDiv.textContent = `Error fetching user profile: ${errorData.message || response.status}`;
-        adminMessageDiv.classList.add('text-danger');
+      if (!response.success) {
+        ErrorHandler.handleApiError(response, adminMessage);
         return;
       }
 
-      const responseData = await response.json();
-      console.log('fetchUserProfile: responseData object:', responseData); // Added log
-      const user = responseData.data; // Extract the actual user data
+      console.log('fetchUserProfile: responseData object:', response); // Added log
+      const user = response.data; // Extract the actual user data
       adminServerAnswerTextarea.value = JSON.stringify(user, null, 2);
       adminProfileInfo.dataset.currentUserId = user.base.id;
 
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      adminMessageDiv.textContent = 'An error occurred while fetching user profile.';
-      adminMessageDiv.classList.add('text-danger');
+      ErrorHandler.handleNetworkError(error, adminMessage);
     }
   }
 
@@ -138,8 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
   adminSaveButton.addEventListener('click', async function() {
     const userIdToUpdate = adminProfileInfo.dataset.currentUserId;
     if (!userIdToUpdate) {
-      adminMessageDiv.textContent = 'No user selected for saving.';
-      adminMessageDiv.classList.add('text-danger');
+      adminMessage.showError('No user selected for saving.');
       return;
     }
 
@@ -153,78 +133,56 @@ document.addEventListener('DOMContentLoaded', function() {
       };
     } catch (e) {
       console.error('Invalid JSON format:', e);
-      adminMessageDiv.textContent = 'Invalid JSON format.';
-      adminMessageDiv.classList.add('text-danger');
+      adminMessage.showError('Invalid JSON format.');
       return;
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(updatedData),
-      });
-      const result = await response.json();
-      console.log('adminSaveButton: result object:', result); // Added log
-      adminServerAnswerTextarea.value = JSON.stringify(result, null, 2);
-      if (result.success) {
-        adminMessageDiv.textContent = result.message;
-        adminMessageDiv.classList.remove('text-danger');
-        adminMessageDiv.classList.add('text-success');
+      loadingManager.setLoading(adminSaveButton, true, 'Saving...');
+      
+      // Note: Using ProfileAPI.update for profile updates
+      const response = await ProfileAPI.update(updatedData);
+      
+      console.log('adminSaveButton: result object:', response); // Added log
+      adminServerAnswerTextarea.value = JSON.stringify(response, null, 2);
+      
+      adminMessage.showApiResponse(response);
+      
+      if (response.success) {
         // Instead of re-fetching all users, fetch only the updated user
         fetchUserProfile(userIdToUpdate);
-      } else {
-        adminMessageDiv.textContent = 'Failed to update profile: ' + result.message;
-        adminMessageDiv.classList.remove('text-success');
-        adminMessageDiv.classList.add('text-danger');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      adminMessageDiv.textContent = 'An error occurred while updating profile.';
-      adminMessageDiv.classList.remove('text-success');
-      adminMessageDiv.classList.add('text-danger');
+      ErrorHandler.handleNetworkError(error, adminMessage);
+    } finally {
+      loadingManager.setLoading(adminSaveButton, false);
     }
   });
 
   // Record functions
   async function fetchRecords() {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        recordMessageDiv.textContent = 'Not authenticated. Please log in.';
-        recordMessageDiv.classList.add('text-danger');
+      // Check authentication
+      if (!AuthAPI.isAuthenticated()) {
+        recordMessage.showError('Not authenticated. Please log in.');
         window.location.href = '/login';
         return;
       }
 
-      const response = await fetch('/api/records', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      recordMessage.hide();
+      const response = await RecordsAPI.getAll();
 
-      if (handleAuthError(response)) return;
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        recordMessageDiv.textContent = `Error fetching records: ${errorData.message || response.status}`;
-        recordMessageDiv.classList.add('text-danger');
+      if (!response.success) {
+        ErrorHandler.handleApiError(response, recordMessage);
         return;
       }
 
-      const records = await response.json();
-      displayRecords(records);
+      displayRecords(response.data || []);
 
     } catch (error) {
       console.error('Error fetching records:', error);
-      recordMessageDiv.textContent = 'An error occurred while fetching records.';
-      recordMessageDiv.classList.add('text-danger');
+      ErrorHandler.handleNetworkError(error, recordMessage);
     }
   }
 
@@ -272,10 +230,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   recordSaveButton.addEventListener('click', async () => {
     const recordId = recordInfo.dataset.currentRecordId;
-    const token = localStorage.getItem('token');
-    if (!token) {
-      recordMessageDiv.textContent = 'Not authenticated. Please log in.';
-      recordMessageDiv.classList.add('text-danger');
+    
+    // Check authentication
+    if (!AuthAPI.isAuthenticated()) {
+      recordMessage.showError('Not authenticated. Please log in.');
       window.location.href = '/login';
       return;
     }
@@ -291,56 +249,37 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     try {
+      loadingManager.setLoading(recordSaveButton, true, 'Saving...');
+      
       let response;
       if (recordId) {
         // Update existing record
-        response = await fetch(`/api/records/${recordId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(recordData),
-        });
+        response = await RecordsAPI.update(recordId, recordData);
       } else {
         // Create new record
-        response = await fetch('/api/records', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(recordData),
-        });
+        response = await RecordsAPI.create(recordData);
       }
 
-      const result = await response.json();
-      if (response.ok) {
-        recordMessageDiv.textContent = `Record saved successfully!`;
-        recordMessageDiv.classList.remove('text-danger');
-        recordMessageDiv.classList.add('text-success');
+      recordMessage.showApiResponse(response);
+      
+      if (response.success) {
         fetchRecords(); // Refresh the list
-        if (!recordId && result.id) { // If new record, set its ID for further edits
-          recordInfo.dataset.currentRecordId = result.id;
+        if (!recordId && response.data?.id) { // If new record, set its ID for further edits
+          recordInfo.dataset.currentRecordId = response.data.id;
         }
-      } else {
-        recordMessageDiv.textContent = `Failed to save record: ${result.message || response.statusText}`;
-        recordMessageDiv.classList.remove('text-success');
-        recordMessageDiv.classList.add('text-danger');
       }
     } catch (error) {
       console.error('Error saving record:', error);
-      recordMessageDiv.textContent = 'An error occurred while saving the record.';
-      recordMessageDiv.classList.remove('text-success');
-      recordMessageDiv.classList.add('text-danger');
+      ErrorHandler.handleNetworkError(error, recordMessage);
+    } finally {
+      loadingManager.setLoading(recordSaveButton, false);
     }
   });
 
   recordDeleteButton.addEventListener('click', async () => {
     const recordId = recordInfo.dataset.currentRecordId;
     if (!recordId) {
-      recordMessageDiv.textContent = 'No record selected for deletion.';
-      recordMessageDiv.classList.add('text-danger');
+      recordMessage.showError('No record selected for deletion.');
       return;
     }
 
@@ -348,39 +287,29 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    const token = localStorage.getItem('token');
-    if (!token) {
-      recordMessageDiv.textContent = 'Not authenticated. Please log in.';
-      recordMessageDiv.classList.add('text-danger');
+    // Check authentication
+    if (!AuthAPI.isAuthenticated()) {
+      recordMessage.showError('Not authenticated. Please log in.');
       window.location.href = '/login';
       return;
     }
 
     try {
-      const response = await fetch(`/api/records/${recordId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        recordMessageDiv.textContent = 'Record deleted successfully!';
-        recordMessageDiv.classList.remove('text-danger');
-        recordMessageDiv.classList.add('text-success');
+      loadingManager.setLoading(recordDeleteButton, true, 'Deleting...');
+      
+      const response = await RecordsAPI.delete(recordId);
+      
+      recordMessage.showApiResponse(response);
+      
+      if (response.success) {
         recordEditTab.classList.add('d-none'); // Hide edit form
         fetchRecords(); // Refresh the list
-      } else {
-        const errorData = await response.json();
-        recordMessageDiv.textContent = `Failed to delete record: ${errorData.message || response.statusText}`;
-        recordMessageDiv.classList.remove('text-success');
-        recordMessageDiv.classList.add('text-danger');
       }
     } catch (error) {
       console.error('Error deleting record:', error);
-      recordMessageDiv.textContent = 'An error occurred while deleting the record.';
-      recordMessageDiv.classList.remove('text-success');
-      recordMessageDiv.classList.add('text-danger');
+      ErrorHandler.handleNetworkError(error, recordMessage);
+    } finally {
+      loadingManager.setLoading(recordDeleteButton, false);
     }
   });
 
@@ -402,16 +331,15 @@ document.addEventListener('DOMContentLoaded', function() {
       // Wait for the tab content to be shown before fetching the record
       recordsTabBtn.addEventListener('shown.bs.tab', async () => {
         try {
-          const response = await fetch(`/api/records/${editRecordId}`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+          const response = await RecordsAPI.getById(editRecordId);
+          if (!response.success) {
+            ErrorHandler.handleApiError(response, recordMessage);
+            return;
           }
-          const record = await response.json();
-          displayRecordForEdit(record);
+          displayRecordForEdit(response.data);
         } catch (error) {
           console.error('Error fetching record for edit:', error);
-          recordMessageDiv.textContent = 'Failed to load record for editing.';
-          recordMessageDiv.classList.add('text-danger');
+          ErrorHandler.handleNetworkError(error, recordMessage);
         }
       }, { once: true }); // Use { once: true } to remove the listener after it fires
     }
