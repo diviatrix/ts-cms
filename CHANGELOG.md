@@ -1,5 +1,22 @@
 # TypeScript CMS - Changelog
 
+## 2025-07-01 - Script Architecture Modernization
+
+### Script Refactoring
+- Refactored frontpage script to use FrontPageController extending BasePageController
+- Updated password reset page to use ProtectedPageController with modern architecture
+- Enhanced navigation script with NavigationController for better state management
+- Refactored record display script to use RecordDisplayController
+- Modernized profile script to use ProtectedPageController
+- Fixed navigation button visibility issues by removing conflicting logic from include-nav.js
+
+### Code Quality Improvements
+- Consolidated inline event handlers across all scripts
+- Implemented proper separation of concerns with controller-based architecture
+- Added XSS protection with HTML escaping in frontpage cards
+- Improved error handling and user feedback consistency
+- Better JWT token handling and role-based feature access
+
 ## 2025-06-30 - Frontend Optimization Complete
 
 ### API Client Standardization

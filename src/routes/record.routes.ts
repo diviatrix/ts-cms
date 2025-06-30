@@ -53,10 +53,12 @@ router.delete('/records/:id', requireAuthAndAdmin, validateParams(ParameterSchem
     }
 });
 
-router.get('/records', requireAuth, async (req: Request, res: Response) => {
+router.get('/records', optionalAuth, async (req: Request, res: Response) => {
     try {
         const isAuthenticatedUserAdmin = req.user && req.user.roles.includes('admin');
-        const records = await getAllRecords(!isAuthenticatedUserAdmin);
+        // For unauthenticated users or non-admin users, only return published records
+        const publishedOnly = !isAuthenticatedUserAdmin;
+        const records = await getAllRecords(publishedOnly);
         ResponseUtils.success(res, records, 'Records retrieved successfully');
     } catch (error) {
         console.error("Failed to fetch all records:", error);

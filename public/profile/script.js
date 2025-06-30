@@ -1,120 +1,143 @@
 import { ProfileAPI, AuthAPI } from '../js/api-client.js';
-import { MessageDisplay, loadingManager, ErrorHandler, errorHandler } from '../js/ui-utils.js';
+import { MessageDisplay, loadingManager, errorHandler } from '../js/ui-utils.js';
 
-// Make error handler available globally
-window.errorHandler = errorHandler;
-
-document.addEventListener('DOMContentLoaded', function() {
-  const messageDiv = document.getElementById('messageDiv');
-  const profileBlock = document.getElementById('profileBlock');
-  const responseBox = document.getElementById('responseBox');
-  const fetchButton = document.getElementById('fetchButton');
-  const saveButton = document.getElementById('saveButton');
-
-  // Create message display
-  const message = new MessageDisplay(messageDiv);
-
-  // Check for token on page load
-  if (!AuthAPI.isAuthenticated()) {
-    window.location.href = '/login';
-    return;
+/**
+ * Profile Page Controller
+ * Simple profile management for authenticated users
+ */
+class ProfileController {
+  constructor() {
+    this.profileAPI = ProfileAPI;
+    this.authAPI = AuthAPI;
+    
+    // Create message display
+    const messageDiv = document.getElementById('messageDiv');
+    this.message = new MessageDisplay(messageDiv);
+    
+    // Get DOM elements
+    this.elements = {
+      // JSON editor elements
+      profileData: document.getElementById('profileData'),
+      fetchButton: document.getElementById('fetchButton'),
+      saveButton: document.getElementById('saveButton'),
+      jsonValidation: document.getElementById('jsonValidation')
+    };
+    
+    this.init();
   }
-  profileBlock.classList.remove('d-none');
 
-  // Fetch and display JSON server answer in textbox
-  async function fetchProfile() {
+  /**
+   * Initialize the profile page
+   */
+  async init() {
+    // Simple auth check - if not authenticated, redirect to login
+    if (!this.authAPI.isAuthenticated()) {
+      const currentPath = window.location.pathname + window.location.search;
+      window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+      return;
+    }
+
+    this.setupEventListeners();
+    await this.loadProfile();
+  }
+
+  /**
+   * Setup event listeners
+   */
+  setupEventListeners() {
+    // JSON editor event listeners
+    this.elements.fetchButton.addEventListener('click', () => this.loadProfile());
+    this.elements.saveButton.addEventListener('click', () => this.saveProfile());
+    this.elements.profileData.addEventListener('input', () => this.validateJson());
+  }
+
+  /**
+   * Load profile data from API
+   */
+  async loadProfile() {
     try {
-      message.hide();
-      loadingManager.setLoading(fetchButton, true, 'Loading...');
+      this.message.hide();
+      loadingManager.setLoading(this.elements.fetchButton, true, 'Loading...');
       
-      const response = await ProfileAPI.get();
+      const response = await this.profileAPI.get();
       
       if (!response.success) {
-        errorHandler.handleApiError(response, message);
-        responseBox.value = '';
+        console.error('Error fetching profile:', response);
+        this.message.showApiResponse(response);
+        this.elements.profileData.value = '';
         return;
       }
 
-      responseBox.value = JSON.stringify(response.data, null, 2);
+      // Extract only the actual profile data from the API response
+      const profileData = response.data || {};
+      
+      // Populate JSON editor with only the data
+      this.elements.profileData.value = JSON.stringify(profileData.data, null, 2);
+      this.validateJson();
+      this.message.showSuccess('Profile loaded successfully');
+      
     } catch (error) {
-      console.error('Error fetching profile:', error);
-      errorHandler.handleNetworkError(error, message);
-      responseBox.value = '';
+      console.error('Error loading profile:', error);
+      errorHandler.handleNetworkError(error, this.message);
+      this.elements.profileData.value = '';
     } finally {
-      loadingManager.setLoading(fetchButton, false);
+      loadingManager.setLoading(this.elements.fetchButton, false);
     }
   }
 
-  // Fetch on load
-  fetchProfile();
-
-  // Optional: Add a button to re-fetch
-  if (fetchButton) {
-    fetchButton.addEventListener('click', function() {
-      fetchProfile();
-    });
-  }
-
-  // Add real-time JSON validation to textarea
-  if (responseBox) {
-    responseBox.addEventListener('input', function() {
-      const jsonValidationDiv = document.getElementById('jsonValidation') || createJsonValidationDiv();
+  /**
+   * Save profile data to API
+   */
+  async saveProfile() {
+    try {
+      // Parse the user's JSON input (should be just the profile data)
+      const userInputData = JSON.parse(this.elements.profileData.value);
       
-      try {
-        const parsedData = JSON.parse(responseBox.value);
-        jsonValidationDiv.innerHTML = '<div class="text-success small"><i class="fas fa-check-circle"></i> Valid JSON format</div>';
-        saveButton.disabled = false;
-      } catch (e) {
-        jsonValidationDiv.innerHTML = `<div class="text-danger small"><i class="fas fa-exclamation-triangle"></i> Invalid JSON: ${e.message}</div>`;
-        saveButton.disabled = true;
+      this.message.hide();
+      loadingManager.setLoading(this.elements.saveButton, true, 'Saving...');
+      
+      // Send the user input as the profile data payload
+      const payload = { profile: userInputData };
+      
+      const response = await this.profileAPI.update(payload);
+      
+      this.message.showApiResponse(response);
+      
+      if (response.success) {
+        // Reload profile to show updated data
+        await this.loadProfile();
       }
-    });
+      
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        this.message.showError('Invalid JSON format. Please check the syntax and try again.');
+      } else {
+        console.error('Error saving profile:', error);
+        errorHandler.handleNetworkError(error, this.message);
+      }
+    } finally {
+      loadingManager.setLoading(this.elements.saveButton, false);
+    }
   }
 
-  function createJsonValidationDiv() {
-    const div = document.createElement('div');
-    div.id = 'jsonValidation';
-    div.className = 'mt-2';
-    responseBox.parentNode.appendChild(div);
-    return div;
+  /**
+   * Validate JSON input and update UI
+   */
+  validateJson() {
+    try {
+      JSON.parse(this.elements.profileData.value);
+      this.elements.jsonValidation.innerHTML = 
+        '<div class="text-success small"><i class="fas fa-check-circle"></i> Valid JSON format</div>';
+      this.elements.saveButton.disabled = false;
+    } catch (error) {
+      this.elements.jsonValidation.innerHTML = 
+        `<div class="text-danger small"><i class="fas fa-exclamation-triangle"></i> Invalid JSON: ${error.message}</div>`;
+      this.elements.saveButton.disabled = true;
+    }
   }
+}
 
-  // Save button: send textarea value to server
-  if (saveButton) {
-    saveButton.addEventListener('click', async function() {
-      let parsedData;
-      try {
-        parsedData = JSON.parse(responseBox.value);
-      } catch (e) {
-        console.error('Invalid JSON format:', e);
-        message.showError('Invalid JSON format. Please check the syntax and try again.');
-        return;
-      }
-
-      // Extract the profile data from the API response format
-      const profileData = parsedData.data || parsedData;
-
-      // Structure the data correctly for the ProfileAPI - just send the profile data directly
-      const updatedData = {
-        profile: profileData
-      };
-
-      try {
-        loadingManager.setLoading(saveButton, true, 'Saving...');
-        
-        const response = await ProfileAPI.update(updatedData);
-        
-        message.showApiResponse(response);
-        
-        if (response.success) {
-          fetchProfile(); // Refresh profile after successful update
-        }
-      } catch (error) {
-        console.error('Error updating profile:', error);
-        errorHandler.handleNetworkError(error, message);
-      } finally {
-        loadingManager.setLoading(saveButton, false);
-      }
-    });
-  }
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  new ProfileController();
 });

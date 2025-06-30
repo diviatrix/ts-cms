@@ -4,7 +4,8 @@ export default {
             id TEXT PRIMARY KEY UNIQUE NOT NULL,
             login TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
+            password_hash TEXT NOT NULL,
+            is_active BOOLEAN NOT NULL DEFAULT TRUE
         )`,
     records: `
         CREATE TABLE IF NOT EXISTS records (
@@ -56,7 +57,6 @@ export default {
         CREATE TABLE IF NOT EXISTS user_profiles (
             user_id TEXT PRIMARY KEY UNIQUE NOT NULL,
             public_name TEXT NOT NULL,
-            is_active BOOLEAN NOT NULL DEFAULT TRUE,
             profile_picture_url TEXT,
             bio TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,

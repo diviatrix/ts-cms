@@ -16,7 +16,26 @@ declare global {
 
 // Centralized authentication middleware
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-    authenticateToken(req, res, next);
+    authenticateToken(req, res, (error?: any) => {
+        if (error) {
+            return res.status(500).json({
+                success: false,
+                message: 'Authentication error',
+                data: null
+            });
+        }
+        
+        // Check if user was successfully authenticated
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required. Please log in.',
+                data: null
+            });
+        }
+        
+        next();
+    });
 };
 
 // Optional authentication middleware (for endpoints that work with or without auth)

@@ -3,6 +3,7 @@ import config from '../data/config';
 import IJwtPayload from '../types/IJwtPayload';
 import IResolve from '../types/IResolve';
 import prep from '../utils/prepare';
+import { getUser } from '../functions/user';
 
 export async function generateToken(user: IJwtPayload): Promise<IResolve<string>> {
   return new Promise((resolve) => {
@@ -30,7 +31,18 @@ export async function authenticateToken(req: any, res: any, next: any) {
   const verificationResult = await verifyToken(token);
 
   if (verificationResult.success && verificationResult.data) {
-    req.user = verificationResult.data; // Set req.user if token is valid
+    // Additional security check: verify the user still exists in the database
+    const userId = verificationResult.data.id;
+    const userCheck = await getUser(userId);
+    
+    if (userCheck.success && userCheck.data && userCheck.data.base) {
+      // User exists in database and token is valid
+      req.user = verificationResult.data;
+    } else {
+      // Token is valid but user no longer exists in database
+      console.warn(`Authentication failed: User ${userId} from valid JWT token does not exist in database`);
+      req.user = undefined;
+    }
   } else {
     req.user = undefined; // Ensure req.user is undefined if token is invalid or expired
   }

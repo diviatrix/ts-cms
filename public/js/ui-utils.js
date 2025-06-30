@@ -485,7 +485,9 @@ class KeyboardShortcuts {
         if (e.ctrlKey) parts.push('ctrl');
         if (e.altKey) parts.push('alt');
         if (e.shiftKey) parts.push('shift');
-        parts.push(e.key.toLowerCase());
+        if (e.key) {
+            parts.push(e.key.toLowerCase());
+        }
         return parts.join('+');
     }
 

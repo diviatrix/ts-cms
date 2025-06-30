@@ -50,7 +50,7 @@ class Database {
     }
 
     public async getUserProfile(userId: string): Promise<IResolve<IUserProfile | undefined>> {
-        const query = `SELECT * FROM user_profiles WHERE user_id = ?`;
+        const query = `SELECT user_id, public_name, profile_picture_url, bio, created_at, updated_at FROM user_profiles WHERE user_id = ?`;
         const response = await this.db.executeQuery(query, [userId]);
         const data = (response.data && response.data.length > 0)
             ? (response.data[0] as unknown as IUserProfile)
@@ -64,7 +64,6 @@ class Database {
         const defaultProfile: IUserProfile = {
             user_id: userId,
             public_name: 'User', // Default public name
-            is_active: true, // true (SQLite boolean equivalent)
             profile_picture_url: '/img/placeholder-square.png',
             bio: 'Я родился', // Default empty bio
             created_at: new Date(),
@@ -141,15 +140,9 @@ class Database {
             return prep.response(true, messages.success, undefined); // Nothing to update
         }
 
-        const setClauses = fieldsToUpdate.map(field => {
-            if (field === 'is_active') {
-                return `${field} = ?`; // Handle boolean conversion below
-            }
-            return `${field} = ?`;
-        }).join(', ');
+        const setClauses = fieldsToUpdate.map(field => `${field} = ?`).join(', ');
 
         const values = fieldsToUpdate.map(field => {
-            if (field === 'is_active') return profile[field] ? 1 : 0; // Convert boolean to SQLite integer
             return (profile as any)[field];
         });
         values.push(userId);
