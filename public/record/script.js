@@ -1,6 +1,10 @@
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
 import { RecordsAPI, AuthAPI } from '../js/api-client.js';
 import { jwtDecode } from '../js/jwt-decode.js';
+import { ErrorHandler, errorHandler } from '../js/ui-utils.js';
+
+// Make error handler available globally
+window.errorHandler = errorHandler;
 
 document.addEventListener('DOMContentLoaded', async function() {
   const recordTitle = document.getElementById('recordTitle');
@@ -26,9 +30,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (response.errors?.some(err => err.includes('not found'))) {
         recordTitle.textContent = 'Record Not Found';
         recordDescription.textContent = 'The requested record does not exist.';
+        ErrorHandler.showToast('Record not found', 'warning');
       } else {
         recordTitle.textContent = 'Error Loading Record';
         recordDescription.textContent = response.message || 'An error occurred while loading the record.';
+        ErrorHandler.showToast('Failed to load record', 'error');
       }
       return;
     }
@@ -38,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     recordTitle.textContent = record.title;
     recordDescription.textContent = record.description;
     recordContent.innerHTML = marked.parse(record.content);
-    recordAuthor.textContent = record.public_name; // Use public_name from backend
+    recordAuthor.textContent = record.public_name;
     recordDate.textContent = new Date(record.created_at).toLocaleDateString();
 
     // Check if user is admin to show edit button
@@ -54,11 +60,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
       } catch (error) {
         console.error('Error decoding token for admin check:', error);
+        // Non-critical error, don't show to user
       }
     }
 
   } catch (error) {
     console.error('Error fetching record:', error);
+    recordTitle.textContent = 'Network Error';
+    recordDescription.textContent = 'Unable to load the record. Please check your connection and try again.';
+    ErrorHandler.showToast('Network error occurred', 'error');
     recordTitle.textContent = 'Error Loading Record';
     recordDescription.textContent = 'An error occurred while loading the record.';
   }

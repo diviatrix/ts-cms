@@ -1,350 +1,468 @@
 import { AdminAPI, ProfileAPI, RecordsAPI, AuthAPI } from '../js/api-client.js';
-import { MessageDisplay, loadingManager, ErrorHandler } from '../js/ui-utils.js';
+import { MessageDisplay, loadingManager, ErrorHandler, errorHandler } from '../js/ui-utils.js';
+import { ProtectedPageController, DataTable } from '../js/shared-components.js';
 
-document.addEventListener('DOMContentLoaded', function() {
-  const userList = document.getElementById('userList');
-  const profileEditTab = document.getElementById('profileEditTab');
-  const adminProfileInfo = document.getElementById('adminProfileInfo');
-  const adminMessageDiv = document.getElementById('adminMessageDiv');
-  const adminServerAnswerTextarea = document.getElementById('adminServerAnswerTextarea');
-
-  const recordList = document.getElementById('recordList');
-  const recordEditTab = document.getElementById('recordEditTab');
-  const recordInfo = document.getElementById('recordInfo');
-  const recordTitle = document.getElementById('recordTitle');
-  const recordDescription = document.getElementById('recordDescription');
-  const recordContent = document.getElementById('recordContent');
-  const recordTags = document.getElementById('recordTags');
-  const recordCategories = document.getElementById('recordCategories');
-  const recordIsPublished = document.getElementById('recordIsPublished');
-  const recordMessageDiv = document.getElementById('recordMessageDiv');
-  const newRecordButton = document.getElementById('newRecordButton');
-  const recordSaveButton = document.getElementById('recordSaveButton');
-  const recordDeleteButton = document.getElementById('recordDeleteButton');
-
-  // Create message displays
-  const adminMessage = new MessageDisplay(adminMessageDiv);
-  const recordMessage = new MessageDisplay(recordMessageDiv);
-
-  // Tab switching logic
-  const usersTabBtn = document.getElementById('users-tab');
-  const recordsTabBtn = document.getElementById('records-tab');
-
-  usersTabBtn.addEventListener('shown.bs.tab', function (event) {
-    fetchUsers();
-  });
-
-  recordsTabBtn.addEventListener('shown.bs.tab', function (event) {
-    fetchRecords();
-  });
-
-  // Function to fetch the list of users from the backend
-  async function fetchUsers() {
-    try {
-      // Check authentication
-      if (!AuthAPI.isAuthenticated()) {
-        adminMessage.showError('Not authenticated. Please log in.');
-        window.location.href = '/login';
-        return;
-      }
-
-      adminMessage.hide();
-      const response = await AdminAPI.getUsers();
-
-      if (!response.success) {
-        ErrorHandler.handleApiError(response, adminMessage);
-        return;
-      }
-
-      const users = response.data || [];
-      displayUsers(users);
-
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      ErrorHandler.handleNetworkError(error, adminMessage);
-    }
-  }
-
-  // Function to display users in the list
-  function displayUsers(users) {
-    userList.innerHTML = '';
-    if (users.length === 0) {
-      userList.innerHTML = '<li class="list-group-item">No users found.</li>';
-      return;
-    }
-    users.forEach(user => {
-      const listItem = document.createElement('li');
-      listItem.classList.add('list-group-item', 'list-group-item-action');
-      listItem.textContent = user.base.login;
-      listItem.dataset.login = user.base.login;
-      listItem.addEventListener('click', () => displayUserProfile(user));
-      userList.appendChild(listItem);
-    });
-  }
-
-  // Function to display selected user's profile (just show server answer)
-  async function displayUserProfile(user) {
-    console.log('displayUserProfile: user object:', user); // Added log
-    profileEditTab.classList.remove('d-none');
-    adminServerAnswerTextarea.value = JSON.stringify(user, null, 2);
-    adminProfileInfo.dataset.currentUserId = user.base.id; // Use user.base.id
-    adminMessageDiv.textContent = '';
-    adminMessageDiv.classList.remove('text-success', 'text-danger');
-  }
-
-  // Function to fetch and display a single user's profile
-  async function fetchUserProfile(userId) {
-    try {
-      adminMessage.hide();
-      const response = await AdminAPI.getUserProfile(userId);
-
-      if (!response.success) {
-        ErrorHandler.handleApiError(response, adminMessage);
-        return;
-      }
-
-      console.log('fetchUserProfile: responseData object:', response); // Added log
-      const user = response.data; // Extract the actual user data
-      adminServerAnswerTextarea.value = JSON.stringify(user, null, 2);
-      adminProfileInfo.dataset.currentUserId = user.base.id;
-
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      ErrorHandler.handleNetworkError(error, adminMessage);
-    }
-  }
-
-  // Save button: send textarea value to server, show server answer in textarea
-  const adminSaveButton = document.getElementById('adminSaveButton');
-  adminSaveButton.addEventListener('click', async function() {
-    const userIdToUpdate = adminProfileInfo.dataset.currentUserId;
-    if (!userIdToUpdate) {
-      adminMessage.showError('No user selected for saving.');
-      return;
+/**
+ * Admin Panel Controller
+ * Manages users and records administration
+ */
+class AdminController {
+    constructor() {
+        // Temporarily remove ProtectedPageController inheritance for debugging
+        // super({
+        //     authAPI: AuthAPI
+        //     // Temporarily disable role requirement until JWT role issue is fixed
+        //     // requiredRole: 'admin'
+        // });
+        
+        console.log('AdminController: Starting initialization...');
+        
+        this.initializeElements();
+        this.initializeDataTables();
+        this.initializeEventHandlers();
+        this.loadInitialData();
+        
+        console.log('AdminController: Initialization complete');
     }
 
-    let updatedData;
-    try {
-      const parsedData = JSON.parse(adminServerAnswerTextarea.value);
-      updatedData = {
-        user_id: userIdToUpdate,
-        base: parsedData.base,
-        profile: parsedData.profile
-      };
-    } catch (e) {
-      console.error('Invalid JSON format:', e);
-      adminMessage.showError('Invalid JSON format.');
-      return;
+    /**
+     * Initialize DOM elements
+     */
+    initializeElements() {
+        // User management elements
+        this.userListContainer = document.getElementById('userList');
+        this.profileEditTab = document.getElementById('profileEditTab');
+        this.adminProfileInfo = document.getElementById('adminProfileInfo');
+        this.adminMessageDiv = document.getElementById('adminMessageDiv');
+        this.adminServerAnswerTextarea = document.getElementById('adminServerAnswerTextarea');
+        this.adminSaveButton = document.getElementById('adminSaveButton');
+
+        // Record management elements
+        this.recordListContainer = document.getElementById('recordList');
+        this.recordEditTab = document.getElementById('recordEditTab');
+        this.recordInfo = document.getElementById('recordInfo');
+        this.recordTitle = document.getElementById('recordTitle');
+        this.recordDescription = document.getElementById('recordDescription');
+        this.recordContent = document.getElementById('recordContent');
+        this.recordTags = document.getElementById('recordTags');
+        this.recordCategories = document.getElementById('recordCategories');
+        this.recordIsPublished = document.getElementById('recordIsPublished');
+        this.recordMessageDiv = document.getElementById('recordMessageDiv');
+        this.newRecordButton = document.getElementById('newRecordButton');
+        this.recordSaveButton = document.getElementById('recordSaveButton');
+        this.recordDeleteButton = document.getElementById('recordDeleteButton');
+
+        // Message displays
+        this.adminMessage = new MessageDisplay(this.adminMessageDiv);
+        this.recordMessage = new MessageDisplay(this.recordMessageDiv);
+
+        // Tab elements
+        this.usersTabBtn = document.getElementById('users-tab');
+        this.recordsTabBtn = document.getElementById('records-tab');
     }
 
-    try {
-      loadingManager.setLoading(adminSaveButton, true, 'Saving...');
-      
-      // Note: Using ProfileAPI.update for profile updates
-      const response = await ProfileAPI.update(updatedData);
-      
-      console.log('adminSaveButton: result object:', response); // Added log
-      adminServerAnswerTextarea.value = JSON.stringify(response, null, 2);
-      
-      adminMessage.showApiResponse(response);
-      
-      if (response.success) {
-        // Instead of re-fetching all users, fetch only the updated user
-        fetchUserProfile(userIdToUpdate);
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      ErrorHandler.handleNetworkError(error, adminMessage);
-    } finally {
-      loadingManager.setLoading(adminSaveButton, false);
-    }
-  });
+    /**
+     * Initialize data tables
+     */
+    initializeDataTables() {
+        // Initialize users table
+        this.usersTable = new DataTable(this.userListContainer, {
+            columns: [
+                {
+                    key: 'base.login',
+                    title: 'Username',
+                    render: (value, row) => `
+                        <a href="#" class="text-decoration-none user-link" data-user='${JSON.stringify(row)}'>
+                            ${value || row.base?.login || 'N/A'}
+                        </a>
+                    `
+                },
+                {
+                    key: 'base.id',
+                    title: 'ID',
+                    render: (value, row) => value || row.base?.id || 'N/A'
+                }
+            ],
+            filterable: true,
+            sortable: true,
+            pagination: { enabled: true, pageSize: 10 }
+        });
 
-  // Record functions
-  async function fetchRecords() {
-    try {
-      // Check authentication
-      if (!AuthAPI.isAuthenticated()) {
-        recordMessage.showError('Not authenticated. Please log in.');
-        window.location.href = '/login';
-        return;
-      }
-
-      recordMessage.hide();
-      const response = await RecordsAPI.getAll();
-
-      if (!response.success) {
-        ErrorHandler.handleApiError(response, recordMessage);
-        return;
-      }
-
-      displayRecords(response.data || []);
-
-    } catch (error) {
-      console.error('Error fetching records:', error);
-      ErrorHandler.handleNetworkError(error, recordMessage);
-    }
-  }
-
-  function displayRecords(records) {
-    recordList.innerHTML = '';
-    if (records.length === 0) {
-      recordList.innerHTML = '<li class="list-group-item">No records found.</li>';
-      return;
-    }
-    records.forEach(record => {
-      const listItem = document.createElement('li');
-      listItem.classList.add('list-group-item', 'list-group-item-action');
-      listItem.textContent = record.title;
-      listItem.dataset.recordId = record.id;
-      listItem.addEventListener('click', () => displayRecordForEdit(record));
-      recordList.appendChild(listItem);
-    });
-  }
-
-  function displayRecordForEdit(record) {
-    recordEditTab.classList.remove('d-none');
-    recordInfo.dataset.currentRecordId = record.id || '';
-    recordTitle.value = record.title || '';
-    recordDescription.value = record.description || '';
-    recordContent.value = record.content || '';
-    recordTags.value = (record.tags && record.tags.join(', ')) || '';
-    recordCategories.value = (record.categories && record.categories.join(', ')) || '';
-    recordIsPublished.checked = record.is_published || false;
-    recordMessageDiv.textContent = '';
-    recordMessageDiv.classList.remove('text-success', 'text-danger');
-  }
-
-  newRecordButton.addEventListener('click', () => {
-    recordEditTab.classList.remove('d-none');
-    recordInfo.dataset.currentRecordId = ''; // Clear ID for new record
-    recordTitle.value = '';
-    recordDescription.value = '';
-    recordContent.value = '';
-    recordTags.value = '';
-    recordCategories.value = '';
-    recordIsPublished.checked = false;
-    recordMessageDiv.textContent = '';
-    recordMessageDiv.classList.remove('text-success', 'text-danger');
-  });
-
-  recordSaveButton.addEventListener('click', async () => {
-    const recordId = recordInfo.dataset.currentRecordId;
-    
-    // Check authentication
-    if (!AuthAPI.isAuthenticated()) {
-      recordMessage.showError('Not authenticated. Please log in.');
-      window.location.href = '/login';
-      return;
+        // Initialize records table  
+        this.recordsTable = new DataTable(this.recordListContainer, {
+            columns: [
+                {
+                    key: 'title',
+                    title: 'Title',
+                    render: (value, row) => `
+                        <a href="#" class="text-decoration-none record-link" data-record='${JSON.stringify(row)}'>
+                            ${value}
+                        </a>
+                    `
+                },
+                {
+                    key: 'is_published',
+                    title: 'Status',
+                    render: (value) => `
+                        <span class="badge ${value ? 'bg-success' : 'bg-secondary'}">
+                            ${value ? 'Published' : 'Draft'}
+                        </span>
+                    `
+                }
+            ],
+            filterable: true,
+            sortable: true,
+            pagination: { enabled: true, pageSize: 10 }
+        });
     }
 
-    const recordData = {
-      title: recordTitle.value,
-      description: recordDescription.value,
-      content: recordContent.value,
-      tags: recordTags.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
-      categories: recordCategories.value.split(',').map(cat => cat.trim()).filter(cat => cat.length > 0),
-      is_published: recordIsPublished.checked,
-      // authorId will be set on the backend based on the authenticated user
-    };
+    /**
+     * Initialize event handlers
+     */
+    initializeEventHandlers() {
+        // Tab switching logic
+        this.usersTabBtn.addEventListener('shown.bs.tab', () => this.loadUsers());
+        this.recordsTabBtn.addEventListener('shown.bs.tab', () => this.loadRecords());
 
-    try {
-      loadingManager.setLoading(recordSaveButton, true, 'Saving...');
-      
-      let response;
-      if (recordId) {
-        // Update existing record
-        response = await RecordsAPI.update(recordId, recordData);
-      } else {
-        // Create new record
-        response = await RecordsAPI.create(recordData);
-      }
+        // User table interactions
+        this.userListContainer.addEventListener('click', (e) => {
+            const userLink = e.target.closest('.user-link');
+            if (userLink) {
+                e.preventDefault();
+                const userData = JSON.parse(userLink.dataset.user);
+                this.displayUserProfile(userData);
+            }
+        });
 
-      recordMessage.showApiResponse(response);
-      
-      if (response.success) {
-        fetchRecords(); // Refresh the list
-        if (!recordId && response.data?.id) { // If new record, set its ID for further edits
-          recordInfo.dataset.currentRecordId = response.data.id;
-        }
-      }
-    } catch (error) {
-      console.error('Error saving record:', error);
-      ErrorHandler.handleNetworkError(error, recordMessage);
-    } finally {
-      loadingManager.setLoading(recordSaveButton, false);
-    }
-  });
+        // Record table interactions
+        this.recordListContainer.addEventListener('click', (e) => {
+            const recordLink = e.target.closest('.record-link');
+            if (recordLink) {
+                e.preventDefault();
+                const recordData = JSON.parse(recordLink.dataset.record);
+                this.displayRecordForEdit(recordData);
+            }
+        });
 
-  recordDeleteButton.addEventListener('click', async () => {
-    const recordId = recordInfo.dataset.currentRecordId;
-    if (!recordId) {
-      recordMessage.showError('No record selected for deletion.');
-      return;
+        // Form handlers
+        this.adminSaveButton.addEventListener('click', () => this.handleUserSave());
+        this.newRecordButton.addEventListener('click', () => this.handleNewRecord());
+        this.recordSaveButton.addEventListener('click', () => this.handleRecordSave());
+        this.recordDeleteButton.addEventListener('click', () => this.handleRecordDelete());
     }
 
-    if (!confirm('Are you sure you want to delete this record?')) {
-      return;
+    /**
+     * Load initial data based on active tab
+     */
+    loadInitialData() {
+        // Load users by default
+        this.loadUsers();
+        this.checkUrlForRecordId();
     }
 
-    // Check authentication
-    if (!AuthAPI.isAuthenticated()) {
-      recordMessage.showError('Not authenticated. Please log in.');
-      window.location.href = '/login';
-      return;
-    }
-
-    try {
-      loadingManager.setLoading(recordDeleteButton, true, 'Deleting...');
-      
-      const response = await RecordsAPI.delete(recordId);
-      
-      recordMessage.showApiResponse(response);
-      
-      if (response.success) {
-        recordEditTab.classList.add('d-none'); // Hide edit form
-        fetchRecords(); // Refresh the list
-      }
-    } catch (error) {
-      console.error('Error deleting record:', error);
-      ErrorHandler.handleNetworkError(error, recordMessage);
-    } finally {
-      loadingManager.setLoading(recordDeleteButton, false);
-    }
-  });
-
-  // Initial fetches based on active tab
-  // This assumes the users tab is active by default
-  fetchUsers();
-
-  // Function to check URL for record ID and open for edit
-  async function checkUrlForRecordId() {
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(hash.indexOf('?') + 1));
-    const editRecordId = params.get('editRecordId');
-
-    if (editRecordId) {
-      // Activate the records tab
-      const recordsTab = new bootstrap.Tab(recordsTabBtn);
-      recordsTab.show();
-
-      // Wait for the tab content to be shown before fetching the record
-      recordsTabBtn.addEventListener('shown.bs.tab', async () => {
+    /**
+     * Load users and populate the data table
+     */
+    async loadUsers() {
         try {
-          const response = await RecordsAPI.getById(editRecordId);
-          if (!response.success) {
-            ErrorHandler.handleApiError(response, recordMessage);
-            return;
-          }
-          displayRecordForEdit(response.data);
-        } catch (error) {
-          console.error('Error fetching record for edit:', error);
-          ErrorHandler.handleNetworkError(error, recordMessage);
-        }
-      }, { once: true }); // Use { once: true } to remove the listener after it fires
-    }
-  }
+            // Check authentication
+            if (!AuthAPI.isAuthenticated()) {
+                this.adminMessage.showError('Not authenticated. Please log in.');
+                window.location.href = '/login';
+                return;
+            }
 
-  // Call the function on page load
-  checkUrlForRecordId();
+            this.adminMessage.hide();
+            const response = await AdminAPI.getUsers();
+
+            if (!response.success) {
+                errorHandler.handleApiError(response, this.adminMessage);
+                return;
+            }
+
+            console.log('Users response:', response);
+            console.log('Users response.data type:', typeof response.data);
+            console.log('Users response.data:', response.data);
+            
+            let users = [];
+            if (Array.isArray(response.data)) {
+                users = response.data;
+            } else if (response.data && typeof response.data === 'object') {
+                // If data is an object with an array property, extract it
+                if (Array.isArray(response.data.users)) {
+                    users = response.data.users;
+                } else if (Array.isArray(response.data.data)) {
+                    users = response.data.data;
+                } else {
+                    // Convert object to array if needed
+                    users = Object.values(response.data);
+                }
+            }
+            
+            console.log('Final users array:', users);
+            console.log('Users array length:', users.length);
+            this.usersTable.updateData(users);
+
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            errorHandler.handleNetworkError(error, this.adminMessage);
+        }
+    }
+
+    /**
+     * Load records and populate the data table
+     */
+    async loadRecords() {
+        try {
+            // Check authentication
+            if (!AuthAPI.isAuthenticated()) {
+                this.recordMessage.showError('Not authenticated. Please log in.');
+                window.location.href = '/login';
+                return;
+            }
+
+            this.recordMessage.hide();
+            const response = await RecordsAPI.getAll();
+
+            if (!response.success) {
+                errorHandler.handleApiError(response, this.recordMessage);
+                return;
+            }
+
+            const records = response.data || [];
+            this.recordsTable.updateData(records);
+
+        } catch (error) {
+            console.error('Error fetching records:', error);
+            errorHandler.handleNetworkError(error, this.recordMessage);
+        }
+    }
+
+    /**
+     * Display user profile for editing
+     */
+    displayUserProfile(user) {
+        console.log('displayUserProfile: user object:', user);
+        this.profileEditTab.classList.remove('d-none');
+        this.adminServerAnswerTextarea.value = JSON.stringify(user, null, 2);
+        this.adminProfileInfo.dataset.currentUserId = user.base?.id || user.id;
+        this.adminMessage.hide();
+    }
+
+    /**
+     * Display record for editing
+     */
+    displayRecordForEdit(record) {
+        this.recordEditTab.classList.remove('d-none');
+        this.recordInfo.dataset.currentRecordId = record.id || '';
+        this.recordTitle.value = record.title || '';
+        this.recordDescription.value = record.description || '';
+        this.recordContent.value = record.content || '';
+        this.recordTags.value = (record.tags && record.tags.join(', ')) || '';
+        this.recordCategories.value = (record.categories && record.categories.join(', ')) || '';
+        this.recordIsPublished.checked = record.is_published || false;
+        this.recordMessage.hide();
+    }
+
+    /**
+     * Handle user profile save
+     */
+    async handleUserSave() {
+        const userIdToUpdate = this.adminProfileInfo.dataset.currentUserId;
+        if (!userIdToUpdate) {
+            this.adminMessage.showError('No user selected for saving.');
+            return;
+        }
+
+        let updatedData;
+        try {
+            const parsedData = JSON.parse(this.adminServerAnswerTextarea.value);
+            updatedData = {
+                user_id: userIdToUpdate,
+                base: parsedData.base,
+                profile: parsedData.profile
+            };
+        } catch (e) {
+            console.error('Invalid JSON format:', e);
+            this.adminMessage.showError('Invalid JSON format.');
+            return;
+        }
+
+        try {
+            loadingManager.setLoading(this.adminSaveButton, true, 'Saving...');
+            
+            const response = await ProfileAPI.update(updatedData);
+            
+            console.log('adminSaveButton: result object:', response);
+            this.adminServerAnswerTextarea.value = JSON.stringify(response, null, 2);
+            
+            this.adminMessage.showApiResponse(response);
+            
+            if (response.success) {
+                this.loadUsers(); // Refresh the users list
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            ErrorHandler.handleNetworkError(error, this.adminMessage);
+        } finally {
+            loadingManager.setLoading(this.adminSaveButton, false);
+        }
+    }
+
+    /**
+     * Handle new record creation
+     */
+    handleNewRecord() {
+        this.recordEditTab.classList.remove('d-none');
+        this.recordInfo.dataset.currentRecordId = '';
+        this.recordTitle.value = '';
+        this.recordDescription.value = '';
+        this.recordContent.value = '';
+        this.recordTags.value = '';
+        this.recordCategories.value = '';
+        this.recordIsPublished.checked = false;
+        this.recordMessage.hide();
+    }
+
+    /**
+     * Handle record save (create or update)
+     */
+    async handleRecordSave() {
+        const recordId = this.recordInfo.dataset.currentRecordId;
+        
+        // Check authentication
+        if (!AuthAPI.isAuthenticated()) {
+            this.recordMessage.showError('Not authenticated. Please log in.');
+            window.location.href = '/login';
+            return;
+        }
+
+        const recordData = {
+            title: this.recordTitle.value,
+            description: this.recordDescription.value,
+            content: this.recordContent.value,
+            tags: this.recordTags.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+            categories: this.recordCategories.value.split(',').map(cat => cat.trim()).filter(cat => cat.length > 0),
+            is_published: this.recordIsPublished.checked,
+        };
+
+        try {
+            loadingManager.setLoading(this.recordSaveButton, true, 'Saving...');
+            
+            let response;
+            if (recordId) {
+                response = await RecordsAPI.update(recordId, recordData);
+            } else {
+                response = await RecordsAPI.create(recordData);
+            }
+
+            this.recordMessage.showApiResponse(response);
+            
+            if (response.success) {
+                this.loadRecords(); // Refresh the list
+                if (!recordId && response.data?.id) {
+                    this.recordInfo.dataset.currentRecordId = response.data.id;
+                }
+            }
+        } catch (error) {
+            console.error('Error saving record:', error);
+            ErrorHandler.handleNetworkError(error, this.recordMessage);
+        } finally {
+            loadingManager.setLoading(this.recordSaveButton, false);
+        }
+    }
+
+    /**
+     * Handle record deletion
+     */
+    async handleRecordDelete() {
+        const recordId = this.recordInfo.dataset.currentRecordId;
+        if (!recordId) {
+            this.recordMessage.showError('No record selected for deletion.');
+            return;
+        }
+
+        if (!confirm('Are you sure you want to delete this record?')) {
+            return;
+        }
+
+        // Check authentication
+        if (!AuthAPI.isAuthenticated()) {
+            this.recordMessage.showError('Not authenticated. Please log in.');
+            window.location.href = '/login';
+            return;
+        }
+
+        try {
+            loadingManager.setLoading(this.recordDeleteButton, true, 'Deleting...');
+            
+            const response = await RecordsAPI.delete(recordId);
+            
+            this.recordMessage.showApiResponse(response);
+            
+            if (response.success) {
+                this.recordEditTab.classList.add('d-none');
+                this.loadRecords(); // Refresh the list
+            }
+        } catch (error) {
+            console.error('Error deleting record:', error);
+            ErrorHandler.handleNetworkError(error, this.recordMessage);
+        } finally {
+            loadingManager.setLoading(this.recordDeleteButton, false);
+        }
+    }
+
+    /**
+     * Check URL for record ID and open for edit
+     */
+    async checkUrlForRecordId() {
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.substring(hash.indexOf('?') + 1));
+        const editRecordId = params.get('editRecordId');
+
+        if (editRecordId) {
+            // Activate the records tab
+            const recordsTab = new bootstrap.Tab(this.recordsTabBtn);
+            recordsTab.show();
+
+            // Wait for the tab content to be shown before fetching the record
+            this.recordsTabBtn.addEventListener('shown.bs.tab', async () => {
+                try {
+                    const response = await RecordsAPI.getById(editRecordId);
+                    if (!response.success) {
+                        ErrorHandler.handleApiError(response, this.recordMessage);
+                        return;
+                    }
+                    this.displayRecordForEdit(response.data);
+                } catch (error) {
+                    console.error('Error fetching record for edit:', error);
+                    ErrorHandler.handleNetworkError(error, this.recordMessage);
+                }
+            }, { once: true });
+        }
+    }
+}
+
+// Initialize the admin controller when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Debug authentication before initializing controller
+    console.log('=== Admin Panel Authentication Debug ===');
+    console.log('Token from localStorage:', localStorage.getItem('token'));
+    console.log('AuthAPI.isAuthenticated():', AuthAPI.isAuthenticated());
+    
+    try {
+        const userRoles = AuthAPI.getUserRole();
+        console.log('User roles:', userRoles);
+        console.log('Has admin role:', userRoles.includes('admin'));
+    } catch (error) {
+        console.log('Error getting user roles:', error);
+    }
+    
+    console.log('=== End Debug ===');
+    
+    // Small delay to see debug output before potential redirect
+    setTimeout(() => {
+        new AdminController();
+    }, 100);
 });
+

@@ -1,5 +1,8 @@
 import { ProfileAPI, AuthAPI } from '../js/api-client.js';
-import { MessageDisplay, loadingManager, ErrorHandler } from '../js/ui-utils.js';
+import { MessageDisplay, loadingManager, ErrorHandler, errorHandler } from '../js/ui-utils.js';
+
+// Make error handler available globally
+window.errorHandler = errorHandler;
 
 document.addEventListener('DOMContentLoaded', function() {
   const messageDiv = document.getElementById('messageDiv');

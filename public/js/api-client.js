@@ -3,6 +3,8 @@
  * Handles standardized backend responses and provides consistent error handling
  */
 
+import { jwtDecode } from './jwt-decode.js';
+
 /**
  * Standard API Response interface matching backend
  */
@@ -226,7 +228,7 @@ class ApiClient {
             // Basic JWT validation (check if it's not expired)
             const payload = JSON.parse(atob(token.split('.')[1]));
             return payload.exp * 1000 > Date.now();
-        } catch {
+        } catch (error) {
             return false;
         }
     }
@@ -252,6 +254,42 @@ class ApiClient {
     logout() {
         this.setAuthToken(null);
         window.location.href = '/login';
+    }
+
+    /**
+     * Make HTTP request with enhanced error handling
+     */
+    async makeRequestWithErrorHandling(url, options = {}, messageDisplay = null, retryCallback = null) {
+        const operationKey = `${options.method || 'GET'}_${url}`;
+        
+        try {
+            const response = await this.makeRequest(url, options);
+            
+            // Clear retry count on success
+            if (window.errorHandler) {
+                window.errorHandler.clearRetries(operationKey);
+            }
+            
+            return response;
+            
+        } catch (error) {
+            console.error('API Request Error:', error);
+            
+            // Use enhanced error handler if available
+            if (window.errorHandler && messageDisplay) {
+                window.errorHandler.handleNetworkError(error, messageDisplay, retryCallback, operationKey);
+            } else if (messageDisplay) {
+                // Fallback error handling
+                messageDisplay.showError('Network error occurred. Please try again.');
+            }
+            
+            // Return error response format
+            return {
+                success: false,
+                message: error.message || 'Network error occurred',
+                errors: [error.message || 'Network error occurred']
+            };
+        }
     }
 }
 
@@ -282,6 +320,25 @@ const AuthAPI = {
 
     isAuthenticated() {
         return apiClient.isAuthenticated();
+    },
+
+    getUserRole() {
+        const token = apiClient.getAuthToken();
+        if (!token) return [];
+        
+        try {
+            const decoded = jwtDecode(token);
+            console.log('getUserRole: decoded token:', decoded);
+            console.log('getUserRole: roles field:', decoded.roles);
+            console.log('getUserRole: groups field:', decoded.groups);
+            // Check both 'roles' and 'groups' fields for compatibility
+            const roles = decoded.roles || decoded.groups || [];
+            console.log('getUserRole: returning roles:', roles);
+            return roles;
+        } catch (error) {
+            console.error('Error decoding JWT token:', error);
+            return [];
+        }
     }
 };
 

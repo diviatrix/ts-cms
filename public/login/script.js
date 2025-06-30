@@ -1,129 +1,155 @@
 import { AuthAPI } from '../js/api-client.js';
-import { MessageDisplay, FormValidator, loadingManager } from '../js/ui-utils.js';
+import { AuthPageController, FormHandler } from '../js/shared-components.js';
+import { MessageDisplay, ErrorHandler } from '../js/ui-utils.js';
+
+/**
+ * Login Page Controller
+ */
+class LoginPageController extends AuthPageController {
+  constructor() {
+    super({
+      authAPI: AuthAPI,
+      messageDiv: document.getElementById('messageDiv')
+    });
+    
+    this.initializeElements();
+    this.setupFormHandlers();
+    this.setupInputValidation();
+  }
+
+  initializeElements() {
+    this.loginInput = document.getElementById('loginInput');
+    this.passwordInput = document.getElementById('passwordInput');
+    this.emailInput = document.getElementById('emailInput');
+    this.loginButton = document.getElementById('loginButton');
+    this.registerButton = document.getElementById('registerButton');
+
+    // Initially disable buttons
+    this.loginButton.disabled = true;
+    this.registerButton.disabled = true;
+  }
+
+  setupFormHandlers() {
+    // Login form handler
+    this.loginFormHandler = new FormHandler(document.body, {
+      messageDisplay: this.message,
+      validationRules: {
+        login: [{ type: 'required', message: 'Login is required' }],
+        password: [{ type: 'required', message: 'Password is required' }]
+      }
+    });
+
+    // Register form handler  
+    this.registerFormHandler = new FormHandler(document.body, {
+      messageDisplay: this.message,
+      validationRules: {
+        login: [
+          { type: 'required', message: 'Login is required' },
+          { type: 'minLength', value: 3, message: 'Login must be at least 3 characters long' },
+          { type: 'maxLength', value: 50, message: 'Login must be no more than 50 characters long' }
+        ],
+        password: [
+          { type: 'required', message: 'Password is required' },
+          { type: 'minLength', value: 6, message: 'Password must be at least 6 characters long' }
+        ],
+        email: [
+          { type: 'required', message: 'Email is required' },
+          { type: 'email', message: 'Please enter a valid email address' }
+        ]
+      }
+    });
+
+    // Set up button event listeners
+    this.loginButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.handleLogin();
+    });
+
+    this.registerButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.handleRegister();
+    });
+  }
+
+  setupInputValidation() {
+    const updateButtonStates = () => {
+      const loginValue = this.loginInput.value.trim();
+      const passwordValue = this.passwordInput.value.trim();
+      const emailValue = this.emailInput.value.trim();
+
+      this.loginButton.disabled = !(loginValue && passwordValue);
+      this.registerButton.disabled = !(loginValue && passwordValue && emailValue);
+    };
+
+    [this.loginInput, this.passwordInput, this.emailInput].forEach(input => {
+      if (input) {
+        input.setAttribute('name', input.id.replace('Input', ''));
+        input.addEventListener('input', updateButtonStates);
+      }
+    });
+  }
+
+  async handleLogin() {
+    const isValid = this.loginFormHandler.validateForm();
+    if (!isValid) return;
+
+    const attemptLogin = async () => {
+      const response = await AuthAPI.login(
+        this.loginInput.value.trim(),
+        this.passwordInput.value.trim()
+      );
+      
+      if (response.success) {
+        this.handleAuthSuccess();
+      } else {
+        this.handleAuthFailure(response);
+      }
+    };
+
+    return this.safeApiCall(attemptLogin, {
+      loadingElements: [this.loginButton],
+      retryCallback: attemptLogin,
+      operationKey: 'login_attempt'
+    });
+  }
+
+  async handleRegister() {
+    const isValid = this.registerFormHandler.validateForm();
+    if (!isValid) return;
+
+    const response = await this.safeApiCall(
+      () => AuthAPI.register(
+        this.loginInput.value.trim(),
+        this.emailInput.value.trim(),
+        this.passwordInput.value.trim()
+      ),
+      {
+        loadingElements: [this.registerButton],
+        successCallback: () => {
+          ErrorHandler.showToast('Registration successful!', 'success');
+          this.clearForm();
+        }
+      }
+    );
+
+    return response;
+  }
+
+  clearForm() {
+    [this.loginInput, this.passwordInput, this.emailInput].forEach(input => {
+      if (input) {
+        input.value = '';
+        input.classList.remove('is-valid', 'is-invalid');
+      }
+    });
+    
+    document.querySelectorAll('.field-error').forEach(error => error.remove());
+    this.loginButton.disabled = true;
+    this.registerButton.disabled = true;
+  }
+}
 
 document.addEventListener('DOMContentLoaded', function() {
-  const messageDiv = document.getElementById('messageDiv');
-  const message = new MessageDisplay(messageDiv);
+  new LoginPageController();
 
-  const loginInput = document.getElementById('loginInput');
-  const passwordInput = document.getElementById('passwordInput');
-  const emailInput = document.getElementById('emailInput');
-  const loginButton = document.getElementById('loginButton');
-  const registerButton = document.getElementById('registerButton');
-
-  // Initially disable buttons
-  loginButton.disabled = true;
-  registerButton.disabled = true;
-
-  // Check for token on page load and redirect if found
-  if (AuthAPI.isAuthenticated()) {
-    window.location.href = '/'; // Redirect to main page
-    return; // Stop further execution of this script
-  }
-
-  function checkInputs() {
-    const loginValue = loginInput.value.trim();
-    const passwordValue = passwordInput.value.trim();
-    const emailValue = emailInput.value.trim();
-
-    loginButton.disabled = !(loginValue && passwordValue);
-    registerButton.disabled = !(loginValue && passwordValue && emailValue);
-  }
-
-  loginInput.addEventListener('input', checkInputs);
-  passwordInput.addEventListener('input', checkInputs);
-  emailInput.addEventListener('input', checkInputs);
-
-  registerButton.addEventListener('click', async function(event) {
-    event.preventDefault();
-    
-    // Clear previous messages
-    message.hide();
-
-    // Validate inputs
-    const requiredFields = [
-      { element: loginInput, name: 'Login' },
-      { element: passwordInput, name: 'Password' },
-      { element: emailInput, name: 'Email' }
-    ];
-
-    const requiredErrors = FormValidator.validateRequired(requiredFields);
-    const emailErrors = FormValidator.validateEmail(emailInput);
-    const passwordErrors = FormValidator.validatePassword(passwordInput);
-
-    const allErrors = [...requiredErrors, ...emailErrors, ...passwordErrors];
-    
-    if (allErrors.length > 0) {
-      message.showError(allErrors.join(', '));
-      return;
-    }
-
-    // Set loading state
-    loadingManager.setLoading(registerButton, true, 'Registering...');
-
-    try {
-      const response = await AuthAPI.register(
-        loginInput.value.trim(),
-        emailInput.value.trim(),
-        passwordInput.value.trim()
-      );
-
-      message.showApiResponse(response);
-      
-      if (response.success) {
-        // Clear form on success
-        loginInput.value = '';
-        passwordInput.value = '';
-        emailInput.value = '';
-        checkInputs();
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      message.showError('An error occurred during registration. Please try again.');
-    } finally {
-      loadingManager.setLoading(registerButton, false);
-    }
-  });
-
-  loginButton.addEventListener('click', async function(event) {
-    event.preventDefault();
-    
-    // Clear previous messages
-    message.hide();
-
-    // Validate inputs
-    const requiredFields = [
-      { element: loginInput, name: 'Login' },
-      { element: passwordInput, name: 'Password' }
-    ];
-
-    const requiredErrors = FormValidator.validateRequired(requiredFields);
-    
-    if (requiredErrors.length > 0) {
-      message.showError(requiredErrors.join(', '));
-      return;
-    }
-
-    // Set loading state
-    loadingManager.setLoading(loginButton, true, 'Logging in...');
-
-    try {
-      const response = await AuthAPI.login(
-        loginInput.value.trim(),
-        passwordInput.value.trim()
-      );
-
-      message.showApiResponse(response);
-      
-      if (response.success) {
-        // Redirect to main page
-        window.location.href = '/';
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      message.showError('An error occurred during login. Please try again.');
-    } finally {
-      loadingManager.setLoading(loginButton, false);
-    }
-  });
 });
