@@ -1,7 +1,7 @@
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
 import { RecordsAPI, AuthAPI } from '../js/api-client.js';
 import { jwtDecode } from '../js/jwt-decode.js';
-import { ErrorHandler, errorHandler } from '../js/ui-utils.js';
+import { MessageDisplay, ErrorHandler, errorHandler } from '../js/ui-utils.js';
 
 // Make error handler available globally
 window.errorHandler = errorHandler;
@@ -13,6 +13,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   const recordContent = document.getElementById('recordContent');
   const recordAuthor = document.getElementById('recordAuthor');
   const recordDate = document.getElementById('recordDate');
+  
+  // Create message display for better user feedback
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'mt-3';
+  document.querySelector('.container').insertBefore(messageDiv, document.querySelector('.card'));
+  const message = new MessageDisplay(messageDiv);
 
   const urlParams = new URLSearchParams(window.location.search);
   const recordId = urlParams.get('id');
@@ -20,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (!recordId) {
     recordTitle.textContent = 'Record Not Found';
     recordDescription.textContent = 'No record ID provided.';
+    message.showError('No record ID provided in the URL.');
     return;
   }
 
@@ -30,12 +37,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (response.errors?.some(err => err.includes('not found'))) {
         recordTitle.textContent = 'Record Not Found';
         recordDescription.textContent = 'The requested record does not exist.';
-        ErrorHandler.showToast('Record not found', 'warning');
       } else {
         recordTitle.textContent = 'Error Loading Record';
         recordDescription.textContent = response.message || 'An error occurred while loading the record.';
-        ErrorHandler.showToast('Failed to load record', 'error');
       }
+      message.showApiResponse(response);
       return;
     }
 
@@ -68,8 +74,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.error('Error fetching record:', error);
     recordTitle.textContent = 'Network Error';
     recordDescription.textContent = 'Unable to load the record. Please check your connection and try again.';
-    ErrorHandler.showToast('Network error occurred', 'error');
-    recordTitle.textContent = 'Error Loading Record';
-    recordDescription.textContent = 'An error occurred while loading the record.';
+    errorHandler.handleNetworkError(error, message);
   }
 });

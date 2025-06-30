@@ -1,6 +1,14 @@
-import { AdminAPI, ProfileAPI, RecordsAPI, AuthAPI } from '../js/api-client.js';
-import { MessageDisplay, loadingManager, ErrorHandler, errorHandler } from '../js/ui-utils.js';
-import { ProtectedPageController, DataTable } from '../js/shared-components.js';
+import { AdminAPI, AuthAPI, RecordsAPI, ProfileAPI } from '../js/api-client.js';
+import { DataTable } from '../js/shared-components.js';
+import { 
+    MessageDisplay, 
+    loadingManager, 
+    ErrorHandler, 
+    errorHandler, 
+    keyboardShortcuts, 
+    ConfirmationDialog 
+} from '../js/ui-utils.js';
+import { jwtDecode } from '../js/jwt-decode.js';
 
 /**
  * Admin Panel Controller
@@ -20,6 +28,7 @@ class AdminController {
         this.initializeElements();
         this.initializeDataTables();
         this.initializeEventHandlers();
+        this.setupKeyboardShortcuts();
         this.loadInitialData();
         
         console.log('AdminController: Initialization complete');
@@ -173,17 +182,18 @@ class AdminController {
             }
 
             this.adminMessage.hide();
+            
+            // Show loading state
+            this.usersTable.showLoading('Loading users...');
+            
             const response = await AdminAPI.getUsers();
 
             if (!response.success) {
+                this.usersTable.showError('Failed to load users');
                 errorHandler.handleApiError(response, this.adminMessage);
                 return;
             }
 
-            console.log('Users response:', response);
-            console.log('Users response.data type:', typeof response.data);
-            console.log('Users response.data:', response.data);
-            
             let users = [];
             if (Array.isArray(response.data)) {
                 users = response.data;
@@ -199,12 +209,15 @@ class AdminController {
                 }
             }
             
-            console.log('Final users array:', users);
-            console.log('Users array length:', users.length);
-            this.usersTable.updateData(users);
+            if (users.length === 0) {
+                this.usersTable.showEmpty('No users found');
+            } else {
+                this.usersTable.updateData(users);
+            }
 
         } catch (error) {
             console.error('Error fetching users:', error);
+            this.usersTable.showError('Network error occurred');
             errorHandler.handleNetworkError(error, this.adminMessage);
         }
     }
@@ -222,18 +235,29 @@ class AdminController {
             }
 
             this.recordMessage.hide();
+            
+            // Show loading state
+            this.recordsTable.showLoading('Loading records...');
+            
             const response = await RecordsAPI.getAll();
 
             if (!response.success) {
+                this.recordsTable.showError('Failed to load records');
                 errorHandler.handleApiError(response, this.recordMessage);
                 return;
             }
 
             const records = response.data || [];
-            this.recordsTable.updateData(records);
+            
+            if (records.length === 0) {
+                this.recordsTable.showEmpty('No records found');
+            } else {
+                this.recordsTable.updateData(records);
+            }
 
         } catch (error) {
             console.error('Error fetching records:', error);
+            this.recordsTable.showError('Network error occurred');
             errorHandler.handleNetworkError(error, this.recordMessage);
         }
     }
@@ -299,11 +323,14 @@ class AdminController {
             this.adminMessage.showApiResponse(response);
             
             if (response.success) {
-                this.loadUsers(); // Refresh the users list
+                // Show success feedback and refresh the users list
+                setTimeout(() => {
+                    this.loadUsers();
+                }, 1000); // Small delay to let user see the success message
             }
         } catch (error) {
             console.error('Error updating profile:', error);
-            ErrorHandler.handleNetworkError(error, this.adminMessage);
+            errorHandler.handleNetworkError(error, this.adminMessage);
         } finally {
             loadingManager.setLoading(this.adminSaveButton, false);
         }
@@ -359,14 +386,17 @@ class AdminController {
             this.recordMessage.showApiResponse(response);
             
             if (response.success) {
-                this.loadRecords(); // Refresh the list
+                // Show success feedback and refresh the list
+                setTimeout(() => {
+                    this.loadRecords();
+                }, 1000); // Small delay to let user see the success message
                 if (!recordId && response.data?.id) {
                     this.recordInfo.dataset.currentRecordId = response.data.id;
                 }
             }
         } catch (error) {
             console.error('Error saving record:', error);
-            ErrorHandler.handleNetworkError(error, this.recordMessage);
+            errorHandler.handleNetworkError(error, this.recordMessage);
         } finally {
             loadingManager.setLoading(this.recordSaveButton, false);
         }
@@ -382,9 +412,15 @@ class AdminController {
             return;
         }
 
-        if (!confirm('Are you sure you want to delete this record?')) {
-            return;
-        }
+        const recordTitle = this.recordTitle.value || 'Untitled';
+        const confirmed = await ConfirmationDialog.show({
+            title: 'Delete Record',
+            message: `Are you sure you want to delete this record?\n\nThis action cannot be undone.\n\nRecord: ${recordTitle}`,
+            confirmText: 'Delete',
+            confirmClass: 'btn-danger'
+        });
+
+        if (!confirmed) return;
 
         // Check authentication
         if (!AuthAPI.isAuthenticated()) {
@@ -402,11 +438,14 @@ class AdminController {
             
             if (response.success) {
                 this.recordEditTab.classList.add('d-none');
-                this.loadRecords(); // Refresh the list
+                // Show success feedback and refresh the list
+                setTimeout(() => {
+                    this.loadRecords();
+                }, 1000); // Small delay to let user see the success message
             }
         } catch (error) {
             console.error('Error deleting record:', error);
-            ErrorHandler.handleNetworkError(error, this.recordMessage);
+            errorHandler.handleNetworkError(error, this.recordMessage);
         } finally {
             loadingManager.setLoading(this.recordDeleteButton, false);
         }
@@ -436,10 +475,53 @@ class AdminController {
                     this.displayRecordForEdit(response.data);
                 } catch (error) {
                     console.error('Error fetching record for edit:', error);
-                    ErrorHandler.handleNetworkError(error, this.recordMessage);
+                    errorHandler.handleNetworkError(error, this.recordMessage);
                 }
             }, { once: true });
         }
+    }
+
+    /**
+     * Setup keyboard shortcuts for admin panel
+     */
+    setupKeyboardShortcuts() {
+        // Refresh data
+        keyboardShortcuts.register('f5', () => {
+            this.loadInitialData();
+        }, 'Refresh all data');
+
+        keyboardShortcuts.register('ctrl+r', () => {
+            this.loadInitialData();
+        }, 'Refresh all data');
+
+        // Navigation shortcuts
+        keyboardShortcuts.register('ctrl+1', () => {
+            document.querySelector('[data-bs-target="#users"]')?.click();
+        }, 'Switch to Users tab');
+
+        keyboardShortcuts.register('ctrl+2', () => {
+            document.querySelector('[data-bs-target="#records"]')?.click();
+        }, 'Switch to Records tab');
+
+        keyboardShortcuts.register('ctrl+3', () => {
+            document.querySelector('[data-bs-target="#profile"]')?.click();
+        }, 'Switch to Profile tab');
+
+        // Help shortcut
+        keyboardShortcuts.register('f1', () => {
+            keyboardShortcuts.showHelp();
+        }, 'Show keyboard shortcuts help');
+
+        keyboardShortcuts.register('ctrl+/', () => {
+            keyboardShortcuts.showHelp();
+        }, 'Show keyboard shortcuts help');
+
+        // Quick actions
+        keyboardShortcuts.register('ctrl+s', () => {
+            if (this.adminSaveButton && !this.adminSaveButton.disabled) {
+                this.adminSaveButton.click();
+            }
+        }, 'Save profile changes');
     }
 }
 

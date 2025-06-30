@@ -444,14 +444,243 @@ class AdvancedFormValidator extends FormValidator {
 }
 
 /**
- * Create global instances
+ * Keyboard Shortcuts Manager
  */
-const loadingManager = new LoadingManager();
-const errorHandler = new ErrorHandler();
+class KeyboardShortcuts {
+    constructor() {
+        this.shortcuts = new Map();
+        this.setupGlobalListeners();
+    }
+
+    /**
+     * Register a keyboard shortcut
+     * @param {string} key - Key combination (e.g., 'ctrl+s', 'alt+n')
+     * @param {Function} callback - Function to execute
+     * @param {string} description - Description for help text
+     */
+    register(key, callback, description = '') {
+        this.shortcuts.set(key.toLowerCase(), { callback, description });
+    }
+
+    /**
+     * Setup global keyboard listeners
+     */
+    setupGlobalListeners() {
+        document.addEventListener('keydown', (e) => {
+            const key = this.getKeyString(e);
+            const shortcut = this.shortcuts.get(key);
+            
+            if (shortcut && !this.isInputFocused()) {
+                e.preventDefault();
+                shortcut.callback(e);
+            }
+        });
+    }
+
+    /**
+     * Get key string from event
+     */
+    getKeyString(e) {
+        const parts = [];
+        if (e.ctrlKey) parts.push('ctrl');
+        if (e.altKey) parts.push('alt');
+        if (e.shiftKey) parts.push('shift');
+        parts.push(e.key.toLowerCase());
+        return parts.join('+');
+    }
+
+    /**
+     * Check if an input element is focused
+     */
+    isInputFocused() {
+        const activeElement = document.activeElement;
+        return activeElement && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.isContentEditable
+        );
+    }
+
+    /**
+     * Show help overlay with available shortcuts
+     */
+    showHelp() {
+        if (document.getElementById('shortcutsHelp')) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'shortcutsHelp';
+        overlay.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        overlay.style.zIndex = '9999';
+
+        const helpContent = document.createElement('div');
+        helpContent.className = 'bg-white p-4 rounded shadow-lg';
+        helpContent.style.maxWidth = '500px';
+        helpContent.style.maxHeight = '70vh';
+        helpContent.style.overflowY = 'auto';
+
+        let helpHTML = '<h5 class="mb-3">Keyboard Shortcuts</h5>';
+        this.shortcuts.forEach((shortcut, key) => {
+            if (shortcut.description) {
+                helpHTML += `<div class="mb-2"><kbd>${key}</kbd> - ${shortcut.description}</div>`;
+            }
+        });
+        helpHTML += '<div class="mt-3 text-center"><small class="text-muted">Press ESC to close</small></div>';
+
+        helpContent.innerHTML = helpHTML;
+        overlay.appendChild(helpContent);
+        document.body.appendChild(overlay);
+
+        // Close on ESC or click outside
+        const closeHelp = () => {
+            overlay.remove();
+        };
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeHelp();
+        });
+
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                closeHelp();
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
+    }
+}
 
 /**
- * Export utilities
+ * Auto-logout Manager
  */
+class AutoLogoutManager {
+    constructor(timeoutMinutes = 30) {
+        this.timeoutMinutes = timeoutMinutes;
+        this.timeoutId = null;
+        this.warningId = null;
+        this.setupActivityListeners();
+        this.resetTimer();
+    }
+
+    setupActivityListeners() {
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        events.forEach(event => {
+            document.addEventListener(event, () => this.resetTimer(), true);
+        });
+    }
+
+    resetTimer() {
+        // Clear existing timers
+        if (this.timeoutId) clearTimeout(this.timeoutId);
+        if (this.warningId) clearTimeout(this.warningId);
+
+        // Show warning 5 minutes before logout
+        this.warningId = setTimeout(() => {
+            this.showLogoutWarning();
+        }, (this.timeoutMinutes - 5) * 60 * 1000);
+
+        // Auto logout
+        this.timeoutId = setTimeout(() => {
+            this.performLogout();
+        }, this.timeoutMinutes * 60 * 1000);
+    }
+
+    showLogoutWarning() {
+        if (document.getElementById('logoutWarning')) return;
+
+        const warning = document.createElement('div');
+        warning.id = 'logoutWarning';
+        warning.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+        warning.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        warning.style.zIndex = '9999';
+
+        warning.innerHTML = `
+            <div class="bg-warning text-dark p-4 rounded shadow-lg text-center">
+                <h5><i class="fas fa-exclamation-triangle"></i> Session Expiring</h5>
+                <p>Your session will expire in 5 minutes due to inactivity.</p>
+                <button class="btn btn-primary me-2" onclick="this.parentElement.parentElement.remove()">
+                    Stay Logged In
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='/login'">
+                    Logout Now
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(warning);
+
+        // Auto-remove warning after 30 seconds if no action
+        setTimeout(() => {
+            if (document.getElementById('logoutWarning')) {
+                warning.remove();
+            }
+        }, 30000);
+    }
+
+    performLogout() {
+        // Clear token and redirect
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        window.location.href = '/login?reason=timeout';
+    }
+}
+
+/**
+ * Confirmation Dialog Utility
+ */
+class ConfirmationDialog {
+    static show(options = {}) {
+        const {
+            title = 'Confirm Action',
+            message = 'Are you sure?',
+            confirmText = 'Confirm',
+            cancelText = 'Cancel',
+            confirmClass = 'btn-primary',
+            cancelClass = 'btn-secondary'
+        } = options;
+
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            overlay.style.zIndex = '9999';
+
+            overlay.innerHTML = `
+                <div class="bg-white p-4 rounded shadow-lg" style="max-width: 400px;">
+                    <h5 class="mb-3">${title}</h5>
+                    <p class="mb-4">${message}</p>
+                    <div class="text-end">
+                        <button class="btn ${cancelClass} me-2" data-action="cancel">${cancelText}</button>
+                        <button class="btn ${confirmClass}" data-action="confirm">${confirmText}</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            overlay.addEventListener('click', (e) => {
+                const action = e.target.dataset.action;
+                if (action === 'confirm') {
+                    resolve(true);
+                    overlay.remove();
+                } else if (action === 'cancel' || e.target === overlay) {
+                    resolve(false);
+                    overlay.remove();
+                }
+            });
+
+            // Focus confirm button
+            overlay.querySelector('[data-action="confirm"]').focus();
+        });
+    }
+}
+
+// Create global instances
+const loadingManager = new LoadingManager();
+const errorHandler = new ErrorHandler();
+const keyboardShortcuts = new KeyboardShortcuts();
+const autoLogoutManager = new AutoLogoutManager();
+
+// Export utilities
 export { 
     MessageDisplay, 
     LoadingManager, 
@@ -459,5 +688,8 @@ export {
     ErrorHandler,
     AdvancedFormValidator,
     loadingManager,
-    errorHandler 
+    errorHandler,
+    keyboardShortcuts,
+    autoLogoutManager,
+    ConfirmationDialog
 };

@@ -55,6 +55,30 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // Add real-time JSON validation to textarea
+  if (responseBox) {
+    responseBox.addEventListener('input', function() {
+      const jsonValidationDiv = document.getElementById('jsonValidation') || createJsonValidationDiv();
+      
+      try {
+        const parsedData = JSON.parse(responseBox.value);
+        jsonValidationDiv.innerHTML = '<div class="text-success small"><i class="fas fa-check-circle"></i> Valid JSON format</div>';
+        saveButton.disabled = false;
+      } catch (e) {
+        jsonValidationDiv.innerHTML = `<div class="text-danger small"><i class="fas fa-exclamation-triangle"></i> Invalid JSON: ${e.message}</div>`;
+        saveButton.disabled = true;
+      }
+    });
+  }
+
+  function createJsonValidationDiv() {
+    const div = document.createElement('div');
+    div.id = 'jsonValidation';
+    div.className = 'mt-2';
+    responseBox.parentNode.appendChild(div);
+    return div;
+  }
+
   // Save button: send textarea value to server
   if (saveButton) {
     saveButton.addEventListener('click', async function() {
@@ -63,30 +87,23 @@ document.addEventListener('DOMContentLoaded', function() {
         parsedData = JSON.parse(responseBox.value);
       } catch (e) {
         console.error('Invalid JSON format:', e);
-        message.showError('Invalid JSON format.');
+        message.showError('Invalid JSON format. Please check the syntax and try again.');
         return;
       }
 
-      console.log('Profile save - parsedData:', parsedData);
-      console.log('Profile save - parsedData keys:', Object.keys(parsedData));
-      
       // Extract the profile data from the API response format
       const profileData = parsedData.data || parsedData;
-      console.log('Profile save - profileData:', profileData);
 
       // Structure the data correctly for the ProfileAPI - just send the profile data directly
       const updatedData = {
         profile: profileData
       };
 
-      console.log('Profile save - updatedData:', updatedData);
-
       try {
         loadingManager.setLoading(saveButton, true, 'Saving...');
         
         const response = await ProfileAPI.update(updatedData);
         
-        console.log('Profile save - response:', response);
         message.showApiResponse(response);
         
         if (response.success) {

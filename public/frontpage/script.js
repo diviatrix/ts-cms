@@ -1,8 +1,29 @@
 import { RecordsAPI, AuthAPI } from '../js/api-client.js';
+import { MessageDisplay, errorHandler } from '../js/ui-utils.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 
 document.addEventListener('DOMContentLoaded', function() {
   const postsGrid = document.getElementById('postsGrid');
+  
+  // Create message display for user feedback
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'mt-3';
+  messageDiv.id = 'frontpageMessages';
+  
+  // Find the appropriate container and insert the message div
+  const container = document.querySelector('.container-fluid') || document.querySelector('.container');
+  if (container && postsGrid) {
+    const h1Element = container.querySelector('h1');
+    if (h1Element) {
+      // Insert after the h1 element
+      h1Element.insertAdjacentElement('afterend', messageDiv);
+    } else {
+      // Fallback: insert before postsGrid
+      postsGrid.parentElement.insertBefore(messageDiv, postsGrid);
+    }
+  }
+  
+  const message = new MessageDisplay(messageDiv);
 
   async function fetchAndRenderRecords() {
     try {
@@ -10,14 +31,18 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (!response.success) {
         console.error('Error fetching records:', response);
-        postsGrid.innerHTML = '<p class="text-danger">Failed to load posts. Please try again later.</p>';
+        postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
+        message.showApiResponse(response);
         return;
       }
       
+      // Hide any previous error messages on success
+      message.hide();
       renderRecords(response.data || []);
     } catch (error) {
       console.error('Error fetching records:', error);
-      postsGrid.innerHTML = '<p class="text-danger">Failed to load posts. Please try again later.</p>';
+      postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
+      errorHandler.handleNetworkError(error, message);
     }
   }
 

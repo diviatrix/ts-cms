@@ -15,6 +15,7 @@ class LoginPageController extends AuthPageController {
     this.initializeElements();
     this.setupFormHandlers();
     this.setupInputValidation();
+    this.setupPasswordStrengthValidation();
   }
 
   initializeElements() {
@@ -87,6 +88,76 @@ class LoginPageController extends AuthPageController {
         input.addEventListener('input', updateButtonStates);
       }
     });
+  }
+
+  setupPasswordStrengthValidation() {
+    if (!this.passwordInput || !this.registerButton) return;
+
+    // Create password strength indicator
+    const strengthDiv = document.createElement('div');
+    strengthDiv.id = 'passwordStrength';
+    strengthDiv.className = 'mt-2';
+    this.passwordInput.parentNode.appendChild(strengthDiv);
+
+    this.passwordInput.addEventListener('input', () => {
+      const password = this.passwordInput.value;
+      const strength = this.calculatePasswordStrength(password);
+      this.updatePasswordStrengthUI(strengthDiv, strength, password.length);
+    });
+  }
+
+  calculatePasswordStrength(password) {
+    let score = 0;
+    const checks = {
+      length: password.length >= 8,
+      lowercase: /[a-z]/.test(password),
+      uppercase: /[A-Z]/.test(password),
+      numbers: /\d/.test(password),
+      special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>?]/.test(password)
+    };
+
+    score = Object.values(checks).filter(Boolean).length;
+    
+    return {
+      score,
+      checks,
+      level: score < 2 ? 'weak' : score < 4 ? 'medium' : 'strong'
+    };
+  }
+
+  updatePasswordStrengthUI(strengthDiv, strength, passwordLength) {
+    if (passwordLength === 0) {
+      strengthDiv.innerHTML = '';
+      return;
+    }
+
+    const colors = {
+      weak: 'danger',
+      medium: 'warning', 
+      strong: 'success'
+    };
+
+    const messages = {
+      weak: 'Weak password',
+      medium: 'Medium strength',
+      strong: 'Strong password'
+    };
+
+    const progressWidth = (strength.score / 5) * 100;
+    
+    strengthDiv.innerHTML = `
+      <div class="small mb-1">Password strength: <span class="text-${colors[strength.level]}">${messages[strength.level]}</span></div>
+      <div class="progress mb-2" style="height: 4px;">
+        <div class="progress-bar bg-${colors[strength.level]}" style="width: ${progressWidth}%"></div>
+      </div>
+      <div class="small text-muted">
+        ${strength.checks.length ? '✓' : '✗'} At least 8 characters<br>
+        ${strength.checks.lowercase ? '✓' : '✗'} Lowercase letter<br>
+        ${strength.checks.uppercase ? '✓' : '✗'} Uppercase letter<br>
+        ${strength.checks.numbers ? '✓' : '✗'} Number<br>
+        ${strength.checks.special ? '✓' : '✗'} Special character
+      </div>
+    `;
   }
 
   async handleLogin() {
