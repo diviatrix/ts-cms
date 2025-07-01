@@ -7,11 +7,13 @@ A simple, TypeScript-based Content Management System built with Node.js, Express
 ## Features
 
 - User authentication with JWT and role-based access control
-- Markdown content creation and publishing
+- Content is stored as "records" in SQL, save and read by frontend as markdown strings.
+- Frontend is served directly by backend, so you don't need an extra express server if you keep frontend simple.
 - Admin panel for user and content management
 - Dynamic frontpage displaying published content
 - SQLite database with automatic schema creation
-- Bootstrap frontend with responsive design
+- Bootstrap frontend with simple responsive design (works on mobile too)
+
 
 ## Quick Start
 
