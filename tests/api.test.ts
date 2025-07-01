@@ -15,20 +15,24 @@ describe('GET /api', () => {
 });
 
 describe('Authentication', () => {
+  // Generate unique test data for each test run
+  const timestamp = Date.now();
+  const testUser = {
+    login: `testuser_${timestamp}`,
+    email: `test_${timestamp}@example.com`,
+    password: 'password123'
+  };
+
   it('should register a new user', (done) => {
     request(app)
       .post('/api/register')
-      .send({
-        login: 'testuser',
-        email: 'test@example.com',
-        password: 'password123',
-      })
+      .send(testUser)
       .end((err, res) => {
-        expect(res.statusCode).to.equal(200);
+        expect(res.statusCode).to.equal(201);
         expect(res.body.success).to.be.true;
         expect(res.body.data).to.have.property('id');
-        expect(res.body.data.login).to.equal('testuser');
-        expect(res.body.data.email).to.equal('test@example.com');
+        expect(res.body.data.login).to.equal(testUser.login);
+        expect(res.body.data.email).to.equal(testUser.email);
         expect(res.body.message).to.equal('User registered successfully');
         done();
       });
@@ -38,8 +42,8 @@ describe('Authentication', () => {
     request(app)
       .post('/api/login')
       .send({
-        login: 'testuser',
-        password: 'password123',
+        login: testUser.login,
+        password: testUser.password,
       })
       .end((err, res) => {
         expect(res.statusCode).to.equal(200);

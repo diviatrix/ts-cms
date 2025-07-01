@@ -21,11 +21,11 @@ router.post('/register', validateBody(ValidationSchemas.register), asyncHandler(
     delete userDataWithHash.password; // Remove plain password
 
     const result = await registerUser(userDataWithHash);
-    if (result) {
-        ResponseUtils.created(res, result, 'User registered successfully');
+    if (result.success && result.data) {
+        ResponseUtils.created(res, result.data, result.message || 'User registered successfully');
     } else {
         logger.warn('User registration failed', { login: userData.login, email: userData.email });
-        throw Errors.validation('Registration failed');
+        throw Errors.validation(result.message || 'Registration failed');
     }
 }));
 

@@ -3,7 +3,7 @@ import database from '../db';
 import { hashPassword } from '../utils/password';
 import { generateGuid } from '../utils/guid';
 
-export async function registerUser(user: IUser): Promise<{ success: boolean; message?: string }> {
+export async function registerUser(user: IUser): Promise<{ success: boolean; message?: string; data?: IUser }> {
   return new Promise(async (resolve, reject) => {
     if (!user.login || user.login.trim() === '') {
       resolve({ success: false, message: 'Username is required.' });
@@ -35,7 +35,7 @@ export async function registerUser(user: IUser): Promise<{ success: boolean; mes
 
     const result = await database.registerUser(user); // Use the imported instance
     if (result.success) {
-      resolve(result);
+      resolve({ success: true, message: 'User registered successfully', data: result.data });
     } else {
       resolve({ success: false, message: 'Registration failed.' });
     }
