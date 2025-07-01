@@ -43,8 +43,7 @@ export class ValidationUtils {
     static email(value: string, fieldName: string): string | null {
         if (typeof value !== 'string') return null;
         
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) {
+        if (!REGEX_PATTERNS.EMAIL.test(value)) {
             return `${fieldName} must be a valid email address`;
         }
         return null;

@@ -3,6 +3,11 @@
  * Provides consistent message display and loading states
  */
 
+// Common regex patterns
+const REGEX_PATTERNS = {
+    EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+};
+
 /**
  * Message Display Utility
  */
@@ -147,10 +152,9 @@ class FormValidator {
      * Validate email format
      */
     static validateEmail(emailElement) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const email = emailElement.value?.trim();
 
-        if (email && !emailRegex.test(email)) {
+        if (email && !REGEX_PATTERNS.EMAIL.test(email)) {
             this.addErrorClass(emailElement);
             return ['Please enter a valid email address'];
         } else {
@@ -438,8 +442,7 @@ class AdvancedFormValidator extends FormValidator {
      * Check if email is valid
      */
     static isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
+        return REGEX_PATTERNS.EMAIL.test(email);
     }
 }
 

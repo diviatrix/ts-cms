@@ -52,16 +52,8 @@ class Logger {
         this.info(`API Request: ${method} ${url}`, { userId });
     }
 
-    dbQuery(query: string, duration?: number): void {
-        this.debug(`Database Query: ${query}`, { duration });
-    }
-
     authAction(action: string, userId: string, success: boolean): void {
         this.info(`Auth Action: ${action}`, { userId, success });
-    }
-
-    validation(field: string, value: any, valid: boolean): void {
-        this.debug(`Validation: ${field}`, { value, valid });
     }
 }
 

@@ -5,6 +5,11 @@
 
 import { MessageDisplay, ErrorHandler, loadingManager, errorHandler } from './ui-utils.js';
 
+// Common regex patterns
+const REGEX_PATTERNS = {
+    EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+};
+
 /**
  * Base Page Controller
  * Common functionality for all pages
@@ -293,7 +298,7 @@ class FormHandler {
                 ErrorHandler.addFieldError(field, rule.message || `${fieldName} is required`);
                 isValid = false;
                 break;
-            } else if (rule.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            } else if (rule.type === 'email' && value && !REGEX_PATTERNS.EMAIL.test(value)) {
                 ErrorHandler.addFieldError(field, rule.message || 'Please enter a valid email address');
                 isValid = false;
                 break;
