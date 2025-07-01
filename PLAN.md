@@ -7,25 +7,17 @@
 - [x] Enhance navigation page with modern architecture  
 - [x] Refactor frontpage script to use shared controllers
 - [x] Consolidate remaining inline event handlers
-
-### Responsive Design
-- [ ] Optimize admin panel for mobile devices
-- [ ] Improve tablet layout responsiveness
-- [ ] Add touch-friendly interactions for mobile
-- [ ] Test and fix layout issues on various screen sizes
+- [x] Remove unused code and simplify utilities (saved 654 lines)
+- [x] Refactor large frontend files into smaller modules (Phase 1: shared-components)
+- [ ] Split ui-utils.js into focused utility modules (Phase 2)
+- [ ] Break down admin controller into feature modules (Phase 3)
 
 ### Polish Features
-- [ ] Add search functionality to data tables
-- [ ] Implement bulk actions for admin operations
-- [ ] Add export functionality (CSV/JSON) for data tables
-- [ ] Create comprehensive help system with tooltips
-- [ ] Add loading states and progress indicators
+- [ ] Add 'console terminal' feature for user action log, displaying recent actions in a terminal-like interface, this terminal should show all user received messages, with different data for user and admin roles.
 
 ### Performance
 - [ ] Implement client-side caching for API responses
 - [ ] Add lazy loading for large data sets
-- [ ] Optimize image loading and display
-- [ ] Add service worker for offline functionality
 
 ## Future Tasks
 
@@ -59,6 +51,56 @@
 - [ ] Implement image lazy loading
 - [ ] Add API response caching
 - [ ] Optimize database queries and indexing
+
+## Frontend Refactoring Plan
+
+### Current Large Files Analysis
+- `shared-components.js` (900 lines) - 6 classes mixed together
+- `ui-utils.js` (701 lines) - 9 utility classes in one file  
+- `admin/script.js` (551 lines) - Single massive AdminController
+
+### Refactoring Phases
+
+#### Phase 1: Split shared-components.js (High Priority) ✅ COMPLETED
+**Results achieved:**
+- Reduced `shared-components.js` from 900 lines to ~15 lines (re-export wrapper)
+- Created 6 focused modules totaling ~770 lines (net reduction of 130+ lines)
+- Clear separation of concerns achieved
+- Backward compatibility maintained
+- Fixed navigation role-based display issues
+
+Split into focused files:
+- `js/shared-components/base-controller.js` - BasePageController (100 lines)
+- `js/shared-components/auth-controller.js` - Auth + Protected controllers (85 lines)
+- `js/shared-components/form-handler.js` - FormHandler component (140 lines)
+- `js/shared-components/data-table.js` - DataTable component (280 lines)
+- `js/shared-components/navigation.js` - Navigation components (150 lines)
+- `js/shared-components/index.js` - Main export file (15 lines)
+
+#### Phase 2: Reorganize ui-utils.js (Medium Priority)
+Split into logical utility groups:
+- `js/utils/message-display.js` - MessageDisplay
+- `js/utils/loading-manager.js` - LoadingManager  
+- `js/utils/form-validation.js` - Validation utilities
+- `js/utils/error-handling.js` - ErrorHandler
+- `js/utils/keyboard-shortcuts.js` - KeyboardShortcuts
+- `js/utils/auto-logout.js` - AutoLogoutManager
+- `js/utils/dialogs.js` - ConfirmationDialog
+- `js/utils/index.js` - Main export file
+
+#### Phase 3: Split admin controller (Medium Priority)
+Split into feature-based modules:
+- `admin/admin-controller.js` - Main coordinator (150 lines)
+- `admin/user-management.js` - User CRUD operations (180 lines)
+- `admin/record-management.js` - Record CRUD operations (200 lines)
+- `admin/admin-utils.js` - Shared admin utilities
+
+### Expected Results
+- Reduce largest files from 900+ lines to 50-200 lines each
+- Clear separation of concerns
+- Easier testing and maintenance
+- Better code reusability
+- Estimated effort: 9-13 hours total
 ## Notes
 
 - Tasks are organized by priority - complete current tasks before moving to future ones

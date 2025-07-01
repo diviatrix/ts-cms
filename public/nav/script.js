@@ -13,8 +13,16 @@ class NavigationController extends BasePageController {
     this.authAPI = AuthAPI;
     this.elements = null; // Will be set after navigation loads
     
+    console.log('NavigationController constructor called');
+    
     // Listen for navigation loaded event
     document.addEventListener('navigationLoaded', () => this.init());
+    
+    // Also try to initialize immediately if navigation is already loaded
+    if (document.getElementById('navPlaceholder') && document.getElementById('navPlaceholder').innerHTML.trim() !== '') {
+      console.log('Navigation already loaded, initializing immediately');
+      setTimeout(() => this.init(), 0);
+    }
   }
 
   /**
@@ -34,6 +42,8 @@ class NavigationController extends BasePageController {
    */
   init() {
     console.log('Navigation controller initializing...');
+    console.log('AuthAPI available:', !!this.authAPI);
+    console.log('Is authenticated?', this.authAPI.isAuthenticated());
     
     // Get elements after navigation HTML is loaded
     this.elements = this.getNavigationElements();
@@ -100,8 +110,19 @@ class NavigationController extends BasePageController {
   getUserRoles() {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found in localStorage');
+        return [];
+      }
+      
+      console.log('Token found, decoding...');
       const decodedToken = jwtDecode(token);
-      return decodedToken?.roles || decodedToken?.groups || [];
+      console.log('Decoded token:', decodedToken);
+      
+      const roles = decodedToken?.roles || decodedToken?.groups || [];
+      console.log('Extracted roles:', roles);
+      
+      return roles;
     } catch (error) {
       console.error('Error decoding token for role check:', error);
       return [];
@@ -174,4 +195,24 @@ class NavigationController extends BasePageController {
 }
 
 // Initialize navigation controller
-new NavigationController();
+const navController = new NavigationController();
+
+// Also try to initialize immediately in case navigation is already loaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      if (document.getElementById('signOutButton')) {
+        console.log('Navigation elements found after DOM loaded, initializing...');
+        navController.init();
+      }
+    }, 100);
+  });
+} else {
+  // DOM is already loaded
+  setTimeout(() => {
+    if (document.getElementById('signOutButton')) {
+      console.log('Navigation elements found immediately, initializing...');
+      navController.init();
+    }
+  }, 100);
+}
