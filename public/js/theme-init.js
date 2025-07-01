@@ -16,11 +16,19 @@ if (document.readyState === 'loading') {
 }
 
 function initializeTheme() {
+    console.log('[ThemeInit] Starting theme manager initialization...');
     try {
         themeManager = new ThemeManager();
-        console.log('Theme manager initialized successfully');
+        console.log('[ThemeInit] Theme manager initialized successfully');
+        
+        // Add global error handler for theme events
+        document.addEventListener('themeFallbackApplied', (event) => {
+            console.warn('[ThemeInit] Fallback theme was applied:', event.detail);
+        });
+        
     } catch (error) {
-        console.error('Failed to initialize theme manager:', error);
+        console.error('[ThemeInit] Failed to initialize theme manager:', error);
+        console.log('[ThemeInit] Site will continue with default browser styling');
     }
 }
 

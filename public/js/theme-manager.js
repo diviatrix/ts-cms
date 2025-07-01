@@ -9,6 +9,10 @@ export class ThemeManager {
     constructor() {
         this.currentTheme = null;
         this.themeStyleElement = null;
+        this.fallbackTheme = this.getDefaultFallbackTheme();
+        this.loadAttempts = 0;
+        this.maxLoadAttempts = 3;
+        this.retryDelay = 1000; // 1 second
         this.init();
     }
 
@@ -20,41 +24,89 @@ export class ThemeManager {
         document.addEventListener('themeChanged', () => {
             this.loadActiveTheme();
         });
+
+        // Listen for dynamic content loading
+        document.addEventListener('dynamicContentLoaded', (event) => {
+            console.log('Re-applying theme to dynamic content:', event.detail);
+            this.reapplyThemeToElement(event.detail.element);
+        });
     }
 
     async loadActiveTheme() {
+        this.loadAttempts++;
+        console.log(`[ThemeManager] Theme loading attempt ${this.loadAttempts}/${this.maxLoadAttempts}`);
+        
         try {
+            console.log('[ThemeManager] Fetching active theme from API...');
             const result = await apiClient.get('/themes/active');
+            
             if (result.success && result.data) {
+                console.log('[ThemeManager] Active theme fetched successfully:', result.data.theme?.name);
                 await this.applyTheme(result.data);
+                this.loadAttempts = 0; // Reset on success
+                console.log('[ThemeManager] Theme application completed successfully');
+            } else {
+                console.warn('[ThemeManager] API returned unsuccessful result:', result);
+                throw new Error(`API returned unsuccessful result: ${result.message || 'Unknown error'}`);
             }
         } catch (error) {
-            console.warn('Failed to load active theme:', error);
+            console.error(`[ThemeManager] Theme loading failed (attempt ${this.loadAttempts}):`, error);
+            
+            if (this.loadAttempts < this.maxLoadAttempts) {
+                console.log(`[ThemeManager] Retrying in ${this.retryDelay}ms...`);
+                setTimeout(() => this.loadActiveTheme(), this.retryDelay);
+                this.retryDelay *= 1.5; // Exponential backoff
+            } else {
+                console.warn('[ThemeManager] Max retry attempts reached, applying fallback theme');
+                await this.applyFallbackTheme();
+            }
         }
     }
 
     async applyTheme(theme) {
+        console.log('[ThemeManager] Starting theme application:', theme.theme?.name || 'Unknown');
         this.currentTheme = theme;
         
         // Load theme settings
         try {
-            const settings = await apiClient.get(`/themes/${theme.id}/settings`);
+            let settings;
+            if (theme.settings) {
+                // Settings already provided (e.g., from active theme API)
+                settings = { success: true, data: theme.settings };
+                console.log('[ThemeManager] Using provided theme settings');
+            } else {
+                // Fetch settings separately
+                console.log('[ThemeManager] Fetching theme settings from API...');
+                settings = await apiClient.get(`/themes/${theme.theme.id}/settings`);
+            }
+            
             if (settings.success) {
+                console.log('[ThemeManager] Theme settings loaded, applying styles...');
                 this.injectThemeCSS(settings.data);
+                
+                console.log('[ThemeManager] Applying theme components...');
                 this.applyFavicon(settings.data.favicon_url);
                 this.applyLogo(settings.data.logo_url);
                 this.applyFooter(settings.data.footer_text, settings.data.footer_links);
                 this.applyMenuLinks(settings.data.menu_links);
+                
+                console.log('[ThemeManager] Theme application completed successfully');
+            } else {
+                throw new Error(`Failed to load theme settings: ${settings.message}`);
             }
         } catch (error) {
-            console.error('Error loading theme settings:', error);
+            console.error('[ThemeManager] Error during theme application:', error);
+            throw error; // Re-throw to trigger fallback mechanism
         }
     }
 
     injectThemeCSS(settings) {
+        console.log('[ThemeManager] Injecting theme CSS...');
+        
         // Remove existing theme styles
         if (this.themeStyleElement) {
             this.themeStyleElement.remove();
+            console.log('[ThemeManager] Removed existing theme styles');
         }
 
         // Create new style element
@@ -62,11 +114,13 @@ export class ThemeManager {
         this.themeStyleElement.id = 'dynamic-theme-styles';
         
         // Generate CSS from settings
+        console.log('[ThemeManager] Generating CSS from theme settings...');
         const css = this.generateThemeCSS(settings);
         this.themeStyleElement.textContent = css;
         
         // Inject into document head
         document.head.appendChild(this.themeStyleElement);
+        console.log('[ThemeManager] Theme CSS injected into document head');
         
         // Load Google Fonts if specified
         this.loadGoogleFonts(settings.font_family);
@@ -311,16 +365,27 @@ export class ThemeManager {
     }
 
     loadGoogleFonts(fontFamily) {
-        if (!fontFamily || !fontFamily.includes('Google Font')) return;
+        if (!fontFamily || !fontFamily.includes('Google Font')) {
+            console.log('[ThemeManager] No Google Fonts to load');
+            return;
+        }
+        
+        console.log('[ThemeManager] Loading Google Font:', fontFamily);
         
         // Extract font name from selections like "'Roboto', sans-serif"
         const fontName = fontFamily.match(/'([^']+)'/);
-        if (!fontName) return;
+        if (!fontName) {
+            console.warn('[ThemeManager] Could not extract font name from:', fontFamily);
+            return;
+        }
         
         const fontId = `google-font-${fontName[1].toLowerCase().replace(/\s+/g, '-')}`;
         
         // Check if font is already loaded
-        if (document.getElementById(fontId)) return;
+        if (document.getElementById(fontId)) {
+            console.log('[ThemeManager] Google Font already loaded:', fontName[1]);
+            return;
+        }
         
         // Create and inject Google Fonts link
         const link = document.createElement('link');
@@ -328,6 +393,7 @@ export class ThemeManager {
         link.rel = 'stylesheet';
         link.href = `https://fonts.googleapis.com/css2?family=${fontName[1].replace(/\s+/g, '+')}:wght@300;400;500;600;700&display=swap`;
         document.head.appendChild(link);
+        console.log('[ThemeManager] Google Font loaded:', fontName[1]);
     }
 
     applyFavicon(faviconUrl) {
@@ -491,6 +557,71 @@ export class ThemeManager {
         }
     }
 
+    reapplyThemeToElement(element) {
+        if (!element || !this.currentTheme) return;
+
+        // Force refresh of theme styles on the specific element
+        // This ensures dynamically loaded content gets proper styling
+        const themeClasses = [
+            'navbar', 'nav-link', 'navbar-brand', 'btn', 'card',
+            'form-control', 'list-group-item', 'modal-content'
+        ];
+
+        themeClasses.forEach(className => {
+            const elements = element.querySelectorAll(`.${className}`);
+            elements.forEach(el => {
+                // Trigger a style recalculation by briefly removing and re-adding a class
+                el.classList.add('theme-refresh');
+                setTimeout(() => el.classList.remove('theme-refresh'), 10);
+            });
+        });
+
+        console.log('Theme styles reapplied to dynamic element');
+    }
+
+    async applyFallbackTheme() {
+        console.log('[ThemeManager] Applying fallback theme');
+        try {
+            await this.applyTheme(this.fallbackTheme);
+            console.log('[ThemeManager] Fallback theme applied successfully');
+            
+            // Dispatch fallback event for monitoring
+            document.dispatchEvent(new CustomEvent('themeFallbackApplied', {
+                detail: { reason: 'max_retries_exceeded' }
+            }));
+        } catch (error) {
+            console.error('[ThemeManager] CRITICAL: Fallback theme application failed:', error);
+            // Last resort - apply minimal CSS
+            this.applyEmergencyStyles();
+        }
+    }
+
+    applyEmergencyStyles() {
+        console.log('[ThemeManager] Applying emergency styles');
+        const emergencyCSS = `
+            body { 
+                background: #ffffff !important; 
+                color: #000000 !important; 
+                font-family: system-ui, sans-serif !important; 
+            }
+            .card { 
+                border: 1px solid #ccc !important; 
+                background: #f9f9f9 !important; 
+            }
+            .btn-primary { 
+                background: #007bff !important; 
+                border-color: #007bff !important; 
+            }
+        `;
+        
+        const emergencyStyle = document.createElement('style');
+        emergencyStyle.id = 'emergency-theme-styles';
+        emergencyStyle.textContent = emergencyCSS;
+        document.head.appendChild(emergencyStyle);
+        
+        console.log('[ThemeManager] Emergency styles applied');
+    }
+
     // Color utility functions
     hexToRgb(hex) {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -532,23 +663,49 @@ export class ThemeManager {
 
     // Public methods for theme switching
     async switchTheme(themeId) {
+        console.log('[ThemeManager] Switching to theme:', themeId);
         try {
             const result = await apiClient.post('/themes/active', { theme_id: themeId });
             if (result.success) {
+                console.log('[ThemeManager] Theme switch API call successful');
                 await this.loadActiveTheme();
                 // Dispatch theme change event
                 document.dispatchEvent(new CustomEvent('themeChanged', { detail: { themeId } }));
+                console.log('[ThemeManager] Theme switch completed successfully');
                 return true;
+            } else {
+                console.error('[ThemeManager] Theme switch API call failed:', result.message);
+                return false;
             }
-            return false;
         } catch (error) {
-            console.error('Error switching theme:', error);
+            console.error('[ThemeManager] Error switching theme:', error);
             return false;
         }
     }
 
     getCurrentTheme() {
         return this.currentTheme;
+    }
+
+    getDefaultFallbackTheme() {
+        return {
+            theme: {
+                id: 'fallback',
+                name: 'System Fallback Theme'
+            },
+            settings: {
+                primary_color: '#007bff',
+                secondary_color: '#6c757d', 
+                background_color: '#ffffff',
+                surface_color: '#f8f9fa',
+                text_color: '#212529',
+                text_secondary: '#6c757d',
+                text_muted: '#adb5bd',
+                border_color: '#dee2e6',
+                font_family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                custom_css: ''
+            }
+        };
     }
 }
 

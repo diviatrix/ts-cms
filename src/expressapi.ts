@@ -13,7 +13,7 @@ import { updateProfile } from './functions/updateProfile';
 import { errorHandler } from './middleware/error.middleware';
 import logger from './utils/logger';
 
-export default function createExpressApp(): express.Application {
+function createExpressApp(): express.Application {
     // Create an Express application
     const app = express();  
 
@@ -57,3 +57,8 @@ export default function createExpressApp(): express.Application {
 
     return app;
 }
+
+// Create and export the app instance
+const app = createExpressApp();
+
+export default app;

@@ -1,7 +1,7 @@
 import { fail } from "assert";
 
 export default {
-    ok: 'OK',
+    ok: 'ok',
     welcome: 'Welcome to the API',
     error: 'An error occurred',
     not_found: 'Resource not found',

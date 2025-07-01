@@ -13,7 +13,14 @@ router.post('/register', validateBody(ValidationSchemas.register), asyncHandler(
     const userData = req.body;
     logger.info('User registration attempt', { login: userData.login, email: userData.email });
 
-    const result = await registerUser(userData);
+    // Hash the password before passing to registerUser
+    const userDataWithHash = {
+        ...userData,
+        password_hash: userData.password
+    };
+    delete userDataWithHash.password; // Remove plain password
+
+    const result = await registerUser(userDataWithHash);
     if (result) {
         ResponseUtils.created(res, result, 'User registered successfully');
     } else {

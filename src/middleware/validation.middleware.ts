@@ -109,7 +109,7 @@ export const ValidationSchemas = {
             ValidationUtils.required,
             (value: string) => ValidationUtils.stringLength(value, 'login', 4, 50)
         ],
-        password_hash: [
+        password: [
             ValidationUtils.required,
             (value: string) => ValidationUtils.stringLength(value, 'password', 6, 100)
         ],

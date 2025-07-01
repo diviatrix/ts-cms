@@ -23,6 +23,13 @@ fetch('/nav/index.html')
       const event = new CustomEvent('navigationLoaded');
       document.dispatchEvent(event);
       console.log('navigationLoaded event dispatched.');
+
+      // Notify theme manager to re-apply styles to newly loaded navigation
+      const themeEvent = new CustomEvent('dynamicContentLoaded', {
+        detail: { type: 'navigation', element: navPlaceholder }
+      });
+      document.dispatchEvent(themeEvent);
+      console.log('Theme re-application event dispatched for navigation.');
     } else {
       console.error('navPlaceholder element not found.');
     }
