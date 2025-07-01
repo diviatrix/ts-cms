@@ -80,5 +80,35 @@ export default {
             token TEXT UNIQUE NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
+        )`,
+    themes: `
+        CREATE TABLE IF NOT EXISTS themes (
+            id TEXT PRIMARY KEY NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            is_active BOOLEAN NOT NULL DEFAULT FALSE,
+            is_default BOOLEAN NOT NULL DEFAULT FALSE,
+            created_by TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (created_by) REFERENCES users (id)
+        )`,
+    theme_settings: `
+        CREATE TABLE IF NOT EXISTS theme_settings (
+            theme_id TEXT NOT NULL,
+            setting_key TEXT NOT NULL,
+            setting_value TEXT NOT NULL,
+            setting_type TEXT NOT NULL DEFAULT 'string',
+            PRIMARY KEY (theme_id, setting_key),
+            FOREIGN KEY (theme_id) REFERENCES themes (id) ON DELETE CASCADE
+        )`,
+    user_theme_preferences: `
+        CREATE TABLE IF NOT EXISTS user_theme_preferences (
+            user_id TEXT PRIMARY KEY NOT NULL,
+            theme_id TEXT NOT NULL,
+            custom_settings TEXT NOT NULL DEFAULT '{}',
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+            FOREIGN KEY (theme_id) REFERENCES themes (id) ON DELETE CASCADE
         )`
 };

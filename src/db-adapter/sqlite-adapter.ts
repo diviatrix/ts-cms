@@ -83,6 +83,10 @@ export default class SQLiteAdapter {
                     if (table === 'roles') {
                         await this.insertDefaultRoles();
                     }
+                    // If themes table was just created, insert default theme
+                    if (table === 'themes') {
+                        await this.insertDefaultTheme();
+                    }
                 } else {
                     console.error(messages.sql_create_table_error, table, response.message);
                 }                
@@ -106,6 +110,93 @@ export default class SQLiteAdapter {
             await this.executeQuery(query, [role.id, role.name, role.description, role.weight, role.perms]);
             console.log(`Inserted default role: ${role.name}`);
         }
+    }
+
+    public async insertDefaultTheme(): Promise<void> {
+        // Check if a default theme already exists
+        const existingThemeQuery = `SELECT id FROM themes WHERE is_default = 1 LIMIT 1`;
+        const existingResult = await this.executeQuery(existingThemeQuery);
+        
+        if (existingResult.success && existingResult.data && Array.isArray(existingResult.data) && existingResult.data.length > 0) {
+            console.log('Default theme already exists, skipping creation');
+            return;
+        }
+
+        const { generateGuid } = require('../utils/guid');
+        
+        // Try to get the first user, if no users exist, create a system user
+        let createdBy = 'system-user';
+        
+        const adminQuery = `SELECT id FROM users LIMIT 1`;
+        const adminResult = await this.executeQuery(adminQuery);
+        if (adminResult.success && adminResult.data && Array.isArray(adminResult.data) && adminResult.data.length > 0) {
+            const firstUser = (adminResult.data as any[])[0];
+            createdBy = firstUser.id;
+        } else {
+            // Create a system user to satisfy foreign key constraint
+            const systemUserId = generateGuid();
+            const systemUserQuery = `INSERT OR IGNORE INTO users (id, login, email, password_hash, is_active) VALUES (?, ?, ?, ?, ?)`;
+            await this.executeQuery(systemUserQuery, [
+                systemUserId,
+                'system',
+                'system@localhost',
+                'system-placeholder-hash',
+                false
+            ]);
+            createdBy = systemUserId;
+            console.log('Created system user for theme creation');
+        }
+        
+        const defaultTheme = {
+            id: generateGuid(),
+            name: 'Default Theme',
+            description: 'Default TypeScript CMS theme with modern dark styling',
+            is_active: true,
+            is_default: true,
+            created_by: createdBy
+        };
+
+        // Insert default theme
+        const themeQuery = `INSERT OR IGNORE INTO themes (id, name, description, is_active, is_default, created_by) VALUES (?, ?, ?, ?, ?, ?)`;
+        const themeResult = await this.executeQuery(themeQuery, [
+            defaultTheme.id, 
+            defaultTheme.name, 
+            defaultTheme.description, 
+            defaultTheme.is_active, 
+            defaultTheme.is_default, 
+            defaultTheme.created_by
+        ]);
+
+        if (!themeResult.success) {
+            console.warn('Failed to insert default theme:', themeResult.message);
+            return;
+        }
+
+        // Insert default theme settings (matching existing dark theme)
+        const defaultSettings = [
+            { key: 'primary_color', value: '#00FF00' },      // Neon green (accent)
+            { key: 'secondary_color', value: '#FFD700' },    // Warm yellow (accent)
+            { key: 'background_color', value: '#222222' },   // Dark grey (main background)
+            { key: 'surface_color', value: '#444444' },      // Grey (cards, surfaces)
+            { key: 'text_color', value: '#E0E0E0' },         // Light grey (primary text)
+            { key: 'text_secondary', value: '#C0C0C0' },     // Medium grey (secondary text)
+            { key: 'text_muted', value: '#A0A0A0' },         // Darker grey (muted text)
+            { key: 'border_color', value: '#00FF00' },       // Neon green (borders)
+            { key: 'font_family', value: "'Share Tech Mono', monospace" },
+            { key: 'custom_css', value: '' },
+            { key: 'favicon_url', value: '' },
+            { key: 'logo_url', value: '' },
+            { key: 'footer_text', value: '© 2025 TypeScript CMS. Built with modern web technologies.' },
+            { key: 'footer_links', value: '[]' },
+            { key: 'menu_links', value: '[]' }
+        ];
+
+        for (const setting of defaultSettings) {
+            const settingQuery = `INSERT OR IGNORE INTO theme_settings (theme_id, setting_key, setting_value) VALUES (?, ?, ?)`;
+            await this.executeQuery(settingQuery, [defaultTheme.id, setting.key, setting.value]);
+        }
+
+        console.log(`Inserted default theme: ${defaultTheme.name} with ${defaultSettings.length} settings`);
     }
 
     public async createTable(schema: string): Promise<IResolve<string[]>> {

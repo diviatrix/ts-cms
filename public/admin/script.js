@@ -7,6 +7,7 @@ import {
 } from '../js/ui-utils.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 import { UserManagement, RecordManagement, AdminUtils } from './modules/index.js';
+import { ThemeManagement } from './modules/theme-management.js';
 
 /**
  * Admin Panel Controller (Refactored)
@@ -136,6 +137,9 @@ class AdminController {
 
         // Initialize record management module  
         this.recordManagement = new RecordManagement(this.elements, this.recordsTable);
+
+        // Initialize theme management module
+        this.themeManagement = new ThemeManagement();
     }
 
     /**
@@ -152,6 +156,14 @@ class AdminController {
         if (this.elements.recordsTab) {
             this.elements.recordsTab.addEventListener('shown.bs.tab', () => {
                 this.recordManagement.loadRecords();
+            });
+        }
+
+        // Add themes tab event handler
+        const themesTab = document.getElementById('themes-tab');
+        if (themesTab) {
+            themesTab.addEventListener('shown.bs.tab', () => {
+                this.themeManagement.loadThemes();
             });
         }
 
@@ -234,7 +246,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Token roles:', decoded.roles);
         }
         
-        const userRoles = AuthAPI.getUserRoles();
+        const userRoles = AuthAPI.getUserRole();
         console.log('User roles from AuthAPI:', userRoles);
     } catch (error) {
         console.log('Error getting user roles:', error);

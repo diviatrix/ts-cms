@@ -14,37 +14,45 @@ class MessageDisplay {
     /**
      * Show success message
      */
-    showSuccess(message) {
-        this.element.textContent = message;
-        this.element.className = 'alert alert-success';
-        this.element.style.display = 'block';
+    showSuccess(message, targetId = null) {
+        const element = targetId ? document.getElementById(targetId) : this.element;
+        if (!element) return;
+        element.textContent = message;
+        element.className = 'alert alert-success';
+        element.style.display = 'block';
     }
 
     /**
      * Show error message
      */
-    showError(message) {
-        this.element.textContent = message;
-        this.element.className = 'alert alert-danger';
-        this.element.style.display = 'block';
+    showError(message, targetId = null) {
+        const element = targetId ? document.getElementById(targetId) : this.element;
+        if (!element) return;
+        element.textContent = message;
+        element.className = 'alert alert-danger';
+        element.style.display = 'block';
     }
 
     /**
      * Show warning message
      */
-    showWarning(message) {
-        this.element.textContent = message;
-        this.element.className = 'alert alert-warning';
-        this.element.style.display = 'block';
+    showWarning(message, targetId = null) {
+        const element = targetId ? document.getElementById(targetId) : this.element;
+        if (!element) return;
+        element.textContent = message;
+        element.className = 'alert alert-warning';
+        element.style.display = 'block';
     }
 
     /**
      * Show info message
      */
-    showInfo(message) {
-        this.element.textContent = message;
-        this.element.className = 'alert alert-info';
-        this.element.style.display = 'block';
+    showInfo(message, targetId = null) {
+        const element = targetId ? document.getElementById(targetId) : this.element;
+        if (!element) return;
+        element.textContent = message;
+        element.className = 'alert alert-info';
+        element.style.display = 'block';
     }
 
     /**

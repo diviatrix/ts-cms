@@ -11,7 +11,8 @@
     />
   </head>
   <body>
-    <div class="container mt-5">
+    <div class="main-content">
+      <div class="container mt-5">
       <div class="row justify-content-center">
         <div class="col-md-10">
           <!-- Navigation will be included here -->
@@ -25,6 +26,9 @@
             </li>
             <li class="nav-item" role="presentation">
               <button class="nav-link" id="records-tab" data-bs-toggle="tab" data-bs-target="#records" type="button" role="tab" aria-controls="records" aria-selected="false">Records</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="themes-tab" data-bs-toggle="tab" data-bs-target="#themes" type="button" role="tab" aria-controls="themes" aria-selected="false">Themes</button>
             </li>
           </ul>
 
@@ -91,11 +95,145 @@
                 </div>
               </div>
             </div>
+            <div class="tab-pane fade" id="themes" role="tabpanel" aria-labelledby="themes-tab">
+              <div class="row mt-4">
+                <div class="col-md-4">
+                  <h2>Themes</h2>
+                  <button id="newThemeButton" class="btn btn-primary mb-3">Create New Theme</button>
+                  <ul id="themeList" class="list-group">
+                    <!-- Theme list will be populated by JavaScript -->
+                  </ul>
+                </div>
+                <div class="col-md-8">
+                  <div id="themeEditTab" class="card d-none">
+                    <div class="card-body">
+                      <h2 class="card-title text-center">Edit Theme</h2>
+                      <div id="themeInfo" data-current-theme-id="">
+                        <label for="themeName" class="form-label">Theme Name:</label>
+                        <input type="text" id="themeName" class="form-control mb-2">
+                        <label for="themeDescription" class="form-label">Description:</label>
+                        <textarea id="themeDescription" class="form-control mb-2" rows="3"></textarea>
+                        <div class="form-check mb-3">
+                          <input class="form-check-input" type="checkbox" id="themeIsActive">
+                          <label class="form-check-label" for="themeIsActive">
+                            Set as Active Theme
+                          </label>
+                        </div>
+                        <h4>Theme Settings</h4>
+                        <div id="themeSettings">
+                          <div class="row mb-2">
+                            <div class="col-md-6">
+                              <label for="primaryColor" class="form-label">Primary Color:</label>
+                              <input type="color" id="primaryColor" class="form-control form-control-color" value="#00FF00">
+                            </div>
+                            <div class="col-md-6">
+                              <label for="secondaryColor" class="form-label">Secondary Color:</label>
+                              <input type="color" id="secondaryColor" class="form-control form-control-color" value="#FFD700">
+                            </div>
+                          </div>
+                          <div class="row mb-2">
+                            <div class="col-md-6">
+                              <label for="backgroundColor" class="form-label">Background Color:</label>
+                              <input type="color" id="backgroundColor" class="form-control form-control-color" value="#222222">
+                            </div>
+                            <div class="col-md-6">
+                              <label for="surfaceColor" class="form-label">Surface Color:</label>
+                              <input type="color" id="surfaceColor" class="form-control form-control-color" value="#444444">
+                            </div>
+                          </div>
+                          <div class="row mb-2">
+                            <div class="col-md-6">
+                              <label for="textColor" class="form-label">Text Color:</label>
+                              <input type="color" id="textColor" class="form-control form-control-color" value="#E0E0E0">
+                            </div>
+                            <div class="col-md-6">
+                              <label for="textSecondary" class="form-label">Secondary Text:</label>
+                              <input type="color" id="textSecondary" class="form-control form-control-color" value="#C0C0C0">
+                            </div>
+                          </div>
+                          <div class="row mb-2">
+                            <div class="col-md-6">
+                              <label for="textMuted" class="form-label">Muted Text:</label>
+                              <input type="color" id="textMuted" class="form-control form-control-color" value="#A0A0A0">
+                            </div>
+                            <div class="col-md-6">
+                              <label for="borderColor" class="form-label">Border Color:</label>
+                              <input type="color" id="borderColor" class="form-control form-control-color" value="#00FF00">
+                            </div>
+                          </div>
+                          <div class="mb-2">
+                            <label for="fontFamily" class="form-label">Font Family:</label>
+                            <select id="fontFamily" class="form-select">
+                              <option value="'Share Tech Mono', monospace">Share Tech Mono (Default)</option>
+                              <option value="Arial, sans-serif">Arial</option>
+                              <option value="'Times New Roman', serif">Times New Roman</option>
+                              <option value="'Courier New', monospace">Courier New</option>
+                              <option value="'Roboto', sans-serif">Roboto (Google Font)</option>
+                              <option value="'Open Sans', sans-serif">Open Sans (Google Font)</option>
+                              <option value="'Lato', sans-serif">Lato (Google Font)</option>
+                              <option value="'Fira Code', monospace">Fira Code (Google Font)</option>
+                              <option value="'JetBrains Mono', monospace">JetBrains Mono (Google Font)</option>
+                            </select>
+                          </div>
+                          <div class="row mb-2">
+                            <div class="col-md-6">
+                              <label for="faviconUrl" class="form-label">Favicon URL:</label>
+                              <input type="url" id="faviconUrl" class="form-control" placeholder="https://example.com/favicon.ico">
+                            </div>
+                            <div class="col-md-6">
+                              <label for="logoUrl" class="form-label">Logo URL:</label>
+                              <input type="url" id="logoUrl" class="form-control" placeholder="https://example.com/logo.png">
+                            </div>
+                          </div>
+                          
+                          <h5 class="mt-4">Footer Management</h5>
+                          <div class="mb-2">
+                            <label for="footerText" class="form-label">Footer Text:</label>
+                            <textarea id="footerText" class="form-control" rows="3" placeholder="© 2025 Your Site Name. All rights reserved."></textarea>
+                          </div>
+                          <div class="mb-2">
+                            <label for="footerLinks" class="form-label">Footer Links (JSON format):</label>
+                            <textarea id="footerLinks" class="form-control" rows="4" placeholder='[{"text": "Privacy Policy", "url": "/privacy"}, {"text": "Terms of Service", "url": "/terms"}]'></textarea>
+                            <small class="text-muted">Format: [{"text": "Link Text", "url": "/path", "external": false}]</small>
+                          </div>
+                          
+                          <h5 class="mt-4">Navigation Menu</h5>
+                          <div class="mb-2">
+                            <label for="menuLinks" class="form-label">Custom Menu Links (JSON format):</label>
+                            <textarea id="menuLinks" class="form-control" rows="4" placeholder='[{"text": "About", "url": "/about"}, {"text": "Contact", "url": "/contact"}]'></textarea>
+                            <small class="text-muted">Format: [{"text": "Link Text", "url": "/path", "external": false, "roles": ["user"]}]</small>
+                          </div>
+                          
+                          <div class="mb-2">
+                            <label for="customCss" class="form-label">Custom CSS:</label>
+                            <textarea id="customCss" class="form-control" rows="6" placeholder="Enter custom CSS rules here..."></textarea>
+                          </div>
+                        </div>
+                      </div>
+                      <button id="themeSaveButton" class="btn btn-success btn-sm mt-3">Save Theme</button>
+                      <button id="themeDeleteButton" class="btn btn-danger btn-sm mt-3 ms-2">Delete Theme</button>
+                      <button id="themePreviewButton" class="btn btn-info btn-sm mt-3 ms-2">Preview Theme</button>
+                      <div id="themeMessageDiv" class="mt-3 text-center"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+    </div>
+    
+    <!-- Footer placeholder -->
+    <footer class="footer mt-auto py-3 bg-light" data-theme-footer="true">
+      <div class="container text-center">
+        <p class="mb-0">&copy; 2025 TypeScript CMS Admin Panel. All rights reserved.</p>
+      </div>
+    </footer>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="/js/theme-init.js" type="module"></script>
     <script src="/include-nav.js" type="module"></script>
     <script src="/nav/script.js" type="module"></script>
     <script src="/admin/script.js" type="module"></script>

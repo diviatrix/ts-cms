@@ -10,7 +10,8 @@ body {
     font-family: 'Share Tech Mono', monospace; /* A techy font */
     color: #E0E0E0; /* Light grey for general text */
     min-height: 100vh;
-    position: relative;
+    display: flex;
+    flex-direction: column;
     padding: 20px;
 }
 
@@ -177,4 +178,27 @@ body {
 
 .neon-green-text {
   color: var(--neon-green);
+}
+
+/* Footer Styling */
+.footer {
+  margin-top: auto;
+  background-color: var(--grey) !important;
+  border-top: 1px solid var(--neon-green);
+  color: #E0E0E0;
+}
+
+.footer a {
+  color: var(--warm-yellow);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: var(--neon-green);
+  text-decoration: underline;
+}
+
+/* Main content wrapper */
+.main-content {
+  flex: 1;
 }
