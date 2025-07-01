@@ -12,16 +12,8 @@
 - [x] Split ui-utils.js into focused utility modules (Phase 2)
 - [x] Break down admin controller into feature modules (Phase 3)
 
-### Polish Features
-- [ ] Add 'console terminal' feature for user action log, displaying recent actions in a terminal-like interface, this terminal should show all user received messages, with different data for user and admin roles.
-
-### Performance
-- [ ] Implement client-side caching for API responses
-- [ ] Add lazy loading for large data sets
-
-## Future Tasks
-
 ### Theming System
+- [ ] Prepare backend for themes - sql, api, etc
 - [ ] Create theme configuration interface in admin panel
 - [ ] Implement color customization (CSS variables)
 - [ ] Add Google Fonts integration
@@ -35,10 +27,10 @@
 - [ ] Integrate with record editor interface
 
 ### Comments System
+- [ ] Add third-party integration options (Disqus)
 - [ ] Design basic commenting system for records
 - [ ] Add anti-spam protection (reCAPTCHA)
 - [ ] Create moderation interface for admins
-- [ ] Add third-party integration options (Disqus)
 
 ### Content Management
 - [ ] Integrate rich text editor for record content
