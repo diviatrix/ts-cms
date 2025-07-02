@@ -1,9 +1,10 @@
 import * as sqlite3 from 'sqlite3';
 import config from '../data/config';
-import schemas from './sql-schemas';
+import schemas, { defaultRoles, defaultThemeSettings, defaultTheme } from './sql-schemas';
 import messages from '../data/messages';
 import IResolve from '../types/IResolve';
-import prep from '../utils/prepare'
+import prep from '../utils/prepare';
+import { ContextLogger } from '../utils/context-logger';
 
 // For more detailed logs from the sqlite3 driver, you can uncomment the next line:
 // const sqlite = sqlite3.verbose();
@@ -73,20 +74,13 @@ export default class SQLiteAdapter {
     }
 
     public async createTables(tables: string[]): Promise<IResolve<string[]>> {
+        // First, create all tables
         for (const table of tables) {
             const schema = schemas[table as keyof typeof schemas];
             if (schema) {
                 const response = await this.executeQuery(schema);
                 if (response.success) {
                     console.log(messages.sql_create_table_success, table);
-                    // If roles table was just created, insert default roles
-                    if (table === 'roles') {
-                        await this.insertDefaultRoles();
-                    }
-                    // If themes table was just created, insert default theme
-                    if (table === 'themes') {
-                        await this.insertDefaultTheme();
-                    }
                 } else {
                     console.error(messages.sql_create_table_error, table, response.message);
                 }                
@@ -95,16 +89,18 @@ export default class SQLiteAdapter {
             }
         }
 
+        // After all tables are created, insert default data
+        if (tables.includes('roles')) {
+            await this.insertDefaultRoles();
+        }
+        if (tables.includes('themes') && tables.includes('theme_settings')) {
+            await this.insertDefaultTheme();
+        }
+
         return prep.response(true, messages.success, tables);
     }
 
     private async insertDefaultRoles(): Promise<void> {
-        const defaultRoles = [
-            { id: 'user', name: 'User', description: 'Standard user role', weight: 10, perms: '[]' },
-            { id: 'admin', name: 'Admin', description: 'Administrator role with full access', weight: 100, perms: '[]' },
-            { id: 'guest', name: 'Guest', description: 'Guest user role with limited access', weight: 0, perms: '[]' },
-        ];
-
         for (const role of defaultRoles) {
             const query = `INSERT OR IGNORE INTO roles (id, name, description, weight, perms) VALUES (?, ?, ?, ?, ?)`;
             await this.executeQuery(query, [role.id, role.name, role.description, role.weight, role.perms]);
@@ -147,24 +143,21 @@ export default class SQLiteAdapter {
             console.log('Created system user for theme creation');
         }
         
-        const defaultTheme = {
+        const themeData = {
             id: generateGuid(),
-            name: 'Default Theme',
-            description: 'Default TypeScript CMS theme with modern dark styling',
-            is_active: true,
-            is_default: true,
+            ...defaultTheme,
             created_by: createdBy
         };
 
         // Insert default theme
         const themeQuery = `INSERT OR IGNORE INTO themes (id, name, description, is_active, is_default, created_by) VALUES (?, ?, ?, ?, ?, ?)`;
         const themeResult = await this.executeQuery(themeQuery, [
-            defaultTheme.id, 
-            defaultTheme.name, 
-            defaultTheme.description, 
-            defaultTheme.is_active, 
-            defaultTheme.is_default, 
-            defaultTheme.created_by
+            themeData.id, 
+            themeData.name, 
+            themeData.description, 
+            themeData.is_active, 
+            themeData.is_default, 
+            themeData.created_by
         ]);
 
         if (!themeResult.success) {
@@ -172,31 +165,13 @@ export default class SQLiteAdapter {
             return;
         }
 
-        // Insert default theme settings (matching existing dark theme)
-        const defaultSettings = [
-            { key: 'primary_color', value: '#00FF00' },      // Neon green (accent)
-            { key: 'secondary_color', value: '#FFD700' },    // Warm yellow (accent)
-            { key: 'background_color', value: '#222222' },   // Dark grey (main background)
-            { key: 'surface_color', value: '#444444' },      // Grey (cards, surfaces)
-            { key: 'text_color', value: '#E0E0E0' },         // Light grey (primary text)
-            { key: 'text_secondary', value: '#C0C0C0' },     // Medium grey (secondary text)
-            { key: 'text_muted', value: '#A0A0A0' },         // Darker grey (muted text)
-            { key: 'border_color', value: '#00FF00' },       // Neon green (borders)
-            { key: 'font_family', value: "'Share Tech Mono', monospace" },
-            { key: 'custom_css', value: '' },
-            { key: 'favicon_url', value: '' },
-            { key: 'logo_url', value: '' },
-            { key: 'footer_text', value: '© 2025 TypeScript CMS. Built with modern web technologies.' },
-            { key: 'footer_links', value: '[]' },
-            { key: 'menu_links', value: '[]' }
-        ];
-
-        for (const setting of defaultSettings) {
+        // Insert default theme settings
+        for (const setting of defaultThemeSettings) {
             const settingQuery = `INSERT OR IGNORE INTO theme_settings (theme_id, setting_key, setting_value) VALUES (?, ?, ?)`;
-            await this.executeQuery(settingQuery, [defaultTheme.id, setting.key, setting.value]);
+            await this.executeQuery(settingQuery, [themeData.id, setting.key, setting.value]);
         }
 
-        console.log(`Inserted default theme: ${defaultTheme.name} with ${defaultSettings.length} settings`);
+        console.log(`Inserted default theme: ${themeData.name} with ${defaultThemeSettings.length} settings`);
     }
 
     public async createTable(schema: string): Promise<IResolve<string[]>> {
@@ -255,5 +230,22 @@ export default class SQLiteAdapter {
                 }
             });
         });
+    }
+
+    // Test-only method for cleaning up test users
+    public async cleanupTestUsers(): Promise<IResolve<number>> {
+        const testUserPatterns = ['testuser', 'debug_user', 'state_check_user'];
+        let deletedCount = 0;
+        
+        for (const pattern of testUserPatterns) {
+            const deleteQuery = `DELETE FROM users WHERE login = ? AND login != 'system'`;
+            const result = await this.executeQuery(deleteQuery, [pattern]);
+            if (result.success) {
+                deletedCount++;
+                ContextLogger.operation('TEST', 'Cleanup', pattern, 'DELETED', 0);
+            }
+        }
+        
+        return prep.response(true, `Deleted ${deletedCount} test users`, deletedCount);
     }
 };

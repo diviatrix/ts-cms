@@ -12,22 +12,40 @@ import themeRoutes from './routes/theme.routes';
 import { updateProfile } from './functions/updateProfile';
 import { errorHandler } from './middleware/error.middleware';
 import logger from './utils/logger';
+import { ContextLogger } from './utils/context-logger';
 
 function createExpressApp(): express.Application {
     // Create an Express application
     const app = express();  
 
-    // Log all incoming requests to the API router
-    app.use('/api', (req, res, next) => {
-        logger.apiRequest(req.method, req.url);
-        next();
-    });
-
     // Use CORS middleware to allow requests from the specified origin
     app.use(cors({ origin: config.origin }));   
 
-    // Parse JSON request bodies
+    // Parse JSON request bodies FIRST - before any other middleware that needs req.body
     app.use(express.json());
+
+    // Log all incoming requests to the API router
+    app.use('/api', (req, res, next) => {
+        const startTime = Date.now();
+        
+        // Log request
+        logger.apiRequest(req.method, req.url);
+        
+        // Only log body for registration to debug the issue
+        if (req.url === '/register' && req.method === 'POST') {
+            console.log(`📝 Registration data received:`, req.body);
+        }
+        
+        // Capture response
+        const originalSend = res.send;
+        res.send = function(body) {
+            const timing = Date.now() - startTime;
+            ContextLogger.api(req.method, req.url, res.statusCode, timing);
+            return originalSend.call(this, body);
+        };
+        
+        next();
+    });
 
     // Serve static files from the specified folder
     app.use(express.static(path.join(__dirname, '..', config.static_folder)));
@@ -58,7 +76,9 @@ function createExpressApp(): express.Application {
     return app;
 }
 
-// Create and export the app instance
-const app = createExpressApp();
+// Export the function to create the app
+export { createExpressApp };
 
+// Create and export the app instance for testing
+const app = createExpressApp();
 export default app;

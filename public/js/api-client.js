@@ -310,8 +310,8 @@ const AuthAPI = {
         return response;
     },
 
-    async register(login, email, password_hash) {
-        return apiClient.post('/register', { login, email, password_hash }, false);
+    async register(login, email, password) {
+        return apiClient.post('/register', { login, email, password }, false);
     },
 
     logout() {

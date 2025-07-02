@@ -1,4 +1,4 @@
-import createExpressApp from "./src/expressapi.ts";
+import { createExpressApp } from "./src/expressapi";
 import config from './src/data/config';
 import logger from './src/utils/logger';
 
@@ -23,7 +23,17 @@ const server = app.listen(config.api_port, () => {
         cors_origin: config.origin,
         static_folder: config.static_folder
     });
+    
+    console.log('\n=== TypeScript CMS Server Started ===');
+    console.log(`🚀 Server is running at ${config.api_address}:${config.api_port}`);
+    console.log('📁 Static files served from:', config.static_folder);
+    console.log('🔗 CORS origin:', config.origin);
+    console.log('\nPress Ctrl+C to stop the server');
+    console.log('=====================================\n');
 });
+
+// Keep server alive - prevent auto-exit
+process.stdin.resume();
 
 // Handle server shutdown gracefully
 process.on('SIGTERM', () => {

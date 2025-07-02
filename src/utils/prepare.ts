@@ -23,12 +23,9 @@ export default class prep {
       result = arg1;
     }
 
-    // Add callerInfo to the console log
-    if (message) {
-      console.log(`${message}${callerInfo ? ` <${callerInfo}>` : ''}:`, result);
-    }
-    else {
-      console.log(`${callerInfo ? ` <${callerInfo}>` : ''}:`, result);
+    // Only log errors and important operations, not routine SQL success
+    if (!result.success || (message && !message.includes('SQL query executed successfully'))) {
+      console.log(`${message || 'Operation'}${callerInfo ? ` <${callerInfo}>` : ''}:`, result);
     }
 
     return result;

@@ -11,6 +11,7 @@ const router = express.Router();
 // Add the registration endpoint
 router.post('/register', validateBody(ValidationSchemas.register), asyncHandler(async (req: Request, res: Response) => {
     const userData = req.body;
+    
     logger.info('User registration attempt', { login: userData.login, email: userData.email });
 
     // Hash the password before passing to registerUser

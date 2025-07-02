@@ -121,6 +121,16 @@ class Database {
         return prep.response(false, messages.failure, []);
     }
 
+    public async getUserCount(): Promise<IResolve<number>> {
+        const query = `SELECT COUNT(*) as count FROM users`;
+        const response = await this.db.executeQuery(query, []);
+        if (response.success && Array.isArray(response.data) && response.data.length > 0) {
+            const count = (response.data[0] as any).count;
+            return prep.response(true, messages.success, count);
+        }
+        return prep.response(false, messages.failure, 0);
+    }
+
     public async addUserToGroup(userId: string, groupId: string): Promise<IResolve<boolean>> {
         const query = `INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)`;
         const response = await this.db.executeQuery(query, [userId, groupId]);
@@ -405,7 +415,25 @@ class Database {
         const response = await this.db.executeQuery(query, [userId, themeId, customSettings]);
         return prep.response(response.success, response.message, response.success);
     }
-    
+
+    public async deleteUser(userId: string): Promise<IResolve<boolean>> {
+        // Delete user with proper cascade (sessions, profiles, groups)
+        const queries = [
+            'DELETE FROM sessions WHERE user_id = ?',
+            'DELETE FROM user_profiles WHERE user_id = ?', 
+            'DELETE FROM user_groups WHERE user_id = ?',
+            'DELETE FROM users WHERE id = ?'
+        ];
+        
+        for (const query of queries) {
+            const response = await this.db.executeQuery(query, [userId]);
+            if (!response.success) {
+                return prep.response(false, `Failed to delete user: ${response.message}`, false);
+            }
+        }
+        
+        return prep.response(true, 'User deleted successfully', true);
+    }
 }
 
 export default Database.getInstance();

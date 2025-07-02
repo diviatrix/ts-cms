@@ -71,8 +71,8 @@ class ProfileController {
       // Extract only the actual profile data from the API response
       const profileData = response.data || {};
       
-      // Populate JSON editor with only the data
-      this.elements.profileData.value = JSON.stringify(profileData.data, null, 2);
+      // Populate JSON editor with the profile data directly
+      this.elements.profileData.value = JSON.stringify(profileData, null, 2);
       this.validateJson();
       this.message.showSuccess('Profile loaded successfully');
       

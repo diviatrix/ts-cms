@@ -112,3 +112,35 @@ export default {
             FOREIGN KEY (theme_id) REFERENCES themes (id) ON DELETE CASCADE
         )`
 };
+
+// Default data for database initialization
+export const defaultRoles = [
+    { id: 'user', name: 'User', description: 'Standard user role', weight: 10, perms: '[]' },
+    { id: 'admin', name: 'Admin', description: 'Administrator role with full access', weight: 100, perms: '[]' },
+    { id: 'guest', name: 'Guest', description: 'Guest user role with limited access', weight: 0, perms: '[]' },
+];
+
+export const defaultThemeSettings = [
+    { key: 'primary_color', value: '#00FF00' },      // Neon green (accent)
+    { key: 'secondary_color', value: '#FFD700' },    // Warm yellow (accent)
+    { key: 'background_color', value: '#222222' },   // Dark grey (main background)
+    { key: 'surface_color', value: '#444444' },      // Grey (cards, surfaces)
+    { key: 'text_color', value: '#E0E0E0' },         // Light grey (primary text)
+    { key: 'text_secondary', value: '#C0C0C0' },     // Medium grey (secondary text)
+    { key: 'text_muted', value: '#A0A0A0' },         // Darker grey (muted text)
+    { key: 'border_color', value: '#00FF00' },       // Neon green (borders)
+    { key: 'font_family', value: "'Share Tech Mono', monospace" },
+    { key: 'custom_css', value: '' },
+    { key: 'favicon_url', value: '' },
+    { key: 'logo_url', value: '' },
+    { key: 'footer_text', value: '© 2025 TypeScript CMS. Built with modern web technologies.' },
+    { key: 'footer_links', value: '[]' },
+    { key: 'menu_links', value: '[]' }
+];
+
+export const defaultTheme = {
+    name: 'Default Theme',
+    description: 'Default TypeScript CMS theme with modern dark styling',
+    is_active: true,
+    is_default: true
+};
