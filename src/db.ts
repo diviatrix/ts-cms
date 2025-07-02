@@ -434,6 +434,53 @@ class Database {
         
         return prep.response(true, 'User deleted successfully', true);
     }
+
+    // CMS Settings management methods
+    public async getCMSSettings(): Promise<IResolve<any[]>> {
+        const query = 'SELECT * FROM cms_settings ORDER BY category, setting_key';
+        const response = await this.db.executeQuery(query, []);
+        return prep.response(response.success, response.message, response.data);
+    }
+
+    public async getCMSSetting(key: string): Promise<IResolve<any>> {
+        const query = 'SELECT * FROM cms_settings WHERE setting_key = ?';
+        const response = await this.db.executeQuery(query, [key]);
+        const setting = response.data?.[0];
+        return prep.response(response.success, response.message, setting);
+    }
+
+    public async setCMSSetting(key: string, value: string, type: string = 'string', updatedBy: string): Promise<IResolve<boolean>> {
+        const query = `INSERT OR REPLACE INTO cms_settings (setting_key, setting_value, setting_type, updated_at, updated_by) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)`;
+        const response = await this.db.executeQuery(query, [key, value, type, updatedBy]);
+        return prep.response(response.success, response.message, response.success);
+    }
+
+    public async getActiveWebsiteTheme(): Promise<IResolve<any>> {
+        // First try to get from CMS settings
+        const themeIdSetting = await this.getCMSSetting('active_theme_id');
+        if (themeIdSetting.success && themeIdSetting.data && themeIdSetting.data.setting_value) {
+            const theme = await this.getThemeById(themeIdSetting.data.setting_value);
+            if (theme.success && theme.data) {
+                return theme;
+            }
+        }
+        
+        // Fallback to active theme from themes table
+        return await this.getActiveTheme();
+    }
+
+    public async setActiveWebsiteTheme(themeId: string, updatedBy: string): Promise<IResolve<boolean>> {
+        // Verify theme exists
+        const theme = await this.getThemeById(themeId);
+        if (!theme.success || !theme.data) {
+            return prep.response(false, 'Theme not found', false);
+        }
+
+        // ONLY update CMS setting - do NOT sync with themes table
+        // The themes.is_active should be independent of website theme
+        const cmsResult = await this.setCMSSetting('active_theme_id', themeId, 'string', updatedBy);
+        return cmsResult;
+    }
 }
 
 export default Database.getInstance();

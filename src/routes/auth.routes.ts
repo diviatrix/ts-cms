@@ -26,7 +26,7 @@ router.post('/register', validateBody(ValidationSchemas.register), asyncHandler(
         ResponseUtils.created(res, result.data, result.message || 'User registered successfully');
     } else {
         logger.warn('User registration failed', { login: userData.login, email: userData.email });
-        throw Errors.validation(result.message || 'Registration failed');
+        throw Errors.validation('Registration failed. Please check your information and try again.');
     }
 }));
 

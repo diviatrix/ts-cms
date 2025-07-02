@@ -1,36 +1,33 @@
 /**
  * Global Theme Initialization
- * This script initializes the theme manager on all pages
+ * This script initializes the unified theme system on all pages
  */
 
-import { ThemeManager } from './theme-manager.js';
+import { unifiedThemeSystem } from './utils/theme-system.js';
 
-// Initialize theme manager globally
-let themeManager;
-
-// Wait for DOM to be ready
+// The unified theme system auto-initializes, but we can add global handlers
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeTheme);
+    document.addEventListener('DOMContentLoaded', setupThemeHandlers);
 } else {
-    initializeTheme();
+    setupThemeHandlers();
 }
 
-function initializeTheme() {
-    console.log('[ThemeInit] Starting theme manager initialization...');
-    try {
-        themeManager = new ThemeManager();
-        console.log('[ThemeInit] Theme manager initialized successfully');
-        
-        // Add global error handler for theme events
-        document.addEventListener('themeFallbackApplied', (event) => {
-            console.warn('[ThemeInit] Fallback theme was applied:', event.detail);
-        });
-        
-    } catch (error) {
-        console.error('[ThemeInit] Failed to initialize theme manager:', error);
-        console.log('[ThemeInit] Site will continue with default browser styling');
+function setupThemeHandlers() {
+    console.log('[ThemeInit] Setting up unified theme system handlers...');
+    
+    // Add global error handler for theme events
+    document.addEventListener('themeFallbackApplied', (event) => {
+        console.warn('[ThemeInit] Fallback theme was applied:', event.detail);
+    });
+    
+    document.addEventListener('themeChanged', (event) => {
+        console.log('[ThemeInit] Theme changed:', event.detail);
+    });
+    
+    // Ensure global access (already set by theme-system.js)
+    if (!window.themeManager) {
+        window.themeManager = unifiedThemeSystem;
     }
+    
+    console.log('[ThemeInit] Unified theme system handlers setup complete');
 }
-
-// Export for global access if needed
-window.themeManager = themeManager;

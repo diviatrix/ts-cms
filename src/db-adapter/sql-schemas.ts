@@ -110,6 +110,16 @@ export default {
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
             FOREIGN KEY (theme_id) REFERENCES themes (id) ON DELETE CASCADE
+        )`,
+    cms_settings: `
+        CREATE TABLE IF NOT EXISTS cms_settings (
+            setting_key TEXT PRIMARY KEY NOT NULL,
+            setting_value TEXT NOT NULL,
+            setting_type TEXT NOT NULL DEFAULT 'string',
+            description TEXT,
+            category TEXT NOT NULL DEFAULT 'general',
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_by TEXT NOT NULL
         )`
 };
 
@@ -144,3 +154,12 @@ export const defaultTheme = {
     is_active: true,
     is_default: true
 };
+
+export const defaultCMSSettings = [
+    { key: 'site_name', value: 'TypeScript CMS', type: 'string', description: 'Website name', category: 'general' },
+    { key: 'site_description', value: 'Modern CMS built with TypeScript', type: 'string', description: 'Website description', category: 'general' },
+    { key: 'active_theme_id', value: '', type: 'string', description: 'Currently active website theme', category: 'theme' },
+    { key: 'maintenance_mode', value: 'false', type: 'boolean', description: 'Site maintenance mode', category: 'general' },
+    { key: 'allow_registration', value: 'true', type: 'boolean', description: 'Allow new user registration', category: 'security' },
+    { key: 'default_user_role', value: 'user', type: 'string', description: 'Default role for new users', category: 'security' }
+];

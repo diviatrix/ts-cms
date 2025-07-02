@@ -9,6 +9,7 @@ import profileRoutes from './routes/profile.routes';
 import adminRoutes from './routes/admin.routes';
 import recordRoutes from './routes/record.routes';
 import themeRoutes from './routes/theme.routes';
+import cmsRoutes from './routes/cms.routes';
 import { updateProfile } from './functions/updateProfile';
 import { errorHandler } from './middleware/error.middleware';
 import logger from './utils/logger';
@@ -69,6 +70,9 @@ function createExpressApp(): express.Application {
     
     // Use theme routes
     app.use('/api/themes', themeRoutes);
+    
+    // Use CMS routes
+    app.use('/api/cms', cmsRoutes);
 
     // Centralized error handling middleware (must be last)
     app.use(errorHandler);

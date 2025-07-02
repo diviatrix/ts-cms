@@ -8,6 +8,7 @@ import {
 import { jwtDecode } from '../js/jwt-decode.js';
 import { UserManagement, RecordManagement, AdminUtils } from './modules/index.js';
 import { ThemeManagement } from './modules/theme-management.js';
+import { CMSSettings } from './modules/cms-settings.js';
 
 /**
  * Admin Panel Controller (Refactored)
@@ -140,6 +141,9 @@ class AdminController {
 
         // Initialize theme management module
         this.themeManagement = new ThemeManagement();
+        
+        // Initialize CMS settings module
+        this.cmsSettings = new CMSSettings();
     }
 
     /**
@@ -231,6 +235,150 @@ class AdminController {
         }
     }
 }
+
+/**
+ * Global Test Page Functions
+ * These functions are used by the Test Pages tab for development and testing
+ */
+
+// Store references to opened test page windows
+window.testPageWindows = window.testPageWindows || [];
+
+/**
+ * Opens all test pages in separate tabs/windows for comprehensive theme testing
+ */
+window.openAllTestPages = function() {
+    const testPages = [
+        { url: '/', name: 'Homepage' },
+        { url: '/message-system-demo.html', name: 'Message System Demo' },
+        { url: '/nav/', name: 'Navigation Test' },
+        { url: '/login/', name: 'Login Page' },
+        { url: '/login/index-theme-demo.html', name: 'Login Theme Demo' },
+        { url: '/profile/', name: 'User Profile' },
+        { url: '/password/', name: 'Password Management' },
+        { url: '/record/', name: 'Records Page' }
+    ];
+
+    console.log('Opening all test pages for theme testing...');
+    
+    // Clear any closed window references
+    window.testPageWindows = window.testPageWindows.filter(w => w && !w.closed);
+    
+    testPages.forEach(page => {
+        try {
+            const windowRef = window.open(page.url, `testpage_${page.name.replace(/\s+/g, '_')}`, 'width=1200,height=800');
+            if (windowRef) {
+                window.testPageWindows.push(windowRef);
+                console.log(`Opened: ${page.name} (${page.url})`);
+            }
+        } catch (error) {
+            console.error(`Failed to open ${page.name}:`, error);
+        }
+    });
+    
+    // Show success message
+    const messageDiv = document.getElementById('cmsSettingsMessageDiv');
+    if (messageDiv) {
+        messageDiv.innerHTML = `
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong>Test Pages Opened!</strong> ${testPages.length} pages opened for theme testing.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+};
+
+/**
+ * Refreshes all currently open test page windows
+ */
+window.refreshAllTestPages = function() {
+    // Filter out closed windows
+    window.testPageWindows = window.testPageWindows.filter(w => w && !w.closed);
+    
+    if (window.testPageWindows.length === 0) {
+        const messageDiv = document.getElementById('cmsSettingsMessageDiv');
+        if (messageDiv) {
+            messageDiv.innerHTML = `
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong>No Test Pages Open!</strong> Please open some test pages first.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    console.log(`Refreshing ${window.testPageWindows.length} test page windows...`);
+    
+    let refreshCount = 0;
+    window.testPageWindows.forEach(windowRef => {
+        try {
+            if (windowRef && !windowRef.closed) {
+                windowRef.location.reload();
+                refreshCount++;
+            }
+        } catch (error) {
+            console.warn('Failed to refresh a test page window:', error);
+        }
+    });
+    
+    // Show success message
+    const messageDiv = document.getElementById('cmsSettingsMessageDiv');
+    if (messageDiv) {
+        messageDiv.innerHTML = `
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <strong>Pages Refreshed!</strong> ${refreshCount} test pages have been refreshed to show current theme.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+};
+
+/**
+ * Clears test data and closes all test page windows
+ */
+window.clearTestPageData = function() {
+    // Close all test page windows
+    const windowCount = window.testPageWindows.length;
+    window.testPageWindows.forEach(windowRef => {
+        try {
+            if (windowRef && !windowRef.closed) {
+                windowRef.close();
+            }
+        } catch (error) {
+            console.warn('Failed to close a test page window:', error);
+        }
+    });
+    
+    // Clear the array
+    window.testPageWindows = [];
+    
+    // Clear any session storage or local storage used for testing (if needed)
+    try {
+        // Clear any test-specific storage keys
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+            const key = sessionStorage.key(i);
+            if (key && key.startsWith('test_')) {
+                sessionStorage.removeItem(key);
+            }
+        }
+    } catch (error) {
+        console.warn('Failed to clear test session data:', error);
+    }
+    
+    console.log(`Cleared test data and closed ${windowCount} test page windows`);
+    
+    // Show success message
+    const messageDiv = document.getElementById('cmsSettingsMessageDiv');
+    if (messageDiv) {
+        messageDiv.innerHTML = `
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong>Test Data Cleared!</strong> Closed ${windowCount} test page windows and cleared test data.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+};
 
 // Wait for DOM to be ready, then initialize
 document.addEventListener('DOMContentLoaded', async () => {

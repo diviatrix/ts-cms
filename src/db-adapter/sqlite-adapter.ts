@@ -1,6 +1,6 @@
 import * as sqlite3 from 'sqlite3';
 import config from '../data/config';
-import schemas, { defaultRoles, defaultThemeSettings, defaultTheme } from './sql-schemas';
+import schemas, { defaultRoles, defaultThemeSettings, defaultTheme, defaultCMSSettings } from './sql-schemas';
 import messages from '../data/messages';
 import IResolve from '../types/IResolve';
 import prep from '../utils/prepare';
@@ -96,6 +96,9 @@ export default class SQLiteAdapter {
         if (tables.includes('themes') && tables.includes('theme_settings')) {
             await this.insertDefaultTheme();
         }
+        if (tables.includes('cms_settings')) {
+            await this.insertDefaultCMSSettings();
+        }
 
         return prep.response(true, messages.success, tables);
     }
@@ -172,6 +175,41 @@ export default class SQLiteAdapter {
         }
 
         console.log(`Inserted default theme: ${themeData.name} with ${defaultThemeSettings.length} settings`);
+    }
+
+    private async insertDefaultCMSSettings(): Promise<void> {
+        // Check if CMS settings already exist
+        const existingQuery = `SELECT setting_key FROM cms_settings LIMIT 1`;
+        const existingResult = await this.executeQuery(existingQuery);
+        
+        if (existingResult.success && existingResult.data && Array.isArray(existingResult.data) && existingResult.data.length > 0) {
+            console.log('CMS settings already exist, skipping creation');
+            return;
+        }
+
+        // Get system user ID for CMS settings
+        let systemUserId = 'system-user';
+        const userQuery = `SELECT id FROM users WHERE login = 'system' LIMIT 1`;
+        const userResult = await this.executeQuery(userQuery);
+        if (userResult.success && userResult.data && Array.isArray(userResult.data) && userResult.data.length > 0) {
+            const systemUser = (userResult.data as any[])[0];
+            systemUserId = systemUser.id;
+        }
+
+        // Insert default CMS settings
+        for (const setting of defaultCMSSettings) {
+            const settingQuery = `INSERT OR IGNORE INTO cms_settings (setting_key, setting_value, setting_type, description, category, updated_by) VALUES (?, ?, ?, ?, ?, ?)`;
+            await this.executeQuery(settingQuery, [
+                setting.key, 
+                setting.value, 
+                setting.type, 
+                setting.description, 
+                setting.category, 
+                systemUserId
+            ]);
+        }
+
+        console.log(`Inserted ${defaultCMSSettings.length} default CMS settings`);
     }
 
     public async createTable(schema: string): Promise<IResolve<string[]>> {
