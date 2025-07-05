@@ -43,6 +43,8 @@ Register a user, then manually add admin role to the SQLite database:
 INSERT INTO user_groups (user_id, group_id) VALUES ('YOUR_USER_ID', 'admin');
 ```
 
+---
+
 ## Development
 
 - [PLAN.md](PLAN.md) - Current and future development tasks

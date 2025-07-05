@@ -4,6 +4,7 @@
  */
 
 import { MessageDisplay, ErrorHandler, loadingManager, errorHandler } from '../ui-utils.js';
+import { messages } from '../ui-utils.js';
 
 /**
  * Base Page Controller
@@ -34,7 +35,7 @@ class BasePageController {
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
             if (this.message) {
-                this.message.showError('An unexpected error occurred. Please refresh the page.');
+                messages.error('An unexpected error occurred. Please refresh the page.', { toast: true });
             }
         });
     }
@@ -63,7 +64,7 @@ class BasePageController {
     handleApiResponse(response, successCallback = null, errorCallback = null) {
         if (response.success) {
             if (this.message) {
-                this.message.showSuccess(response.message || 'Operation completed successfully');
+                messages.success(response.message || 'Operation completed successfully', { toast: true });
             }
             if (successCallback) {
                 successCallback(response.data);

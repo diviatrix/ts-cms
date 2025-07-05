@@ -110,62 +110,7 @@ class ErrorHandler {
         fieldElement.parentNode.insertBefore(errorElement, fieldElement.nextSibling);
     }
 
-    /**
-     * Show toast notification
-     */
-    static showToast(message, type = 'info', duration = 5000) {
-        // Create toast container if it doesn't exist
-        let toastContainer = document.getElementById('toast-container');
-        if (!toastContainer) {
-            toastContainer = document.createElement('div');
-            toastContainer.id = 'toast-container';
-            toastContainer.className = 'position-fixed top-0 end-0 p-3';
-            toastContainer.style.zIndex = '9999';
-            document.body.appendChild(toastContainer);
-        }
 
-        // Create toast element
-        const toastId = 'toast-' + Date.now();
-        const toast = document.createElement('div');
-        toast.id = toastId;
-        toast.className = `toast align-items-center text-white bg-${this.getBootstrapColor(type)} border-0`;
-        toast.setAttribute('role', 'alert');
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
-
-        toastContainer.appendChild(toast);
-
-        // Initialize Bootstrap toast (if available)
-        if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
-            const bsToast = new bootstrap.Toast(toast, { autohide: true, delay: duration });
-            bsToast.show();
-        } else {
-            // Fallback: show and hide manually
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.remove();
-            }, duration);
-        }
-    }
-
-    /**
-     * Get Bootstrap color class for message type
-     */
-    static getBootstrapColor(type) {
-        const colorMap = {
-            success: 'success',
-            error: 'danger',
-            warning: 'warning',
-            info: 'info'
-        };
-        return colorMap[type] || 'info';
-    }
 
     /**
      * Clear retry count for operation

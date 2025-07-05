@@ -20,6 +20,9 @@ import { SimpleMessageAPI, messages, handleFormResponse, withErrorHandling } fro
 import { UnifiedThemeSystem, unifiedThemeSystem } from './theme-system.js';
 import { SimpleThemeAPI, theme, withTheme, themedElement, applyTheme, getThemeColors, themeClass } from './theme-api.js';
 
+// Import CMS integration
+import { cmsIntegration } from './cms-integration.js';
+
 // Re-export all utilities
 export {
     // Legacy utilities (kept for backward compatibility)
@@ -56,5 +59,6 @@ export {
     keyboardShortcuts,
     autoLogoutManager,
     unifiedMessageSystem,
-    unifiedThemeSystem
+    unifiedThemeSystem,
+    cmsIntegration
 };

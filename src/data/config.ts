@@ -15,7 +15,7 @@ export default {
     isProduction,
     
     // Server configuration
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:7331',
     api_address: process.env.API_ADDRESS || 'http://localhost',
     api_port: parseInt(process.env.API_PORT || '7331', 10),
     api_suffix: '/api',

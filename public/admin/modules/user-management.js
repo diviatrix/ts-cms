@@ -4,7 +4,8 @@
  */
 
 import { AdminAPI, AuthAPI, ProfileAPI } from '../../js/api-client.js';
-import { MessageDisplay, loadingManager, ErrorHandler, errorHandler } from '../../js/ui-utils.js';
+import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, messages } from '../../js/ui-utils.js';
+import { getThemeColors } from '../../js/utils/theme-api.js';
 
 export class UserManagement {
     constructor(elements, dataTable) {
@@ -13,6 +14,22 @@ export class UserManagement {
         this.adminMessage = new MessageDisplay(elements.adminMessageDiv);
         
         this.setupEventHandlers();
+    }
+
+    /**
+     * Get themed card styles using theme API
+     */
+    getThemedCardStyles() {
+        const colors = getThemeColors();
+        return `border-radius: 10px; margin-bottom: 1em; padding: 1em; background: ${colors.surfaceColor}; color: ${colors.textColor}; border: 1px solid ${colors.borderColor}; min-height: 3.5em;`;
+    }
+
+    /**
+     * Get themed secondary text styles using theme API
+     */
+    getThemedSecondaryStyles() {
+        const colors = getThemeColors();
+        return `color: ${colors.secondaryColor}; font-size: 0.9em;`;
     }
 
     /**
@@ -34,7 +51,7 @@ export class UserManagement {
                     this.displayUserProfile(userData);
                 } catch (error) {
                     console.error('Error parsing user data:', error);
-                    this.adminMessage.showError('Error loading user data');
+                    messages.error('Error loading user data', { toast: true });
                 }
             }
         });
@@ -45,50 +62,53 @@ export class UserManagement {
      */
     async loadUsers() {
         try {
-            // Check authentication
             if (!AuthAPI.isAuthenticated()) {
-                this.adminMessage.showError('Not authenticated. Please log in.');
+                messages.error('Not authenticated. Please log in.', { toast: true });
                 window.location.href = '/login';
                 return;
             }
-
             this.adminMessage.hide();
-            
-            // Show loading state
-            this.usersTable.showLoading('Loading users...');
-            
+            this.elements.userListContainer.innerHTML = '<div class="themed" style="padding:1em;">Loading users...</div>';
             const response = await AdminAPI.getUsers();
-
             if (!response.success) {
-                this.usersTable.showError('Failed to load users');
+                messages.error('Failed to load users', { toast: true });
                 errorHandler.handleApiError(response, this.adminMessage);
                 return;
             }
-
             let users = [];
             if (Array.isArray(response.data)) {
                 users = response.data;
             } else if (response.data && typeof response.data === 'object') {
-                // If data is an object with an array property, extract it
                 if (Array.isArray(response.data.users)) {
                     users = response.data.users;
                 } else if (Array.isArray(response.data.data)) {
                     users = response.data.data;
                 } else {
-                    // Convert object to array if needed
                     users = Object.values(response.data);
                 }
             }
-            
             if (users.length === 0) {
-                this.usersTable.showEmpty('No users found');
+                this.elements.userListContainer.innerHTML = '<div class="themed" style="padding:1em;">No users found</div>';
             } else {
-                this.usersTable.updateData(users);
+                this.elements.userListContainer.innerHTML = users.map(user => `
+                    <div class="admin-card themed" style="${this.getThemedCardStyles()}">
+                        <div class="admin-card-title" style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em; cursor: pointer;">
+                            ${user.base?.login || user.login || 'Unknown'}
+                            <span style="${this.getThemedSecondaryStyles()} margin-left: 0.5em;">${user.base?.email || user.email || ''}</span>
+                        </div>
+                        <div class="admin-card-meta" style="display: flex; align-items: center; gap: 1em;">
+                            <span class="badge ${user.base?.is_active || user.is_active ? 'bg-success' : 'bg-secondary'}">${user.base?.is_active || user.is_active ? 'Active' : 'Inactive'}</span>
+                            <span style="flex: 1"></span>
+                            <button class="icon-btn edit-user-btn btn btn-sm btn-primary" data-user='${JSON.stringify(user)}' title="Edit">✏️</button>
+                            <button class="icon-btn delete-user-btn btn btn-sm btn-secondary" data-user-id="${user.base?.id || user.id}" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+                this.setupUserActions();
             }
-
         } catch (error) {
             console.error('Error fetching users:', error);
-            this.usersTable.showError('Network error occurred');
+            messages.error('Network error occurred', { toast: true });
             errorHandler.handleNetworkError(error, this.adminMessage);
         }
     }
@@ -110,7 +130,7 @@ export class UserManagement {
     async handleUserSave() {
         const userIdToUpdate = this.elements.adminProfileInfo.dataset.currentUserId;
         if (!userIdToUpdate) {
-            this.adminMessage.showError('No user selected for saving.');
+            messages.error('No user selected for saving.', { toast: true });
             return;
         }
 
@@ -124,7 +144,7 @@ export class UserManagement {
             };
         } catch (e) {
             console.error('Invalid JSON format:', e);
-            this.adminMessage.showError('Invalid JSON format.');
+            messages.error('Invalid JSON format.', { toast: true });
             return;
         }
 
@@ -158,9 +178,66 @@ export class UserManagement {
      */
     showApiResponse(response) {
         if (response.success) {
-            this.adminMessage.showSuccess(response.message || 'Operation completed successfully');
+            messages.success(response.message || 'Operation completed successfully', { toast: true });
         } else {
             errorHandler.handleApiError(response, this.adminMessage);
         }
+    }
+
+    setupUserActions() {
+        document.querySelectorAll('.edit-user-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const userData = JSON.parse(btn.getAttribute('data-user'));
+                this.displayUserProfile(userData);
+            });
+        });
+        // Double-click-to-confirm delete logic
+        let confirmingBtn = null;
+        document.querySelectorAll('.delete-user-btn').forEach(btn => {
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-secondary');
+            btn.setAttribute('title', 'Click again to confirm deletion');
+            btn.dataset.confirming = 'false';
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.delete-user-btn').forEach(otherBtn => {
+                    if (otherBtn !== btn) {
+                        otherBtn.classList.remove('btn-danger');
+                        otherBtn.classList.add('btn-secondary');
+                        otherBtn.setAttribute('title', 'Click again to confirm deletion');
+                        otherBtn.dataset.confirming = 'false';
+                    }
+                });
+                if (btn.dataset.confirming === 'true') {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-secondary');
+                    btn.setAttribute('title', 'Click again to confirm deletion');
+                    btn.dataset.confirming = 'false';
+                    const userId = btn.getAttribute('data-user-id');
+                    this.handleUserDelete(userId);
+                } else {
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-danger');
+                    btn.setAttribute('title', 'Click again to permanently delete');
+                    btn.dataset.confirming = 'true';
+                    confirmingBtn = btn;
+                }
+            });
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('delete-user-btn')) {
+                document.querySelectorAll('.delete-user-btn').forEach(btn => {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-secondary');
+                    btn.setAttribute('title', 'Click again to confirm deletion');
+                    btn.dataset.confirming = 'false';
+                });
+            }
+        });
+    }
+
+    async handleUserDelete(userId) {
+        // Implement user deletion logic here, e.g., call AdminAPI.deleteUser(userId)
+        messages.info('User deletion not implemented yet.', { toast: true });
     }
 }

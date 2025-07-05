@@ -3,7 +3,8 @@
  */
 
 import { apiClient } from '/js/api-client.js';
-import { MessageDisplay, ErrorHandler } from '/js/ui-utils.js';
+import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, messages } from '/js/ui-utils.js';
+import { cmsIntegration } from '/js/utils/cms-integration.js';
 
 export class CMSSettings {
     constructor() {
@@ -18,6 +19,7 @@ export class CMSSettings {
 
     init() {
         this.bindEvents();
+        this.setupCharacterCounters();
         // Don't load settings immediately - wait for tab activation
     }
 
@@ -25,11 +27,6 @@ export class CMSSettings {
         // Save general settings button
         document.getElementById('saveGeneralSettings')?.addEventListener('click', () => {
             this.saveGeneralSettings();
-        });
-
-        // Preview theme button
-        document.getElementById('previewSelectedTheme')?.addEventListener('click', () => {
-            this.previewSelectedTheme();
         });
 
         // Apply website theme button
@@ -60,7 +57,7 @@ export class CMSSettings {
             await this.loadCurrentWebsiteTheme();
 
         } catch (error) {
-            this.messageDisplay.showError('Error loading CMS settings: ' + error.message, 'cmsSettingsMessageDiv');
+            messages.error('Error loading CMS settings: ' + error.message, { toast: true });
         }
     }
 
@@ -77,10 +74,10 @@ export class CMSSettings {
 
                 this.populateSettingsForm();
             } else {
-                this.messageDisplay.showError('Failed to load settings: ' + result.message, 'cmsSettingsMessageDiv');
+                messages.error('Failed to load settings: ' + result.message, { toast: true });
             }
         } catch (error) {
-            this.messageDisplay.showError('Error loading settings: ' + error.message, 'cmsSettingsMessageDiv');
+            messages.error('Error loading settings: ' + error.message, { toast: true });
         }
     }
 
@@ -95,16 +92,6 @@ export class CMSSettings {
         if (siteDescElement && this.currentSettings.site_description) {
             siteDescElement.value = this.currentSettings.site_description.setting_value;
         }
-
-        const maintenanceElement = document.getElementById('maintenanceMode');
-        if (maintenanceElement && this.currentSettings.maintenance_mode) {
-            maintenanceElement.checked = this.currentSettings.maintenance_mode.setting_value === 'true';
-        }
-
-        const registrationElement = document.getElementById('allowRegistration');
-        if (registrationElement && this.currentSettings.allow_registration) {
-            registrationElement.checked = this.currentSettings.allow_registration.setting_value === 'true';
-        }
     }
 
     async loadAvailableThemes() {
@@ -114,10 +101,10 @@ export class CMSSettings {
                 this.availableThemes = result.data;
                 this.populateThemeSelector();
             } else {
-                this.messageDisplay.showError('Failed to load themes: ' + result.message, 'cmsSettingsMessageDiv');
+                messages.error('Failed to load themes: ' + result.message, { toast: true });
             }
         } catch (error) {
-            this.messageDisplay.showError('Error loading themes: ' + error.message, 'cmsSettingsMessageDiv');
+            messages.error('Error loading themes: ' + error.message, { toast: true });
         }
     }
 
@@ -175,105 +162,115 @@ export class CMSSettings {
     onThemeSelectionChange(themeId) {
         const selectedTheme = this.availableThemes.find(theme => theme.id === themeId);
         
-        // Enable/disable action buttons
-        const previewBtn = document.getElementById('previewSelectedTheme');
+        // Enable/disable apply button
         const applyBtn = document.getElementById('applyWebsiteTheme');
         
         if (selectedTheme) {
-            if (previewBtn) previewBtn.disabled = false;
             if (applyBtn) applyBtn.disabled = false;
         } else {
-            if (previewBtn) previewBtn.disabled = true;
             if (applyBtn) applyBtn.disabled = true;
         }
     }
 
     async saveGeneralSettings() {
+        const saveButton = document.getElementById('saveGeneralSettings');
+        const applyButton = document.getElementById('applyWebsiteTheme');
+        
         try {
+            // Set loading state
+            if (saveButton) {
+                loadingManager.setLoading(saveButton, true, 'Saving...');
+            }
+            if (applyButton) {
+                applyButton.disabled = true;
+            }
+
+            const siteName = document.getElementById('siteName').value.trim();
+            const siteDescription = document.getElementById('siteDescription').value.trim();
+
+            // Validation
+            const errors = [];
+            if (!siteName) {
+                errors.push('Site name is required');
+            } else if (siteName.length > 100) {
+                errors.push('Site name must be 100 characters or less');
+            }
+            
+            if (siteDescription.length > 500) {
+                errors.push('Site description must be 500 characters or less');
+            }
+
+            if (errors.length > 0) {
+                messages.error('Validation errors: ' + errors.join(', '), { toast: true });
+                return;
+            }
+
             const settings = {
-                site_name: document.getElementById('siteName').value,
-                site_description: document.getElementById('siteDescription').value,
-                maintenance_mode: document.getElementById('maintenanceMode').checked.toString(),
-                allow_registration: document.getElementById('allowRegistration').checked.toString()
+                site_name: siteName,
+                site_description: siteDescription
             };
 
             let allSuccessful = true;
-            const errors = [];
+            const saveErrors = [];
 
             // Save each setting individually
             for (const [key, value] of Object.entries(settings)) {
                 try {
-                    const type = (key === 'maintenance_mode' || key === 'allow_registration') ? 'boolean' : 'string';
-                    const result = await this.apiClient.put(`/cms/settings/${key}`, { value, type });
+                    const result = await this.apiClient.put(`/cms/settings/${key}`, { value, type: 'string' });
                     
                     if (!result.success) {
                         allSuccessful = false;
-                        errors.push(`Failed to save ${key}: ${result.message}`);
+                        saveErrors.push(`Failed to save ${key}: ${result.message}`);
                     }
                 } catch (error) {
                     allSuccessful = false;
-                    errors.push(`Error saving ${key}: ${error.message}`);
+                    saveErrors.push(`Error saving ${key}: ${error.message}`);
                 }
             }
 
             if (allSuccessful) {
-                this.messageDisplay.showSuccess('General settings saved successfully', 'cmsSettingsMessageDiv');
+                messages.success('General settings saved successfully', { toast: true });
                 // Reload settings to reflect changes
                 await this.loadSettings();
+                // Refresh CMS integration across all pages
+                await cmsIntegration.refresh();
             } else {
-                this.messageDisplay.showError('Some settings failed to save: ' + errors.join(', '), 'cmsSettingsMessageDiv');
+                messages.error('Some settings failed to save: ' + saveErrors.join(', '), { toast: true });
             }
 
         } catch (error) {
-            this.messageDisplay.showError('Error saving general settings: ' + error.message, 'cmsSettingsMessageDiv');
-        }
-    }
-
-    async previewSelectedTheme() {
-        const themeSelect = document.getElementById('activeThemeSelect');
-        if (!themeSelect || !themeSelect.value) {
-            this.messageDisplay.showWarning('Please select a theme to preview', 'cmsSettingsMessageDiv');
-            return;
-        }
-
-        const selectedTheme = this.availableThemes.find(theme => theme.id === themeSelect.value);
-        if (!selectedTheme) {
-            this.messageDisplay.showError('Selected theme not found', 'cmsSettingsMessageDiv');
-            return;
-        }
-
-        try {
-            // Get the theme manager from global scope
-            if (window.themeManager && window.themeManager.previewTheme) {
-                const result = await window.themeManager.previewTheme(selectedTheme.id);
-                if (result.success) {
-                    this.messageDisplay.showInfo(`Theme "${selectedTheme.name}" preview applied. It will auto-revert in 10 seconds or refresh the page to revert manually.`, 'cmsSettingsMessageDiv');
-                } else {
-                    this.messageDisplay.showError('Failed to preview theme: ' + result.message, 'cmsSettingsMessageDiv');
-                }
-            } else {
-                this.messageDisplay.showWarning('Theme manager not available for preview', 'cmsSettingsMessageDiv');
+            messages.error('Error saving general settings: ' + error.message, { toast: true });
+        } finally {
+            // Clear loading state
+            if (saveButton) {
+                loadingManager.setLoading(saveButton, false);
             }
-        } catch (error) {
-            this.messageDisplay.showError('Error previewing theme: ' + error.message, 'cmsSettingsMessageDiv');
+            if (applyButton) {
+                applyButton.disabled = false;
+            }
         }
     }
+
+
 
     async applyWebsiteTheme() {
         const themeSelect = document.getElementById('activeThemeSelect');
+        const applyButton = document.getElementById('applyWebsiteTheme');
+        const saveButton = document.getElementById('saveGeneralSettings');
+        
         if (!themeSelect || !themeSelect.value) {
-            this.messageDisplay.showWarning('Please select a theme to apply', 'cmsSettingsMessageDiv');
+            messages.warning('Please select a theme to apply', { toast: true });
             return;
         }
 
         const selectedTheme = this.availableThemes.find(theme => theme.id === themeSelect.value);
         if (!selectedTheme) {
-            this.messageDisplay.showError('Selected theme not found', 'cmsSettingsMessageDiv');
+            messages.error('Selected theme not found', { toast: true });
             return;
         }
 
         if (this.currentWebsiteTheme && this.currentWebsiteTheme.id === selectedTheme.id) {
-            this.messageDisplay.showInfo('This theme is already the active website theme', 'cmsSettingsMessageDiv');
+            messages.info('This theme is already the active website theme', { toast: true });
             return;
         }
 
@@ -282,10 +279,18 @@ export class CMSSettings {
         }
 
         try {
+            // Set loading state
+            if (applyButton) {
+                loadingManager.setLoading(applyButton, true, 'Applying...');
+            }
+            if (saveButton) {
+                saveButton.disabled = true;
+            }
+
             const result = await this.apiClient.put('/cms/active-theme', { theme_id: selectedTheme.id });
             
             if (result.success) {
-                this.messageDisplay.showSuccess(`Website theme set to "${selectedTheme.name}" successfully`, 'cmsSettingsMessageDiv');
+                messages.success(`Website theme set to "${selectedTheme.name}" successfully`, { toast: true });
                 
                 // Update current theme info
                 this.currentWebsiteTheme = selectedTheme;
@@ -297,10 +302,41 @@ export class CMSSettings {
                 }));
                 
             } else {
-                this.messageDisplay.showError('Failed to set website theme: ' + result.message, 'cmsSettingsMessageDiv');
+                messages.error('Failed to set website theme: ' + result.message, { toast: true });
             }
         } catch (error) {
-            this.messageDisplay.showError('Error setting website theme: ' + error.message, 'cmsSettingsMessageDiv');
+            messages.error('Error setting website theme: ' + error.message, { toast: true });
+        } finally {
+            // Clear loading state
+            if (applyButton) {
+                loadingManager.setLoading(applyButton, false);
+            }
+            if (saveButton) {
+                saveButton.disabled = false;
+            }
+        }
+    }
+
+    setupCharacterCounters() {
+        const siteNameInput = document.getElementById('siteName');
+        const siteNameCounter = document.getElementById('siteNameCounter');
+        const siteDescInput = document.getElementById('siteDescription');
+        const siteDescCounter = document.getElementById('siteDescriptionCounter');
+
+        if (siteNameInput && siteNameCounter) {
+            const updateSiteNameCounter = () => {
+                siteNameCounter.textContent = siteNameInput.value.length;
+            };
+            siteNameInput.addEventListener('input', updateSiteNameCounter);
+            updateSiteNameCounter(); // Initial count
+        }
+
+        if (siteDescInput && siteDescCounter) {
+            const updateSiteDescCounter = () => {
+                siteDescCounter.textContent = siteDescInput.value.length;
+            };
+            siteDescInput.addEventListener('input', updateSiteDescCounter);
+            updateSiteDescCounter(); // Initial count
         }
     }
 }

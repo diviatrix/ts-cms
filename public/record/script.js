@@ -2,6 +2,7 @@ import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
 import { RecordsAPI, AuthAPI } from '../js/api-client.js';
 import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
+import { messages } from '../js/ui-utils.js';
 
 /**
  * Record Display Controller
@@ -148,7 +149,7 @@ class RecordDisplayController extends BasePageController {
   showRecordNotFound(description) {
     this.elements.title.textContent = 'Record Not Found';
     this.elements.description.textContent = description;
-    this.message.showError('Record not found: ' + description);
+    messages.error('Record not found: ' + description, { toast: true });
   }
 
   /**

@@ -3,7 +3,8 @@
  */
 
 import { apiClient } from '/js/api-client.js';
-import { MessageDisplay, ErrorHandler } from '/js/ui-utils.js';
+import { MessageDisplay, ErrorHandler, messages } from '/js/ui-utils.js';
+import { getThemeColors } from '/js/utils/theme-api.js';
 
 export class ThemeManagement {
     constructor() {
@@ -13,6 +14,22 @@ export class ThemeManagement {
         this.themes = [];
         
         this.init();
+    }
+
+    /**
+     * Get themed card styles using theme API
+     */
+    getThemedCardStyles() {
+        const colors = getThemeColors();
+        return `border-radius: 10px; margin-bottom: 1em; padding: 1em; background: ${colors.surfaceColor}; color: ${colors.textColor}; border: 1px solid ${colors.borderColor}; min-height: 3.5em;`;
+    }
+
+    /**
+     * Get themed secondary text styles using theme API
+     */
+    getThemedSecondaryStyles() {
+        const colors = getThemeColors();
+        return `color: ${colors.secondaryColor}; font-size: 0.9em;`;
     }
 
     init() {
@@ -56,42 +73,96 @@ export class ThemeManagement {
                 this.themes = result.data;
                 this.renderThemeList();
             } else {
-                this.messageDisplay.showError('Failed to load themes: ' + result.message, 'themeMessageDiv');
+                messages.error('Failed to load themes: ' + result.message, { toast: true });
             }
         } catch (error) {
-            this.messageDisplay.showError('Error loading themes: ' + error.message, 'themeMessageDiv');
+            messages.error('Error loading themes: ' + error.message, { toast: true });
         }
     }
 
     renderThemeList() {
         const themeList = document.getElementById('themeList');
         if (!themeList) return;
-
         themeList.innerHTML = '';
-
         this.themes.forEach(theme => {
-            const listItem = document.createElement('li');
-            listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-            
-            const themeInfo = document.createElement('div');
-            themeInfo.innerHTML = `
-                <strong>${theme.name}</strong>
-                ${theme.is_active ? '<span class="badge bg-success ms-2">Active</span>' : ''}
-                <br>
-                <small class="text-muted">${theme.description || 'No description'}</small>
+            const card = document.createElement('div');
+            card.className = 'admin-card themed';
+            card.style = this.getThemedCardStyles();
+            card.innerHTML = `
+                <div class="admin-card-title" style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em; cursor: pointer;">
+                    ${theme.name}
+                </div>
+                <div class="admin-card-meta" style="display: flex; align-items: center; gap: 1em;">
+                    <span class="theme-id" style="${this.getThemedSecondaryStyles()}">ID: ${theme.id}</span>
+                    <span class="badge ${theme.is_active ? 'bg-success' : 'bg-secondary'}">${theme.is_active ? 'Active' : 'Inactive'}</span>
+                    <span style="flex: 1"></span>
+                    <button class="icon-btn edit-theme-btn btn btn-sm btn-primary" data-theme-id="${theme.id}" title="Edit">✏️</button>
+                    <button class="icon-btn delete-theme-btn btn btn-sm btn-secondary" data-theme-id="${theme.id}" title="Delete">🗑️</button>
+                </div>
             `;
-
-            const editButton = document.createElement('button');
-            editButton.className = 'btn btn-sm btn-outline-primary';
-            editButton.textContent = 'Edit';
-            editButton.addEventListener('click', () => {
-                this.editTheme(theme);
-            });
-
-            listItem.appendChild(themeInfo);
-            listItem.appendChild(editButton);
-            themeList.appendChild(listItem);
+            themeList.appendChild(card);
         });
+        this.setupThemeActions();
+    }
+
+    setupThemeActions() {
+        document.querySelectorAll('.edit-theme-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const themeId = btn.getAttribute('data-theme-id');
+                const theme = this.themes.find(t => t.id === themeId);
+                if (theme) this.editTheme(theme);
+            });
+        });
+        // Double-click-to-confirm delete logic
+        let confirmingBtn = null;
+        document.querySelectorAll('.delete-theme-btn').forEach(btn => {
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-secondary');
+            btn.setAttribute('title', 'Click again to confirm deletion');
+            btn.dataset.confirming = 'false';
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.delete-theme-btn').forEach(otherBtn => {
+                    if (otherBtn !== btn) {
+                        otherBtn.classList.remove('btn-danger');
+                        otherBtn.classList.add('btn-secondary');
+                        otherBtn.setAttribute('title', 'Click again to confirm deletion');
+                        otherBtn.dataset.confirming = 'false';
+                    }
+                });
+                if (btn.dataset.confirming === 'true') {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-secondary');
+                    btn.setAttribute('title', 'Click again to confirm deletion');
+                    btn.dataset.confirming = 'false';
+                    const themeId = btn.getAttribute('data-theme-id');
+                    this.deleteThemeById(themeId);
+                } else {
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-danger');
+                    btn.setAttribute('title', 'Click again to permanently delete');
+                    btn.dataset.confirming = 'true';
+                    confirmingBtn = btn;
+                }
+            });
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('delete-theme-btn')) {
+                document.querySelectorAll('.delete-theme-btn').forEach(btn => {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-secondary');
+                    btn.setAttribute('title', 'Click again to confirm deletion');
+                    btn.dataset.confirming = 'false';
+                });
+            }
+        });
+    }
+
+    deleteThemeById(themeId) {
+        const theme = this.themes.find(t => t.id === themeId);
+        if (!theme) return;
+        this.currentTheme = theme;
+        this.deleteTheme();
     }
 
     showNewThemeForm() {
@@ -187,7 +258,7 @@ export class ThemeManagement {
         const isActive = document.getElementById('themeIsActive').checked;
 
         if (!name) {
-            this.messageDisplay.showError('Theme name is required', 'themeMessageDiv');
+            messages.error('Theme name is required', { toast: true });
             return;
         }
 
@@ -208,9 +279,9 @@ export class ThemeManagement {
             }
 
             if (result.success) {
-                this.messageDisplay.showSuccess(
-                    this.currentTheme ? 'Theme updated successfully' : 'Theme created successfully',
-                    'themeMessageDiv'
+                messages.success(
+                    'Theme saved successfully! The theme is now available for use.',
+                    { toast: true }
                 );
                 
                 // Save theme settings
@@ -227,10 +298,10 @@ export class ThemeManagement {
                     }));
                 }
             } else {
-                this.messageDisplay.showError('Failed to save theme: ' + result.message, 'themeMessageDiv');
+                messages.error('Failed to save theme: ' + result.message, { toast: true });
             }
         } catch (error) {
-            this.messageDisplay.showError('Error saving theme: ' + error.message, 'themeMessageDiv');
+            messages.error('Error saving theme: ' + error.message, { toast: true });
         }
     }
 
@@ -284,14 +355,14 @@ export class ThemeManagement {
         try {
             const result = await this.apiClient.delete(`/themes/${this.currentTheme.id}`);
             if (result.success) {
-                this.messageDisplay.showSuccess('Theme deleted successfully', 'themeMessageDiv');
+                messages.success('Theme deleted successfully', { toast: true });
                 this.loadThemes();
                 this.hideThemeForm();
             } else {
-                this.messageDisplay.showError('Failed to delete theme: ' + result.message, 'themeMessageDiv');
+                messages.error('Failed to delete theme: ' + result.message, { toast: true });
             }
         } catch (error) {
-            this.messageDisplay.showError('Error deleting theme: ' + error.message, 'themeMessageDiv');
+            messages.error('Error deleting theme: ' + error.message, { toast: true });
         }
     }
 
@@ -299,7 +370,7 @@ export class ThemeManagement {
         try {
             const result = await this.apiClient.post('/themes/active', { theme_id: themeId });
             if (result.success) {
-                this.messageDisplay.showSuccess('Active theme updated', 'themeMessageDiv');
+                messages.success('Active theme updated', { toast: true });
                 this.loadThemes();
                 
                 // Dispatch theme change event
@@ -307,10 +378,10 @@ export class ThemeManagement {
                     detail: { themeId: themeId } 
                 }));
             } else {
-                this.messageDisplay.showError('Failed to set active theme: ' + result.message, 'themeMessageDiv');
+                messages.error('Failed to set active theme: ' + result.message, { toast: true });
             }
         } catch (error) {
-            this.messageDisplay.showError('Error setting active theme: ' + error.message, 'themeMessageDiv');
+            messages.error('Error setting active theme: ' + error.message, { toast: true });
         }
     }
 
@@ -326,7 +397,7 @@ export class ThemeManagement {
         // Preview favicon and logo
         this.previewFaviconAndLogo();
         
-        this.messageDisplay.showInfo('Theme preview applied. Refresh page to revert.', 'themeMessageDiv');
+        messages.info('Theme preview applied. Refresh page to revert.', { toast: true });
     }
 
     generateThemeCSS() {

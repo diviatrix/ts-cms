@@ -4,7 +4,8 @@
  */
 
 import { RecordsAPI, AuthAPI } from '../../js/api-client.js';
-import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, ConfirmationDialog } from '../../js/ui-utils.js';
+import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, ConfirmationDialog, messages } from '../../js/ui-utils.js';
+import { getThemeColors } from '../../js/utils/theme-api.js';
 
 export class RecordManagement {
     constructor(elements, dataTable) {
@@ -13,6 +14,22 @@ export class RecordManagement {
         this.recordMessage = new MessageDisplay(elements.recordMessageDiv);
         
         this.setupEventHandlers();
+    }
+
+    /**
+     * Get themed card styles using theme API
+     */
+    getThemedCardStyles() {
+        const colors = getThemeColors();
+        return `border-radius: 10px; margin-bottom: 1em; padding: 1em; background: ${colors.surfaceColor}; color: ${colors.textColor}; border: 1px solid ${colors.borderColor}; min-height: 3.5em;`;
+    }
+
+    /**
+     * Get themed secondary text styles using theme API
+     */
+    getThemedSecondaryStyles() {
+        const colors = getThemeColors();
+        return `color: ${colors.secondaryColor}; font-size: 0.9em;`;
     }
 
     /**
@@ -42,7 +59,7 @@ export class RecordManagement {
                     this.displayRecordForEdit(recordData);
                 } catch (error) {
                     console.error('Error parsing record data:', error);
-                    this.recordMessage.showError('Error loading record data');
+                    messages.error('Error loading record data', { toast: true });
                 }
             }
         });
@@ -53,37 +70,42 @@ export class RecordManagement {
      */
     async loadRecords() {
         try {
-            // Check authentication
             if (!AuthAPI.isAuthenticated()) {
-                this.recordMessage.showError('Not authenticated. Please log in.');
+                messages.error('Not authenticated. Please log in.', { toast: true });
                 window.location.href = '/login';
                 return;
             }
-
             this.recordMessage.hide();
-            
-            // Show loading state
-            this.recordsTable.showLoading('Loading records...');
-            
+            this.elements.recordListContainer.innerHTML = '<div class="themed" style="padding:1em;">Loading records...</div>';
             const response = await RecordsAPI.getAll();
-
             if (!response.success) {
-                this.recordsTable.showError('Failed to load records');
+                messages.error('Failed to load records', { toast: true });
                 errorHandler.handleApiError(response, this.recordMessage);
                 return;
             }
-
             const records = response.data || [];
-            
             if (records.length === 0) {
-                this.recordsTable.showEmpty('No records found');
+                this.elements.recordListContainer.innerHTML = '<div class="themed" style="padding:1em;">No records found</div>';
             } else {
-                this.recordsTable.updateData(records);
+                this.elements.recordListContainer.innerHTML = records.map(record => `
+                    <div class="record-card themed" style="${this.getThemedCardStyles()}">
+                        <div class="record-title-row" style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em; cursor: pointer;">
+                            ${record.title || 'Untitled'}
+                        </div>
+                        <div class="record-meta-row" style="display: flex; align-items: center; gap: 1em;">
+                            <span class="record-date" style="${this.getThemedSecondaryStyles()}">${new Date(record.created_at).toLocaleDateString()}</span>
+                            <span class="badge ${record.is_published ? 'bg-success' : 'bg-secondary'}">${record.is_published ? 'Published' : 'Draft'}</span>
+                            <span style="flex: 1"></span>
+                            <button class="icon-btn edit-record-btn btn btn-sm btn-primary" data-record-id="${record.id}" title="Edit">✏️</button>
+                            <button class="icon-btn delete-record-btn btn btn-sm btn-secondary" data-record-id="${record.id}" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+                this.setupRecordActions();
             }
-
         } catch (error) {
             console.error('Error fetching records:', error);
-            this.recordsTable.showError('Network error occurred');
+            messages.error('Network error occurred', { toast: true });
             errorHandler.handleNetworkError(error, this.recordMessage);
         }
     }
@@ -126,7 +148,7 @@ export class RecordManagement {
         
         // Check authentication
         if (!AuthAPI.isAuthenticated()) {
-            this.recordMessage.showError('Not authenticated. Please log in.');
+            messages.error('Not authenticated. Please log in.', { toast: true });
             window.location.href = '/login';
             return;
         }
@@ -172,38 +194,26 @@ export class RecordManagement {
     /**
      * Handle record deletion
      */
-    async handleRecordDelete() {
-        const recordId = this.elements.recordEditInfo.dataset.currentRecordId;
-        
-        if (!recordId) {
-            this.recordMessage.showError('No record selected for deletion.');
+    async handleRecordDelete(recordId) {
+        const idToDelete = recordId || this.elements.recordEditInfo.dataset.currentRecordId;
+        if (!idToDelete) {
+            messages.error('No record selected for deletion.', { toast: true });
             return;
         }
-
-        // Check authentication
         if (!AuthAPI.isAuthenticated()) {
-            this.recordMessage.showError('Not authenticated. Please log in.');
+            messages.error('Not authenticated. Please log in.', { toast: true });
             window.location.href = '/login';
             return;
         }
-
-        // Show confirmation dialog
         try {
-            const confirmed = await this.showDeleteConfirmation();
-            if (!confirmed) return;
-
             loadingManager.setLoading(this.elements.recordDeleteButton, true, 'Deleting...');
-            
-            const response = await RecordsAPI.delete(recordId);
-            
+            const response = await RecordsAPI.delete(idToDelete);
             this.recordMessage.showApiResponse(response);
-            
             if (response.success) {
-                // Hide the edit form and refresh the list
                 this.elements.recordEditTab.classList.add('d-none');
                 setTimeout(() => {
                     this.loadRecords();
-                }, 1000); // Small delay to let user see the success message
+                }, 1000);
             }
         } catch (error) {
             console.error('Error deleting record:', error);
@@ -211,24 +221,6 @@ export class RecordManagement {
         } finally {
             loadingManager.setLoading(this.elements.recordDeleteButton, false);
         }
-    }
-
-    /**
-     * Show confirmation dialog for record deletion
-     * @returns {Promise<boolean>} - User's confirmation choice
-     */
-    async showDeleteConfirmation() {
-        return new Promise((resolve) => {
-            const dialog = new ConfirmationDialog({
-                title: 'Delete Record',
-                message: 'Are you sure you want to delete this record? This action cannot be undone.',
-                confirmText: 'Delete',
-                cancelText: 'Cancel',
-                onConfirm: () => resolve(true),
-                onCancel: () => resolve(false)
-            });
-            dialog.show();
-        });
     }
 
     /**
@@ -259,5 +251,71 @@ export class RecordManagement {
                 }
             }, { once: true });
         }
+    }
+
+    setupRecordActions() {
+        // Track the currently confirming button
+        let confirmingBtn = null;
+        document.querySelectorAll('.edit-record-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const recordId = btn.getAttribute('data-record-id');
+                // Fetch the full record data before editing
+                try {
+                    const response = await RecordsAPI.getById(recordId);
+                    if (response.success) {
+                        this.displayRecordForEdit(response.data);
+                    } else {
+                        messages.error('Failed to load record for editing.', { toast: true });
+                    }
+                } catch (error) {
+                    messages.error('Error loading record for editing.', { toast: true });
+                }
+            });
+        });
+        document.querySelectorAll('.delete-record-btn').forEach(btn => {
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-secondary');
+            btn.setAttribute('title', 'Click again to confirm deletion');
+            btn.dataset.confirming = 'false';
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                // Reset other buttons
+                document.querySelectorAll('.delete-record-btn').forEach(otherBtn => {
+                    if (otherBtn !== btn) {
+                        otherBtn.classList.remove('btn-danger');
+                        otherBtn.classList.add('btn-secondary');
+                        otherBtn.setAttribute('title', 'Click again to confirm deletion');
+                        otherBtn.dataset.confirming = 'false';
+                    }
+                });
+                if (btn.dataset.confirming === 'true') {
+                    // Confirmed, delete
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-secondary');
+                    btn.setAttribute('title', 'Click again to confirm deletion');
+                    btn.dataset.confirming = 'false';
+                    const recordId = btn.getAttribute('data-record-id');
+                    await this.handleRecordDelete(recordId);
+                } else {
+                    // First click, set to confirm state
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-danger');
+                    btn.setAttribute('title', 'Click again to permanently delete');
+                    btn.dataset.confirming = 'true';
+                    confirmingBtn = btn;
+                }
+            });
+        });
+        // Reset confirm state if user clicks elsewhere
+        document.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('delete-record-btn')) {
+                document.querySelectorAll('.delete-record-btn').forEach(btn => {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-secondary');
+                    btn.setAttribute('title', 'Click again to confirm deletion');
+                    btn.dataset.confirming = 'false';
+                });
+            }
+        });
     }
 }

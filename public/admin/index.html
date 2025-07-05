@@ -240,33 +240,20 @@
                         <div class="col-md-6">
                           <div class="mb-3">
                             <label for="siteName" class="form-label">Site Name</label>
-                            <input type="text" id="siteName" class="form-control" placeholder="Enter site name">
+                            <input type="text" id="siteName" class="form-control" placeholder="Enter site name" maxlength="100">
+                            <div class="form-text">
+                              <span id="siteNameCounter">0</span>/100 characters
+                            </div>
                           </div>
                           <div class="mb-3">
                             <label for="siteDescription" class="form-label">Site Description</label>
-                            <textarea id="siteDescription" class="form-control" rows="3" placeholder="Enter site description"></textarea>
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <div class="mb-3">
-                            <div class="form-check">
-                              <input type="checkbox" id="maintenanceMode" class="form-check-input">
-                              <label for="maintenanceMode" class="form-check-label">
-                                Maintenance Mode
-                              </label>
-                              <small class="form-text text-muted d-block">Enable to temporarily disable public access</small>
-                            </div>
-                          </div>
-                          <div class="mb-3">
-                            <div class="form-check">
-                              <input type="checkbox" id="allowRegistration" class="form-check-input">
-                              <label for="allowRegistration" class="form-check-label">
-                                Allow User Registration
-                              </label>
-                              <small class="form-text text-muted d-block">Allow new users to register accounts</small>
+                            <textarea id="siteDescription" class="form-control" rows="3" placeholder="Enter site description" maxlength="500"></textarea>
+                            <div class="form-text">
+                              <span id="siteDescriptionCounter">0</span>/500 characters
                             </div>
                           </div>
                         </div>
+
                       </div>
                       <button id="saveGeneralSettings" class="btn btn-primary">Save General Settings</button>
                     </div>
@@ -292,7 +279,6 @@
                           <div class="mb-3">
                             <label class="form-label">Theme Actions</label>
                             <div class="d-grid gap-2">
-                              <button id="previewSelectedTheme" class="btn btn-info btn-sm">Preview Theme</button>
                               <button id="applyWebsiteTheme" class="btn btn-success btn-sm">Apply as Website Theme</button>
                             </div>
                           </div>
@@ -480,7 +466,7 @@
     </div>
     
     <!-- Footer placeholder -->
-    <footer class="footer mt-auto py-3 bg-light" data-theme-footer="true">
+    <footer class="footer mt-auto py-3" data-theme-footer="true">
       <div class="container text-center">
         <p class="mb-0">&copy; 2025 TypeScript CMS Admin Panel. All rights reserved.</p>
         <div data-theme-footer-links class="mt-2"></div>
@@ -489,6 +475,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <script src="/js/theme-init.js" type="module"></script>
+    <script src="/js/utils/cms-integration.js" type="module"></script>
     <script src="/include-nav.js" type="module"></script>
     <script src="/nav/script.js" type="module"></script>
     <script src="/admin/script.js" type="module"></script>

@@ -197,7 +197,7 @@ class LoginPageController extends AuthPageController {
       {
         loadingElements: [this.registerButton],
         successCallback: () => {
-          ErrorHandler.showToast('Registration successful!', 'success');
+          messages.success('Registration successful!', { toast: true });
           this.clearForm();
         }
       }

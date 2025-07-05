@@ -17,5 +17,6 @@ export {
     loadingManager,
     errorHandler,
     keyboardShortcuts,
-    autoLogoutManager
+    autoLogoutManager,
+    messages
 } from './utils/index.js';

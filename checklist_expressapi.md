@@ -148,3 +148,47 @@ This checklist outlines positive test cases for the public-facing API endpoints.
       "data": {}
     }
     ```
+
+## Frontend Refactor Audit - Checkpoint 1
+
+### 1. Main Frontend Structure
+- **public/index.html**: Main entry point for the front page.
+- **public/script.js**: Likely a global script for the main site.
+- **public/js/**: Contains shared logic, utilities, and theme-related scripts.
+  - **shared-components/**: Reusable UI modules (navigation, forms, data tables, controllers).
+  - **utils/**: Utility scripts, including:
+    - `theme-system.js` (core theme logic, 661 lines)
+    - `theme-api.js` (theme API, 164 lines)
+    - Other utilities: message system, error handling, dialogs, etc.
+  - **theme-init.js**: Likely initializes theme on page load.
+  - **shared-components.js**: Entry point for shared components.
+  - **api-client.js**: Handles API requests.
+- **public/admin/**: Admin panel.
+  - **modules/**: Modular scripts for admin features (user, theme, record, settings management).
+  - **script.js**: Main admin script.
+- **public/frontpage/**: Front page scripts.
+- **public/login/**: Login page scripts, including a theme demo.
+- **public/record/**, **profile/**, **password/**, **nav/**: Each has its own script.js and index.html for page-specific logic.
+
+### 2. Theme-Related Code
+- **Theme System Core:**
+  - `public/js/utils/theme-system.js`: Main theme system logic.
+  - `public/js/utils/theme-api.js`: Exposes theme API (theme, withTheme, themedElement, etc.).
+  - `public/js/utils/index.js`: Imports and re-exports theme system and API.
+- **Theme Usage:**
+  - `public/login/script-theme-demo.js`: Demonstrates unified theme system (initialization, switching, theme-aware UI, event listeners for theme changes).
+  - `public/include-nav.js`: Dispatches a custom event to re-apply theme styles to dynamically loaded navigation.
+- **Theme Initialization:**
+  - `public/js/theme-init.js`: Likely responsible for initializing the theme system on page load.
+- **Admin Theme Management:**
+  - `public/admin/modules/theme-management.js`: Large file (437 lines) likely handles admin-side theme management.
+
+### 3. Responsibilities of Major Modules
+- **shared-components/**: Navigation, forms, data tables, base/auth controllers.
+- **utils/**: Theme system, message system, error handling, dialogs, loading, keyboard shortcuts, etc.
+- **admin/modules/**: User, theme, record, and settings management for admin panel.
+- **Page-specific directories**: Each (login, record, profile, password, nav) has its own script and HTML for page logic.
+
+---
+
+Proceeding to the next checkpoint: identifying redundancies and duplications in shared logic and theme handling.

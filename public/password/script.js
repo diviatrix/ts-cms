@@ -2,6 +2,7 @@ import { ProfileAPI, AuthAPI } from '../js/api-client.js';
 import { MessageDisplay, FormValidator, loadingManager } from '../js/ui-utils.js';
 import { ProtectedPageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
+import { messages } from '../js/ui-utils.js';
 
 /**
  * Password Reset Page Controller
@@ -102,7 +103,7 @@ class PasswordResetController extends ProtectedPageController {
     const allErrors = [...requiredErrors, ...passwordErrors];
     
     if (allErrors.length > 0) {
-      this.message.showError(allErrors.join(', '));
+      messages.error(allErrors.join(', '), { toast: true });
       return false;
     }
     

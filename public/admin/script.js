@@ -9,6 +9,7 @@ import { jwtDecode } from '../js/jwt-decode.js';
 import { UserManagement, RecordManagement, AdminUtils } from './modules/index.js';
 import { ThemeManagement } from './modules/theme-management.js';
 import { CMSSettings } from './modules/cms-settings.js';
+import { messages } from '../js/ui-utils.js';
 
 /**
  * Admin Panel Controller (Refactored)
@@ -16,16 +17,12 @@ import { CMSSettings } from './modules/cms-settings.js';
  */
 class AdminController {
     constructor() {
-        console.log('AdminController: Starting modular initialization...');
-        
         this.initializeElements();
         this.initializeDataTables();
         this.initializeModules();
         this.initializeEventHandlers();
         this.setupKeyboardShortcuts();
         this.loadInitialData();
-        
-        console.log('AdminController: Modular initialization complete');
     }
 
     /**
@@ -101,14 +98,10 @@ class AdminController {
                     key: 'title',
                     title: 'Title',
                     render: (value, row) => `
-                        <a href="#" class="text-decoration-none record-link" data-record='${JSON.stringify(row)}'>
+                        <span title="ID: ${row.id}" class="record-title-tooltip" style="cursor:pointer;">
                             ${value || 'Untitled'}
-                        </a>
+                        </span>
                     `
-                },
-                {
-                    key: 'id',
-                    title: 'ID'
                 },
                 {
                     key: 'created_at',
@@ -121,6 +114,14 @@ class AdminController {
                     render: (value) => value ? 
                         '<span class="badge bg-success">Published</span>' : 
                         '<span class="badge bg-secondary">Draft</span>'
+                },
+                {
+                    key: 'actions',
+                    title: 'Actions',
+                    render: (value, row) => `
+                        <button class="btn btn-sm btn-primary edit-record-btn" data-record-id="${row.id}" title="Edit">✏️</button>
+                        <button class="btn btn-sm btn-danger delete-record-btn" data-record-id="${row.id}" title="Delete">🗑️</button>
+                    `
                 }
             ],
             filterable: true,
@@ -204,33 +205,24 @@ class AdminController {
      * Check URL for record ID parameter and load record if present
      */
     async checkUrlForRecordId() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const recordId = urlParams.get('recordId');
+        // Check for editRecordId in hash fragment (used by edit buttons)
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.substring(hash.indexOf('?') + 1));
+        const editRecordId = params.get('editRecordId');
         
-        if (recordId) {
+        if (editRecordId) {
             try {
                 // Switch to records tab
                 const recordsTab = document.getElementById('records-tab');
                 if (recordsTab) {
                     recordsTab.click();
+                    
+                    // Call the record management module's method to handle the editRecordId
+                    await this.recordManagement.checkUrlForRecordId(recordsTab);
                 }
-                
-                // Load records first, then try to find and display the specific record
-                await this.recordManagement.loadRecords();
-                
-                // Small delay to ensure records are loaded
-                setTimeout(() => {
-                    const recordLink = document.querySelector(`[data-record*='"id":"${recordId}"']`);
-                    if (recordLink) {
-                        recordLink.click();
-                    } else {
-                        this.mainMessage.showWarning(`Record with ID ${recordId} not found.`);
-                    }
-                }, 500);
-                
             } catch (error) {
                 console.error('Error loading record from URL:', error);
-                this.mainMessage.showError('Error loading the requested record.');
+                messages.error('Error loading the requested record.', { toast: true });
             }
         }
     }

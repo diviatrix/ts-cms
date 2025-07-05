@@ -1,5 +1,5 @@
 import { ProfileAPI, AuthAPI } from '../js/api-client.js';
-import { MessageDisplay, loadingManager, errorHandler } from '../js/ui-utils.js';
+import { MessageDisplay, loadingManager, errorHandler, messages } from '../js/ui-utils.js';
 
 /**
  * Profile Page Controller
@@ -74,7 +74,7 @@ class ProfileController {
       // Populate JSON editor with the profile data directly
       this.elements.profileData.value = JSON.stringify(profileData, null, 2);
       this.validateJson();
-      this.message.showSuccess('Profile loaded successfully');
+      messages.success('Profile loaded successfully', { toast: true });
       
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -110,7 +110,7 @@ class ProfileController {
       
     } catch (error) {
       if (error instanceof SyntaxError) {
-        this.message.showError('Invalid JSON format. Please check the syntax and try again.');
+        messages.error('Invalid JSON format. Please check the syntax and try again.', { toast: true });
       } else {
         console.error('Error saving profile:', error);
         errorHandler.handleNetworkError(error, this.message);

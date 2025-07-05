@@ -79,14 +79,20 @@ class ApiClient {
      * Handle HTTP errors and convert to standard format
      */
     async handleResponse(response) {
+        if (response.status === 204) {
+            // No Content: treat as success
+            return {
+                success: true,
+                message: 'Operation successful',
+                data: null,
+                errors: []
+            };
+        }
         const contentType = response.headers.get('content-type');
         let data;
-
-        // Handle JSON responses
         if (contentType && contentType.includes('application/json')) {
             data = await response.json();
         } else {
-            // Handle non-JSON responses
             const text = await response.text();
             data = {
                 success: false,
@@ -94,8 +100,6 @@ class ApiClient {
                 errors: [`HTTP ${response.status}: ${response.statusText}`]
             };
         }
-
-        // Ensure response follows our standard format
         if (!data.hasOwnProperty('success')) {
             data = {
                 success: response.ok,
@@ -104,8 +108,38 @@ class ApiClient {
                 errors: response.ok ? [] : [`HTTP ${response.status}: ${response.statusText}`]
             };
         }
-
         return data;
+    }
+
+    /**
+     * Handle HTML response (for non-API endpoints)
+     */
+    async handleHtmlResponse(response) {
+        if (response.status === 204) {
+            return {
+                success: true,
+                message: 'Operation successful',
+                data: null,
+                errors: []
+            };
+        }
+        
+        if (!response.ok) {
+            return {
+                success: false,
+                message: `HTTP ${response.status}: ${response.statusText}`,
+                data: null,
+                errors: [`HTTP ${response.status}: ${response.statusText}`]
+            };
+        }
+        
+        const html = await response.text();
+        return {
+            success: true,
+            message: 'HTML content retrieved successfully',
+            data: html,
+            errors: []
+        };
     }
 
     /**
@@ -185,6 +219,48 @@ class ApiClient {
         return this.makeRequest(fullUrl, {
             method: 'GET'
         });
+    }
+
+    /**
+     * GET HTML request (for non-API endpoints)
+     */
+    async getHtml(url, params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const fullUrl = queryString ? `${url}?${queryString}` : url;
+        
+        try {
+            // Add timeout to request
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+            
+            const response = await fetch(fullUrl, {
+                method: 'GET',
+                signal: controller.signal,
+                headers: {
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                }
+            });
+
+            clearTimeout(timeoutId);
+            return await this.handleHtmlResponse(response);
+
+        } catch (error) {
+            // Handle network errors, timeouts, etc.
+            if (error.name === 'AbortError') {
+                return {
+                    success: false,
+                    message: 'Request timeout',
+                    errors: ['The request took too long to complete']
+                };
+            }
+
+            // Handle other network errors
+            return {
+                success: false,
+                message: 'Network error occurred',
+                errors: [error.message || 'Failed to connect to server']
+            };
+        }
     }
 
     /**
@@ -398,6 +474,15 @@ const ProfileAPI = {
 };
 
 /**
+ * Utility API methods (for non-API endpoints)
+ */
+const UtilityAPI = {
+    async getHtml(url, params = {}) {
+        return apiClient.getHtml(url, params);
+    }
+};
+
+/**
  * Export for use in other scripts
  */
-export { apiClient, AuthAPI, RecordsAPI, AdminAPI, ProfileAPI, ApiResponse };
+export { apiClient, AuthAPI, RecordsAPI, AdminAPI, ProfileAPI, UtilityAPI, ApiResponse };

@@ -5,6 +5,7 @@
 
 import { BasePageController } from './base-controller.js';
 import { ErrorHandler } from '../ui-utils.js';
+import { messages } from '../ui-utils.js';
 
 /**
  * Authentication Page Controller
@@ -31,7 +32,7 @@ class AuthPageController extends BasePageController {
      * Handle successful authentication
      */
     handleAuthSuccess(redirectTo = '/') {
-        ErrorHandler.showToast('Login successful!', 'success');
+        messages.success('Login successful!', { toast: true });
         window.location.href = redirectTo;
     }
 
@@ -88,9 +89,7 @@ class ProtectedPageController extends BasePageController {
             
             if (!hasRequiredRole) {
                 console.log('ProtectedPageController: User does not have required role, redirecting');
-                if (this.message) {
-                    this.message.showError('You do not have permission to access this page.');
-                }
+                messages.error('You do not have permission to access this page.', { toast: true });
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 3000);

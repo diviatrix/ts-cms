@@ -4,6 +4,7 @@
  */
 
 import { ErrorHandler, loadingManager } from '../ui-utils.js';
+import { messages } from '../ui-utils.js';
 
 // Common regex patterns
 const REGEX_PATTERNS = {
@@ -144,7 +145,7 @@ class FormHandler {
         });
 
         if (!isValid && this.messageDisplay) {
-            this.messageDisplay.showError('Please correct the errors below');
+            messages.error('Please correct the errors below', { toast: true });
         }
 
         return isValid;
