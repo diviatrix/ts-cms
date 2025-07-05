@@ -1,8 +1,7 @@
 import { ProfileAPI, AuthAPI } from '../js/api-client.js';
-import { MessageDisplay, FormValidator, loadingManager } from '../js/ui-utils.js';
+import { FormValidator, loadingManager, messages } from '../js/ui-utils.js';
 import { ProtectedPageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
-import { messages } from '../js/ui-utils.js';
 
 /**
  * Password Reset Page Controller
@@ -10,10 +9,7 @@ import { messages } from '../js/ui-utils.js';
  */
 class PasswordResetController extends ProtectedPageController {
   constructor() {
-    const messageDiv = document.getElementById('passwordMessage');
-    
     super({ 
-      messageDiv,
       authAPI: AuthAPI,
       requiredRole: null // Any authenticated user can access
     });
@@ -78,14 +74,15 @@ class PasswordResetController extends ProtectedPageController {
         newPassword: newPassword
       });
 
-      this.message.showApiResponse(response);
-      
       if (response.success) {
+        messages.success('Password updated successfully', { toast: true });
         this.clearForm();
+      } else {
+        messages.error(response.message || 'Failed to update password', { toast: true });
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      this.errorHandler.handleNetworkError(error, this.message);
+      messages.error('Network error occurred. Please try again.', { toast: true });
     } finally {
       this.loadingManager.setLoading(this.savePasswordButton, false);
     }

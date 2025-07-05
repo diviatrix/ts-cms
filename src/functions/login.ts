@@ -21,7 +21,6 @@ export async function loginUser(login: string, password: string): Promise<IResol
     const user = (await database.findUserByLogin(login)).data; 
 
     if (!user) {
-      console.log(messages.not_found, login);
       return prep.response(false, messages.not_found)
     }
 

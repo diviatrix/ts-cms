@@ -1,5 +1,5 @@
 import { RecordsAPI, AuthAPI } from '../js/api-client.js';
-import { MessageDisplay, errorHandler } from '../js/ui-utils.js';
+import { messages } from '../js/ui-utils.js';
 import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 
@@ -9,27 +9,9 @@ import { jwtDecode } from '../js/jwt-decode.js';
  */
 class FrontPageController extends BasePageController {
   constructor() {
-    // Create message display for user feedback
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'mt-3';
-    messageDiv.id = 'frontpageMessages';
+    super();
     
-    // Find the appropriate container and insert the message div
-    const container = document.querySelector('.container-fluid') || document.querySelector('.container');
-    const postsGrid = document.getElementById('postsGrid');
-    
-    if (container && postsGrid) {
-      const h1Element = container.querySelector('h1');
-      if (h1Element) {
-        h1Element.insertAdjacentElement('afterend', messageDiv);
-      } else {
-        postsGrid.parentElement.insertBefore(messageDiv, postsGrid);
-      }
-    }
-
-    super({ messageDiv });
-    
-    this.postsGrid = postsGrid;
+    this.postsGrid = document.getElementById('postsGrid');
     this.recordsAPI = RecordsAPI;
     this.authAPI = AuthAPI;
     
@@ -53,16 +35,15 @@ class FrontPageController extends BasePageController {
       if (!response.success) {
         console.error('Error fetching records:', response);
         this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
-        this.message.showApiResponse(response);
+        messages.error(response.message || 'Failed to load posts', { toast: true });
         return;
       }
       
-      this.message.hide();
       this.renderRecords(response.data || []);
     } catch (error) {
       console.error('Error fetching records:', error);
       this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
-      this.errorHandler.handleNetworkError(error, this.message);
+      messages.error('Network error occurred. Please try again.', { toast: true });
     }
   }
 

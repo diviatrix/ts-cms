@@ -142,26 +142,5 @@ export class AdminUtils {
         };
     }
 
-    /**
-     * Debug authentication status
-     */
-    static debugAuthentication() {
-        console.log('=== Admin Panel Authentication Debug ===');
-        console.log('Token from localStorage:', localStorage.getItem('token'));
-        
-        // Import AuthAPI dynamically to avoid circular dependency
-        import('../../js/api-client.js').then(({ AuthAPI }) => {
-            console.log('AuthAPI.isAuthenticated():', AuthAPI.isAuthenticated());
-            
-            try {
-                const userRoles = AuthAPI.getUserRole();
-                console.log('User roles:', userRoles);
-                console.log('Has admin role:', userRoles.includes('admin'));
-            } catch (error) {
-                console.log('Error getting user roles:', error);
-            }
-            
-            console.log('=== End Debug ===');
-        });
-    }
+
 }

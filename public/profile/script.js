@@ -1,5 +1,5 @@
 import { ProfileAPI, AuthAPI } from '../js/api-client.js';
-import { MessageDisplay, loadingManager, errorHandler, messages } from '../js/ui-utils.js';
+import { loadingManager, messages } from '../js/ui-utils.js';
 
 /**
  * Profile Page Controller
@@ -9,10 +9,6 @@ class ProfileController {
   constructor() {
     this.profileAPI = ProfileAPI;
     this.authAPI = AuthAPI;
-    
-    // Create message display
-    const messageDiv = document.getElementById('messageDiv');
-    this.message = new MessageDisplay(messageDiv);
     
     // Get DOM elements
     this.elements = {
@@ -56,14 +52,13 @@ class ProfileController {
    */
   async loadProfile() {
     try {
-      this.message.hide();
       loadingManager.setLoading(this.elements.fetchButton, true, 'Loading...');
       
       const response = await this.profileAPI.get();
       
       if (!response.success) {
         console.error('Error fetching profile:', response);
-        this.message.showApiResponse(response);
+        messages.error(response.message || 'Failed to load profile', { toast: true });
         this.elements.profileData.value = '';
         return;
       }
@@ -78,7 +73,7 @@ class ProfileController {
       
     } catch (error) {
       console.error('Error loading profile:', error);
-      errorHandler.handleNetworkError(error, this.message);
+      messages.error('Network error occurred. Please try again.', { toast: true });
       this.elements.profileData.value = '';
     } finally {
       loadingManager.setLoading(this.elements.fetchButton, false);
@@ -93,7 +88,6 @@ class ProfileController {
       // Parse the user's JSON input (should be just the profile data)
       const userInputData = JSON.parse(this.elements.profileData.value);
       
-      this.message.hide();
       loadingManager.setLoading(this.elements.saveButton, true, 'Saving...');
       
       // Send the user input as the profile data payload
@@ -101,11 +95,12 @@ class ProfileController {
       
       const response = await this.profileAPI.update(payload);
       
-      this.message.showApiResponse(response);
-      
       if (response.success) {
+        messages.success('Profile saved successfully', { toast: true });
         // Reload profile to show updated data
         await this.loadProfile();
+      } else {
+        messages.error(response.message || 'Failed to save profile', { toast: true });
       }
       
     } catch (error) {
@@ -113,7 +108,7 @@ class ProfileController {
         messages.error('Invalid JSON format. Please check the syntax and try again.', { toast: true });
       } else {
         console.error('Error saving profile:', error);
-        errorHandler.handleNetworkError(error, this.message);
+        messages.error('Network error occurred. Please try again.', { toast: true });
       }
     } finally {
       loadingManager.setLoading(this.elements.saveButton, false);

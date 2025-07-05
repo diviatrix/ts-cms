@@ -34,7 +34,7 @@
               <button class="nav-link" id="cms-settings-tab" data-bs-toggle="tab" data-bs-target="#cms-settings" type="button" role="tab" aria-controls="cms-settings" aria-selected="false">CMS Settings</button>
             </li>
             <li class="nav-item" role="presentation">
-              <button class="nav-link" id="test-pages-tab" data-bs-toggle="tab" data-bs-target="#test-pages" type="button" role="tab" aria-controls="test-pages" aria-selected="false">Test Pages</button>
+              
             </li>
           </ul>
 
@@ -106,9 +106,9 @@
                 <div class="col-md-4">
                   <h2>Themes</h2>
                   <button id="newThemeButton" class="btn btn-primary mb-3">Create New Theme</button>
-                  <ul id="themeList" class="list-group">
+                  <div id="themeList">
                     <!-- Theme list will be populated by JavaScript -->
-                  </ul>
+                  </div>
                 </div>
                 <div class="col-md-8">
                   <div id="themeEditTab" class="card d-none">
@@ -296,169 +296,7 @@
                 </div>
               </div>
             </div>
-            <div class="tab-pane fade" id="test-pages" role="tabpanel" aria-labelledby="test-pages-tab">
-              <div class="row mt-4">
-                <div class="col-12">
-                  <h2>Test & Demo Pages</h2>
-                  <p class="text-muted">Quick access to all test and demo pages for theme testing and development.</p>
-                  
-                  <!-- Main Pages -->
-                  <div class="card mb-4">
-                    <div class="card-header">
-                      <h4 class="mb-0">Main Pages</h4>
-                    </div>
-                    <div class="card-body">
-                      <div class="row">
-                        <div class="col-md-6 col-lg-4 mb-3">
-                          <div class="card h-100">
-                            <div class="card-body">
-                              <h5 class="card-title">Home Page</h5>
-                              <p class="card-text">Main website homepage with navigation and theme features.</p>
-                              <a href="/" target="_blank" class="btn btn-primary btn-sm">Open Page</a>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="col-md-6 col-lg-4 mb-3">
-                          <div class="card h-100">
-                            <div class="card-body">
-                              <h5 class="card-title">Message System Demo</h5>
-                              <p class="card-text">Demonstration of the message system functionality.</p>
-                              <a href="/message-system-demo.html" target="_blank" class="btn btn-primary btn-sm">Open Page</a>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="col-md-6 col-lg-4 mb-3">
-                          <div class="card h-100">
-                            <div class="card-body">
-                              <h5 class="card-title">Navigation Test</h5>
-                              <p class="card-text">Test page for navigation components and theming.</p>
-                              <a href="/nav/" target="_blank" class="btn btn-primary btn-sm">Open Page</a>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  <!-- User Authentication Pages -->
-                  <div class="card mb-4">
-                    <div class="card-header">
-                      <h4 class="mb-0">Authentication & User Pages</h4>
-                    </div>
-                    <div class="card-body">
-                      <div class="row">
-                        <div class="col-md-6 col-lg-4 mb-3">
-                          <div class="card h-100">
-                            <div class="card-body">
-                              <h5 class="card-title">Login Page</h5>
-                              <p class="card-text">Standard login form with theme support.</p>
-                              <a href="/login/" target="_blank" class="btn btn-primary btn-sm">Open Page</a>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="col-md-6 col-lg-4 mb-3">
-                          <div class="card h-100">
-                            <div class="card-body">
-                              <h5 class="card-title">Login Theme Demo</h5>
-                              <p class="card-text">Special demo version of login with advanced theme features.</p>
-                              <a href="/login/index-theme-demo.html" target="_blank" class="btn btn-primary btn-sm">Open Page</a>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="col-md-6 col-lg-4 mb-3">
-                          <div class="card h-100">
-                            <div class="card-body">
-                              <h5 class="card-title">User Profile</h5>
-                              <p class="card-text">User profile management page.</p>
-                              <a href="/profile/" target="_blank" class="btn btn-primary btn-sm">Open Page</a>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="col-md-6 col-lg-4 mb-3">
-                          <div class="card h-100">
-                            <div class="card-body">
-                              <h5 class="card-title">Password Management</h5>
-                              <p class="card-text">Password change and reset functionality.</p>
-                              <a href="/password/" target="_blank" class="btn btn-primary btn-sm">Open Page</a>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Content Management Pages -->
-                  <div class="card mb-4">
-                    <div class="card-header">
-                      <h4 class="mb-0">Content Management</h4>
-                    </div>
-                    <div class="card-body">
-                      <div class="row">
-                        <div class="col-md-6 col-lg-4 mb-3">
-                          <div class="card h-100">
-                            <div class="card-body">
-                              <h5 class="card-title">Records Page</h5>
-                              <p class="card-text">Content records display and management.</p>
-                              <a href="/record/" target="_blank" class="btn btn-primary btn-sm">Open Page</a>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="col-md-6 col-lg-4 mb-3">
-                          <div class="card h-100">
-                            <div class="card-body">
-                              <h5 class="card-title">Admin Panel</h5>
-                              <p class="card-text">Current admin panel (this page).</p>
-                              <a href="/admin/" target="_blank" class="btn btn-secondary btn-sm">Open in New Tab</a>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Quick Actions -->
-                  <div class="card mb-4">
-                    <div class="card-header">
-                      <h4 class="mb-0">Quick Theme Testing</h4>
-                    </div>
-                    <div class="card-body">
-                      <div class="row">
-                        <div class="col-md-6">
-                          <h5>Test Current Theme</h5>
-                          <p class="text-muted">Test the currently active website theme across different pages.</p>
-                          <div class="btn-group-vertical w-100 mb-3" role="group">
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.open('/', '_blank')">Test on Homepage</button>
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.open('/login/', '_blank')">Test on Login</button>
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.open('/profile/', '_blank')">Test on Profile</button>
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <h5>Development Tools</h5>
-                          <p class="text-muted">Useful tools for theme development and testing.</p>
-                          <div class="btn-group-vertical w-100 mb-3" role="group">
-                            <button type="button" class="btn btn-outline-success btn-sm" onclick="openAllTestPages()">Open All Pages</button>
-                            <button type="button" class="btn btn-outline-info btn-sm" onclick="refreshAllTestPages()">Refresh All Open Pages</button>
-                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="clearTestPageData()">Clear Test Data</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Information -->
-                  <div class="alert alert-info">
-                    <h5 class="alert-heading">💡 Theme Testing Tips</h5>
-                    <ul class="mb-0">
-                      <li>Use the <strong>CMS Settings</strong> tab to change the active website theme</li>
-                      <li>Use the <strong>Themes</strong> tab to create, edit, and preview themes</li>
-                      <li>Open multiple test pages to see how themes look across different content types</li>
-                      <li>Test both light and dark themes, and various color combinations</li>
-                      <li>Check responsive design by resizing browser windows</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

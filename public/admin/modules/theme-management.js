@@ -67,15 +67,25 @@ export class ThemeManagement {
     }
 
     async loadThemes() {
+        const themeList = document.getElementById('themeList');
+        if (themeList) {
+            themeList.innerHTML = '<div class="text-muted p-3">Loading themes...</div>';
+        }
         try {
             const result = await this.apiClient.get('/themes');
             if (result.success) {
                 this.themes = result.data;
                 this.renderThemeList();
             } else {
+                if (themeList) {
+                    themeList.innerHTML = '<div class="text-danger p-3">Failed to load themes: ' + result.message + '</div>';
+                }
                 messages.error('Failed to load themes: ' + result.message, { toast: true });
             }
         } catch (error) {
+            if (themeList) {
+                themeList.innerHTML = '<div class="text-danger p-3">Error loading themes: ' + error.message + '</div>';
+            }
             messages.error('Error loading themes: ' + error.message, { toast: true });
         }
     }
@@ -84,20 +94,32 @@ export class ThemeManagement {
         const themeList = document.getElementById('themeList');
         if (!themeList) return;
         themeList.innerHTML = '';
+        
+        if (this.themes.length === 0) {
+            themeList.innerHTML = '<div class="text-muted p-3">No themes found. Create your first theme!</div>';
+            return;
+        }
+        
         this.themes.forEach(theme => {
             const card = document.createElement('div');
-            card.className = 'admin-card themed';
+            card.className = 'card mb-3';
             card.style = this.getThemedCardStyles();
             card.innerHTML = `
-                <div class="admin-card-title" style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em; cursor: pointer;">
-                    ${theme.name}
-                </div>
-                <div class="admin-card-meta" style="display: flex; align-items: center; gap: 1em;">
-                    <span class="theme-id" style="${this.getThemedSecondaryStyles()}">ID: ${theme.id}</span>
-                    <span class="badge ${theme.is_active ? 'bg-success' : 'bg-secondary'}">${theme.is_active ? 'Active' : 'Inactive'}</span>
-                    <span style="flex: 1"></span>
-                    <button class="icon-btn edit-theme-btn btn btn-sm btn-primary" data-theme-id="${theme.id}" title="Edit">✏️</button>
-                    <button class="icon-btn delete-theme-btn btn btn-sm btn-secondary" data-theme-id="${theme.id}" title="Delete">🗑️</button>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h5 class="card-title mb-1">${theme.name}</h5>
+                            <p class="card-text text-muted mb-2">${theme.description || 'No description'}</p>
+                            <small class="text-muted">ID: ${theme.id}</small>
+                        </div>
+                        <div class="d-flex flex-column align-items-end gap-2">
+                            <span class="badge ${theme.is_active ? 'bg-success' : 'bg-secondary'}">${theme.is_active ? 'Active' : 'Inactive'}</span>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-primary edit-theme-btn" data-theme-id="${theme.id}" title="Edit">✏️</button>
+                                <button class="btn btn-secondary delete-theme-btn" data-theme-id="${theme.id}" title="Delete">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
             themeList.appendChild(card);
@@ -253,6 +275,8 @@ export class ThemeManagement {
     }
 
     async saveTheme() {
+        const saveBtn = document.getElementById('themeSaveBtn');
+        if (saveBtn) loadingManager.setLoading(saveBtn, true, 'Saving...');
         const name = document.getElementById('themeName').value.trim();
         const description = document.getElementById('themeDescription').value.trim();
         const isActive = document.getElementById('themeIsActive').checked;
@@ -302,10 +326,14 @@ export class ThemeManagement {
             }
         } catch (error) {
             messages.error('Error saving theme: ' + error.message, { toast: true });
+        } finally {
+            if (saveBtn) loadingManager.setLoading(saveBtn, false);
         }
     }
 
     async saveThemeSettings(themeId) {
+        const applyBtn = document.getElementById('themeApplyBtn');
+        if (applyBtn) loadingManager.setLoading(applyBtn, true, 'Applying...');
         if (!themeId) {
             console.error('Cannot save theme settings: themeId is required');
             throw new Error('Theme ID is required');
@@ -342,10 +370,14 @@ export class ThemeManagement {
         } catch (error) {
             console.error('Error saving theme settings:', error);
             throw error; // Re-throw to let the calling function handle it
+        } finally {
+            if (applyBtn) loadingManager.setLoading(applyBtn, false);
         }
     }
 
     async deleteTheme() {
+        const deleteBtn = document.querySelector('.delete-theme-btn.btn-danger');
+        if (deleteBtn) loadingManager.setLoading(deleteBtn, true, 'Deleting...');
         if (!this.currentTheme) return;
 
         if (!confirm(`Are you sure you want to delete the theme "${this.currentTheme.name}"?`)) {
@@ -363,10 +395,14 @@ export class ThemeManagement {
             }
         } catch (error) {
             messages.error('Error deleting theme: ' + error.message, { toast: true });
+        } finally {
+            if (deleteBtn) loadingManager.setLoading(deleteBtn, false);
         }
     }
 
     async setActiveTheme(themeId) {
+        const activeBtn = document.getElementById('themeIsActive');
+        if (activeBtn) loadingManager.setLoading(activeBtn, true, 'Applying...');
         try {
             const result = await this.apiClient.post('/themes/active', { theme_id: themeId });
             if (result.success) {
@@ -382,6 +418,8 @@ export class ThemeManagement {
             }
         } catch (error) {
             messages.error('Error setting active theme: ' + error.message, { toast: true });
+        } finally {
+            if (activeBtn) loadingManager.setLoading(activeBtn, false);
         }
     }
 

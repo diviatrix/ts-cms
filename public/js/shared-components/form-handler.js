@@ -3,8 +3,7 @@
  * Reusable form validation and submission logic
  */
 
-import { ErrorHandler, loadingManager } from '../ui-utils.js';
-import { messages } from '../ui-utils.js';
+import { loadingManager, messages } from '../ui-utils.js';
 
 // Common regex patterns
 const REGEX_PATTERNS = {
@@ -78,15 +77,15 @@ class FormHandler {
 
         for (const rule of rules) {
             if (rule.type === 'required' && !value) {
-                ErrorHandler.addFieldError(field, rule.message || `${fieldName} is required`);
+                this.addFieldError(field, rule.message || `${fieldName} is required`);
                 isValid = false;
                 break;
             } else if (rule.type === 'email' && value && !REGEX_PATTERNS.EMAIL.test(value)) {
-                ErrorHandler.addFieldError(field, rule.message || 'Please enter a valid email address');
+                this.addFieldError(field, rule.message || 'Please enter a valid email address');
                 isValid = false;
                 break;
             } else if (rule.type === 'minLength' && value && value.length < rule.value) {
-                ErrorHandler.addFieldError(field, rule.message || `Must be at least ${rule.value} characters long`);
+                this.addFieldError(field, rule.message || `Must be at least ${rule.value} characters long`);
                 isValid = false;
                 break;
             }
@@ -144,11 +143,30 @@ class FormHandler {
             }
         });
 
-        if (!isValid && this.messageDisplay) {
+        if (!isValid) {
             messages.error('Please correct the errors below', { toast: true });
         }
 
         return isValid;
+    }
+
+    /**
+     * Add field error display
+     */
+    addFieldError(field, message) {
+        // Remove existing error
+        const existingError = field.parentNode.querySelector('.field-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        // Create error element
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error text-danger small mt-1';
+        errorDiv.textContent = message;
+        
+        // Insert after field
+        field.parentNode.insertBefore(errorDiv, field.nextSibling);
     }
 
     /**

@@ -4,7 +4,6 @@
  */
 
 import { BasePageController } from './base-controller.js';
-import { ErrorHandler } from '../ui-utils.js';
 import { messages } from '../ui-utils.js';
 
 /**
@@ -40,8 +39,13 @@ class AuthPageController extends BasePageController {
      * Handle authentication failure
      */
     handleAuthFailure(response) {
-        if (this.message) {
-            ErrorHandler.handleApiError(response, this.message);
+        // Handle different types of authentication errors
+        if (response.status === 401) {
+            messages.error('Invalid login credentials. Please try again.', { toast: true });
+        } else if (response.errors && response.errors.length > 0) {
+            messages.error(response.errors.join(', '), { toast: true });
+        } else {
+            messages.error(response.message || 'Authentication failed. Please try again.', { toast: true });
         }
     }
 }

@@ -32,10 +32,7 @@ function createExpressApp(): express.Application {
         // Log request
         logger.apiRequest(req.method, req.url);
         
-        // Only log body for registration to debug the issue
-        if (req.url === '/register' && req.method === 'POST') {
-            console.log(`📝 Registration data received:`, req.body);
-        }
+
         
         // Capture response
         const originalSend = res.send;

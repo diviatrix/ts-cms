@@ -12,7 +12,6 @@ class Database {
     private db: adapter;
 
     private constructor() {
-        console.log('Database constructor called.');
         this.db = new adapter();
         this.initialize();
     }
@@ -25,7 +24,7 @@ class Database {
     }
 
     private async initialize() {
-        console.log(await this.db.checkTables());
+        await this.db.checkTables();
     }
 
     public async registerUser(user: IUser): Promise<IResolve<IUser>> {
@@ -163,11 +162,9 @@ class Database {
     }
 
     public async updateUser(userId: string, userData: Partial<IUser>): Promise<IResolve<IUser | undefined>> {
-        console.log('Database: updateUser called for userId:', userId, 'with user data:', userData);
         const fieldsToUpdate = Object.keys(userData).filter(key => (userData as any)[key] !== undefined);
 
         if (fieldsToUpdate.length === 0) {
-            console.log('Database: No fields to update in updateUser.');
             return prep.response(true, messages.success, undefined); // Nothing to update
         }
 
@@ -176,7 +173,6 @@ class Database {
         values.push(userId);
 
         const query = `UPDATE users SET ${setClauses} WHERE id = ?`;
-        console.log('Database: Executing updateUser query:', query, 'with values:', values);
         const response = await this.db.executeQuery(query, values);
         return prep.response(response.success, response.message, undefined);
     }

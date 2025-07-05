@@ -3,8 +3,7 @@
  * Common functionality for all pages
  */
 
-import { MessageDisplay, ErrorHandler, loadingManager, errorHandler } from '../ui-utils.js';
-import { messages } from '../ui-utils.js';
+import { loadingManager, messages } from '../ui-utils.js';
 
 /**
  * Base Page Controller
@@ -13,12 +12,7 @@ import { messages } from '../ui-utils.js';
 class BasePageController {
     constructor(options = {}) {
         this.messageDiv = options.messageDiv || document.getElementById('messageDiv');
-        this.message = this.messageDiv ? new MessageDisplay(this.messageDiv) : null;
         this.loadingManager = loadingManager;
-        this.errorHandler = errorHandler;
-        
-        // Make error handler globally available
-        window.errorHandler = this.errorHandler;
         
         // Set up common event handlers
         this.setupCommonHandlers();
@@ -34,9 +28,7 @@ class BasePageController {
         // Set up global error handler for unhandled promise rejections
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
-            if (this.message) {
-                messages.error('An unexpected error occurred. Please refresh the page.', { toast: true });
-            }
+            messages.error('An unexpected error occurred. Please refresh the page.', { toast: true });
         });
     }
 
@@ -63,15 +55,18 @@ class BasePageController {
      */
     handleApiResponse(response, successCallback = null, errorCallback = null) {
         if (response.success) {
-            if (this.message) {
-                messages.success(response.message || 'Operation completed successfully', { toast: true });
-            }
+            messages.success(response.message || 'Operation completed successfully', { toast: true });
             if (successCallback) {
                 successCallback(response.data);
             }
         } else {
-            if (this.message) {
-                ErrorHandler.handleApiError(response, this.message);
+            // Handle different types of API errors
+            if (response.status === 401) {
+                messages.error('Your session has expired. Please log in again.', { toast: true });
+            } else if (response.errors && response.errors.length > 0) {
+                messages.error(response.errors.join(', '), { toast: true });
+            } else {
+                messages.error(response.message || 'An unexpected error occurred. Please try again.', { toast: true });
             }
             if (errorCallback) {
                 errorCallback(response);
@@ -107,11 +102,11 @@ class BasePageController {
         } catch (error) {
             console.error('API call error:', error);
             
-            // Use enhanced error handler with retry logic
-            if (retryCallback && operationKey) {
-                this.errorHandler.handleNetworkError(error, this.message, retryCallback, operationKey);
+            // Handle network errors with unified messages
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                messages.error('Unable to connect to the server. Please check your internet connection and try again.', { toast: true });
             } else {
-                ErrorHandler.handleNetworkError(error, this.message);
+                messages.error(error.message || 'Network error occurred. Please try again.', { toast: true });
             }
 
             return {

@@ -13,7 +13,6 @@ export default class SQLiteAdapter {
     private db: sqlite3.Database | null = null;
 
     constructor() {
-        console.log('SQLiteAdapter constructor called.');
         this.connect();
     }
 
