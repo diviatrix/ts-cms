@@ -46,12 +46,14 @@ class LoginPageController extends AuthPageController {
       validationRules: {
         login: [
           { type: 'required', message: 'Login is required' },
-          { type: 'minLength', value: 3, message: 'Login must be at least 3 characters long' },
-          { type: 'maxLength', value: 50, message: 'Login must be no more than 50 characters long' }
+          { type: 'minLength', value: 4, message: 'Login must be at least 4 characters long' },
+          { type: 'maxLength', value: 50, message: 'Login must be no more than 50 characters long' },
+          { type: 'username', message: 'Login can only contain letters, numbers, underscores, and hyphens' }
         ],
         password: [
           { type: 'required', message: 'Password is required' },
-          { type: 'minLength', value: 6, message: 'Password must be at least 6 characters long' }
+          { type: 'minLength', value: 6, message: 'Password must be at least 6 characters long' },
+          { type: 'maxLength', value: 100, message: 'Password must be no more than 100 characters long' }
         ],
         email: [
           { type: 'required', message: 'Email is required' },

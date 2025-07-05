@@ -3,9 +3,20 @@
  * Provides form validation functionality and helpers
  */
 
-// Common regex patterns
+// Common regex patterns (aligned with backend)
 const REGEX_PATTERNS = {
-    EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    USERNAME: /^[a-zA-Z0-9_-]+$/
+};
+
+// Validation constants (aligned with backend)
+const VALIDATION_CONSTANTS = {
+    USERNAME_MIN_LENGTH: 4,
+    USERNAME_MAX_LENGTH: 50,
+    PASSWORD_MIN_LENGTH: 6,
+    PASSWORD_MAX_LENGTH: 100,
+    DISPLAY_NAME_MAX_LENGTH: 100,
+    BIO_MAX_LENGTH: 500
 };
 
 /**
@@ -49,20 +60,52 @@ class FormValidator {
     }
 
     /**
-     * Validate password strength
+     * Validate password strength (aligned with backend)
      */
-    static validatePassword(passwordElement, minLength = 8) {
+    static validatePassword(passwordElement) {
         const password = passwordElement.value;
         const errors = [];
 
-        if (password.length < minLength) {
-            errors.push(`Password must be at least ${minLength} characters long`);
+        if (password.length < VALIDATION_CONSTANTS.PASSWORD_MIN_LENGTH) {
+            errors.push(`Password must be at least ${VALIDATION_CONSTANTS.PASSWORD_MIN_LENGTH} characters long`);
+        }
+
+        if (password.length > VALIDATION_CONSTANTS.PASSWORD_MAX_LENGTH) {
+            errors.push(`Password must be no more than ${VALIDATION_CONSTANTS.PASSWORD_MAX_LENGTH} characters long`);
         }
 
         if (errors.length > 0) {
             this.addErrorClass(passwordElement);
         } else {
             this.removeErrorClass(passwordElement);
+        }
+
+        return errors;
+    }
+
+    /**
+     * Validate username (aligned with backend)
+     */
+    static validateUsername(usernameElement) {
+        const username = usernameElement.value?.trim();
+        const errors = [];
+
+        if (username.length < VALIDATION_CONSTANTS.USERNAME_MIN_LENGTH) {
+            errors.push(`Username must be at least ${VALIDATION_CONSTANTS.USERNAME_MIN_LENGTH} characters long`);
+        }
+
+        if (username.length > VALIDATION_CONSTANTS.USERNAME_MAX_LENGTH) {
+            errors.push(`Username must be no more than ${VALIDATION_CONSTANTS.USERNAME_MAX_LENGTH} characters long`);
+        }
+
+        if (!REGEX_PATTERNS.USERNAME.test(username)) {
+            errors.push('Username can only contain letters, numbers, underscores, and hyphens');
+        }
+
+        if (errors.length > 0) {
+            this.addErrorClass(usernameElement);
+        } else {
+            this.removeErrorClass(usernameElement);
         }
 
         return errors;
@@ -129,6 +172,8 @@ class AdvancedFormValidator extends FormValidator {
                     fieldErrors.push(rule.message || `${fieldName} must be no more than ${rule.value} characters long`);
                 } else if (rule.type === 'pattern' && value && !rule.value.test(value)) {
                     fieldErrors.push(rule.message || `${fieldName} format is invalid`);
+                } else if (rule.type === 'username' && value && !this.isValidUsername(value)) {
+                    fieldErrors.push(rule.message || 'Username can only contain letters, numbers, underscores, and hyphens');
                 } else if (rule.type === 'custom' && rule.validator && !rule.validator(value, field)) {
                     fieldErrors.push(rule.message || `${fieldName} is invalid`);
                 }
@@ -160,6 +205,13 @@ class AdvancedFormValidator extends FormValidator {
     static isValidEmail(email) {
         return REGEX_PATTERNS.EMAIL.test(email);
     }
+
+    /**
+     * Check if username is valid
+     */
+    static isValidUsername(username) {
+        return REGEX_PATTERNS.USERNAME.test(username);
+    }
 }
 
-export { FormValidator, AdvancedFormValidator, REGEX_PATTERNS };
+export { FormValidator, AdvancedFormValidator, REGEX_PATTERNS, VALIDATION_CONSTANTS };

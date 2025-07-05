@@ -12,8 +12,11 @@ import themeRoutes from './routes/theme.routes';
 import cmsRoutes from './routes/cms.routes';
 import { updateProfile } from './functions/updateProfile';
 import { errorHandler } from './middleware/error.middleware';
+import { applyRateLimits } from './middleware/rate-limit.middleware';
 import logger from './utils/logger';
 import { ContextLogger } from './utils/context-logger';
+import { securityHeaders } from './middleware/security-headers.middleware';
+import { sanitizeInput } from './middleware/sanitization.middleware';
 
 function createExpressApp(): express.Application {
     // Create an Express application
@@ -24,6 +27,20 @@ function createExpressApp(): express.Application {
 
     // Parse JSON request bodies FIRST - before any other middleware that needs req.body
     app.use(express.json());
+
+    // Apply minimal security headers to all responses
+    app.use(securityHeaders);
+
+    // Sanitize input for POST/PUT API requests only
+    app.use('/api', (req, res, next) => {
+        if (req.method === 'POST' || req.method === 'PUT') {
+            return sanitizeInput(req, res, next);
+        }
+        next();
+    });
+
+    // Apply rate limiting to API routes
+    applyRateLimits(app);
 
     // Log all incoming requests to the API router
     app.use('/api', (req, res, next) => {

@@ -32,6 +32,7 @@ export const HTTP_STATUS = {
     NOT_FOUND: 404,
     CONFLICT: 409,
     UNPROCESSABLE_ENTITY: 422,
+    TOO_MANY_REQUESTS: 429,
     
     // Server Errors
     INTERNAL_SERVER_ERROR: 500,
@@ -134,6 +135,13 @@ export class ResponseUtils {
      */
     static validationError(res: Response, message: string = 'Validation failed', errors?: string[]): void {
         this.error(res, message, HTTP_STATUS.UNPROCESSABLE_ENTITY, errors);
+    }
+
+    /**
+     * Send too many requests response (429)
+     */
+    static tooManyRequests(res: Response, message: string = 'Too many requests'): void {
+        this.error(res, message, HTTP_STATUS.TOO_MANY_REQUESTS);
     }
 
     /**

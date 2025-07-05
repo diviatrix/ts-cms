@@ -14,15 +14,15 @@ export const DB_CONSTANTS = {
 // Authentication constants
 export const AUTH_CONSTANTS = {
     JWT_EXPIRES_IN: '24h',
-    PASSWORD_MIN_LENGTH: 8,
-    PASSWORD_MAX_LENGTH: 128,
+    PASSWORD_MIN_LENGTH: 6,
+    PASSWORD_MAX_LENGTH: 100,
     SALT_ROUNDS: 12,
     TOKEN_PREFIX: 'Bearer ',
 } as const;
 
 // Validation constants
 export const VALIDATION_CONSTANTS = {
-    USERNAME_MIN_LENGTH: 3,
+    USERNAME_MIN_LENGTH: 4,
     USERNAME_MAX_LENGTH: 50,
     EMAIL_MAX_LENGTH: 255,
     DISPLAY_NAME_MAX_LENGTH: 100,

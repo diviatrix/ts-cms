@@ -73,6 +73,18 @@ export class ValidationUtils {
     }
 
     /**
+     * Check if value matches username pattern
+     */
+    static usernamePattern(value: string, fieldName: string): string | null {
+        if (typeof value !== 'string') return null;
+        
+        if (!REGEX_PATTERNS.USERNAME.test(value)) {
+            return `${fieldName} can only contain letters, numbers, underscores, and hyphens`;
+        }
+        return null;
+    }
+
+    /**
      * Validate object against schema
      */
     static validateObject(data: any, schema: ValidationSchema): ValidationResult {
@@ -107,11 +119,12 @@ export const ValidationSchemas = {
     register: {
         login: [
             ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'login', 4, 50)
+            (value: string) => ValidationUtils.stringLength(value, 'login', VALIDATION_CONSTANTS.USERNAME_MIN_LENGTH, VALIDATION_CONSTANTS.USERNAME_MAX_LENGTH),
+            ValidationUtils.usernamePattern
         ],
         password: [
             ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'password', 6, 100)
+            (value: string) => ValidationUtils.stringLength(value, 'password', AUTH_CONSTANTS.PASSWORD_MIN_LENGTH, AUTH_CONSTANTS.PASSWORD_MAX_LENGTH)
         ],
         email: [
             (value: string) => value ? ValidationUtils.email(value, 'email') : null
@@ -122,11 +135,11 @@ export const ValidationSchemas = {
     login: {
         login: [
             ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'login', 1, 50)
+            (value: string) => ValidationUtils.stringLength(value, 'login', 1, VALIDATION_CONSTANTS.USERNAME_MAX_LENGTH)
         ],
         password: [
             ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'password', 1, 100)
+            (value: string) => ValidationUtils.stringLength(value, 'password', 1, AUTH_CONSTANTS.PASSWORD_MAX_LENGTH)
         ]
     } as ValidationSchema,
 
@@ -147,7 +160,7 @@ export const ValidationSchemas = {
     passwordChange: {
         newPassword: [
             ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'newPassword', 6, 100)
+            (value: string) => ValidationUtils.stringLength(value, 'newPassword', AUTH_CONSTANTS.PASSWORD_MIN_LENGTH, AUTH_CONSTANTS.PASSWORD_MAX_LENGTH)
         ]
     } as ValidationSchema,
 
