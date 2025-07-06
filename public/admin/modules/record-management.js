@@ -9,10 +9,9 @@ import { DownloadUtils } from '../../js/utils/download-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
 
 export class RecordManagement extends BaseAdminController {
-    constructor(elements, dataTable, responseLog) {
+    constructor(elements, dataTable) {
         super({
             elements,
-            responseLog,
             messageDiv: elements.recordMessageDiv
         });
         

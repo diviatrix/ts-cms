@@ -6,7 +6,7 @@ import {
     errorHandler 
 } from '../js/ui-utils.js';
 import { jwtDecode } from '../js/jwt-decode.js';
-import { UserManagement, RecordManagement, AdminUtils, ResponseLog } from './modules/index.js';
+import { UserManagement, RecordManagement, AdminUtils } from './modules/index.js';
 import { ThemeManagement } from './modules/theme-management.js';
 import { CMSSettings } from './modules/cms-settings.js';
 import { messages } from '../js/ui-utils.js';
@@ -135,17 +135,14 @@ class AdminController {
      * Initialize modules
      */
     initializeModules() {
-        // Initialize response log module
-        this.responseLog = new ResponseLog();
-
         // Initialize user management module
-        this.userManagement = new UserManagement(this.elements, this.usersTable, this.responseLog);
+        this.userManagement = new UserManagement(this.elements, this.usersTable);
 
         // Initialize record management module  
-        this.recordManagement = new RecordManagement(this.elements, this.recordsTable, this.responseLog);
+        this.recordManagement = new RecordManagement(this.elements, this.recordsTable);
 
         // Initialize CMS settings module
-        this.cmsSettings = new CMSSettings(this.responseLog);
+        this.cmsSettings = new CMSSettings();
     }
 
     /**

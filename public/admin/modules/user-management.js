@@ -8,10 +8,9 @@ import { loadingManager, messages } from '../../js/ui-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
 
 export class UserManagement extends BaseAdminController {
-    constructor(elements, dataTable, responseLog) {
+    constructor(elements, dataTable) {
         super({
             elements,
-            responseLog,
             messageDiv: elements.adminMessageDiv
         });
         

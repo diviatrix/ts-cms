@@ -12,9 +12,8 @@ import { AuthAPI } from '../../js/api-client.js';
  * Provides common functionality for admin modules
  */
 export class BaseAdminController {
-    constructor({ elements = {}, responseLog, messageDiv, apiClient } = {}) {
+    constructor({ elements = {}, messageDiv, apiClient } = {}) {
         this.elements = elements;
-        this.responseLog = responseLog;
         this.messageDisplay = new MessageDisplay(messageDiv);
         this.apiClient = apiClient;
         this.currentItem = null;
@@ -184,7 +183,7 @@ export class BaseAdminController {
         try {
             loadingElements.forEach(el => loadingManager.setLoading(el, true, loadingText));
             const response = await apiCall();
-            this.responseLog?.addResponse(response, operationName, requestData);
+
             if (response.success) {
                 successCallback?.(response.data);
                 return response;

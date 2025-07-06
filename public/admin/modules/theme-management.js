@@ -8,9 +8,8 @@ import { BaseAdminController } from './base-admin-controller.js';
 import { ConfirmationDialog } from '../../js/utils/dialogs.js';
 
 export class ThemeManagement extends BaseAdminController {
-    constructor(responseLog) {
+    constructor() {
         super({
-            responseLog,
             apiClient
         });
         

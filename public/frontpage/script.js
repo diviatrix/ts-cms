@@ -119,12 +119,12 @@ class FrontPageController extends BasePageController {
 
     // Create image HTML if image_url exists
     const imageHtml = record.image_url ? `
-      <div class="card-img-left d-flex align-items-stretch p-1" style="width:200px; min-width:200px; max-width:200px;">
+      <div class="d-flex align-items-stretch p-1 me-3"
+           style="height: 100%; aspect-ratio: 1 / 1; max-width: 250px; max-height: 250px;">
         <img src="${this.escapeHtml(record.image_url)}"
-             class="img-fluid h-100 w-100 rounded-start"
+             class="img-fluid rounded"
              alt="${this.escapeHtml(record.title)}"
-             style="object-fit:cover; height:100%; min-height:150px;"
-             onerror="this.style.display='none'">
+             style="object-fit:cover; width:100%; height:100%;">
       </div>
     ` : '';
 

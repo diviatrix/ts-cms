@@ -91,26 +91,7 @@ body {
     border-color: var(--theme-border-color);
 }
 
-/* Response Log Styling */
-.log-entry {
-    background-color: var(--theme-surface-color);
-    border-color: var(--theme-border-color);
-    color: var(--theme-text-color);
-}
 
-.response-pre {
-    background-color: var(--theme-background-color);
-    border: 1px solid var(--theme-border-color);
-    color: var(--theme-text-color);
-    max-height: 200px;
-    overflow-y: auto;
-    font-family: var(--theme-font-family);
-}
-
-#responseLogContainer {
-    background-color: var(--theme-surface-color);
-    border-color: var(--theme-border-color);
-}
 
 .modal-content {
     background-color: var(--theme-surface-color);

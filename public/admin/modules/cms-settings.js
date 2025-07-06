@@ -9,9 +9,8 @@ import { BaseAdminController } from './base-admin-controller.js';
 import { ConfirmationDialog } from '../../js/utils/dialogs.js';
 
 export class CMSSettings extends BaseAdminController {
-    constructor(responseLog) {
+    constructor() {
         super({
-            responseLog,
             apiClient
         });
         
@@ -335,8 +334,6 @@ export class CMSSettings extends BaseAdminController {
             await this.loadSettings();
             // Refresh CMS integration across all pages
             await cmsIntegration.refresh();
-            // Download JSON after save
-            this.downloadSettingsJson();
         } else {
             this.showError('Some settings failed to save: ' + saveErrors.join(', '));
         }
