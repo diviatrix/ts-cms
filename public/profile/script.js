@@ -1,6 +1,5 @@
 import { ProfileAPI, AuthAPI } from '../js/api-client.js';
 import { loadingManager, messages } from '../js/ui-utils.js';
-import { initResponseLog } from '/js/shared-components/response-log-init.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 import { setImagePreview } from '../js/utils/image-preview.js';
 
@@ -46,19 +45,6 @@ class ProfileController {
 
     this.setupEventListeners();
     await this.loadProfile();
-
-    // Admin check and log init after async work
-    let isAdmin = false;
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const decoded = jwtDecode(token);
-        isAdmin = decoded?.roles?.includes('admin');
-      }
-    } catch {}
-    if (isAdmin) {
-      initResponseLog();
-    }
   }
 
   /**

@@ -4,7 +4,6 @@ import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 import { messages } from '../js/ui-utils.js';
 import { DownloadUtils } from '../js/utils/download-utils.js';
-import { initResponseLog } from '/js/shared-components/response-log-init.js';
 import { setImagePreview } from '../js/utils/image-preview.js';
 
 /**
@@ -72,19 +71,6 @@ class RecordDisplayController extends BasePageController {
     }
 
     await this.loadAndDisplayRecord();
-
-    // Admin check and log init after async work
-    let isAdmin = false;
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const decoded = jwtDecode(token);
-        isAdmin = decoded?.roles?.includes('admin');
-      }
-    } catch {}
-    if (isAdmin) {
-      initResponseLog();
-    }
   }
 
   /**
