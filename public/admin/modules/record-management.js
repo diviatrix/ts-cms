@@ -6,6 +6,7 @@
 import { RecordsAPI, AuthAPI } from '../../js/api-client.js';
 import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, ConfirmationDialog, messages } from '../../js/ui-utils.js';
 import { getThemeColors } from '../../js/utils/theme-api.js';
+import { DownloadUtils } from '../../js/utils/download-utils.js';
 
 export class RecordManagement {
     constructor(elements, dataTable) {
@@ -47,6 +48,10 @@ export class RecordManagement {
         
         if (this.elements.recordDeleteButton) {
             this.elements.recordDeleteButton.addEventListener('click', () => this.handleRecordDelete());
+        }
+        
+        if (this.elements.recordDownloadButton) {
+            this.elements.recordDownloadButton.addEventListener('click', () => this.handleRecordDownload());
         }
 
         // Record link clicks in the data table
@@ -317,5 +322,21 @@ export class RecordManagement {
                 });
             }
         });
+    }
+
+    /**
+     * Handle record download as markdown
+     */
+    handleRecordDownload() {
+        const recordId = this.elements.recordEditInfo.dataset.currentRecordId;
+        if (!recordId) {
+            messages.error('No record selected for download.', { toast: true });
+            return;
+        }
+
+        const title = this.elements.recordTitle.value;
+        const content = this.elements.recordContent.value;
+        
+        DownloadUtils.downloadAsMarkdown(title, content);
     }
 }

@@ -73,9 +73,8 @@ class ProtectedPageController extends BasePageController {
         console.log('ProtectedPageController: requiredRoles:', this.requiredRoles);
         
         if (!this.authAPI || !this.authAPI.isAuthenticated()) {
-            console.log('ProtectedPageController: User not authenticated, redirecting to login');
-            const currentPath = window.location.pathname + window.location.search;
-            window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+            console.log('ProtectedPageController: User not authenticated, redirecting to frontpage');
+            window.location.href = '/';
             return false;
         }
 

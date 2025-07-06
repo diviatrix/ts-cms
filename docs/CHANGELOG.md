@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **User Management Enhancement**: Added tabbed interface for active/inactive users in admin panel
+- **Record Download Feature**: Added markdown download functionality for records (admin panel and single record pages)
+- **Password Management**: Integrated password change functionality into profile page with tabbed interface
+- **Token Auto-Cleanup**: Automatic cleanup of expired tokens without forced redirects
+
+### Changed
+- **Admin User Interface**: Simplified user management with filter buttons instead of complex nested tabs
+- **Authentication Flow**: Removed forced redirects to login - users stay on current page when tokens expire
+- **Profile Page**: Added tabbed interface with JSON editor and password change functionality
+- **Download System**: Created shared download utility to eliminate code duplication
+
+### Fixed
+- **Token Persistence**: Fixed issue where expired tokens remained in localStorage
+- **User Experience**: Improved UX by not forcing redirects to login for non-critical pages
+- **Code Duplication**: Eliminated duplicate download logic across multiple files
+- **Dead Code**: Removed unused password page files and functionality
+
+### Removed
+- **Dead Code**: Removed unused `public/password/` directory and files
+- **Forced Redirects**: Removed automatic redirects to login for expired tokens
+- **Duplicate Logic**: Eliminated redundant download implementations
+
+### Security
+- **Token Management**: Automatic cleanup of expired and invalid tokens
+- **User Feedback**: Clear messaging when sessions expire without disrupting user flow
+- **Access Control**: Admin pages still require explicit login for security
+
 ## [2024-12-19] - Security Implementation & Validation
 
 ### Added

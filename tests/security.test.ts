@@ -122,12 +122,18 @@ describe('Security Tests', () => {
             login: attempt,
             email: 'test@example.com',
             password: 'password123'
-          })
-          .expect(422); // Should be validation error, not SQL error
+          });
         
+        // Should be validation error, not SQL error
+        expect(response.statusCode).to.equal(422);
         expect(response.body.success).to.be.false;
         expect(response.body.message).to.not.contain('SQL');
         expect(response.body.message).to.not.contain('syntax');
+        
+        // Safety check: track any unexpected successful user creation
+        if (response.statusCode === 201 && response.body.data?.id) {
+          testUsers.push(response.body.data.id);
+        }
       }
     });
   });
@@ -207,10 +213,15 @@ describe('Security Tests', () => {
             login: username,
             email: 'test@example.com',
             password: 'password123'
-          })
-          .expect(422);
+          });
         
+        expect(response.statusCode).to.equal(422);
         expect(response.body.success).to.be.false;
+        
+        // Safety check: track any unexpected successful user creation
+        if (response.statusCode === 201 && response.body.data?.id) {
+          testUsers.push(response.body.data.id);
+        }
       }
     });
 
@@ -235,6 +246,11 @@ describe('Security Tests', () => {
           });
         // Accept 201 (created), 409 (duplicate), or 422 (validation error)
         expect([201, 409, 422]).to.include(response.statusCode);
+        
+        // Track successful user creations for cleanup
+        if (response.statusCode === 201 && response.body.data?.id) {
+          testUsers.push(response.body.data.id);
+        }
       }
     });
 
@@ -251,10 +267,15 @@ describe('Security Tests', () => {
             login: 'testuser',
             email: 'test@example.com',
             password: password
-          })
-          .expect(422);
+          });
         
+        expect(response.statusCode).to.equal(422);
         expect(response.body.success).to.be.false;
+        
+        // Safety check: track any unexpected successful user creation
+        if (response.statusCode === 201 && response.body.data?.id) {
+          testUsers.push(response.body.data.id);
+        }
       }
     });
 
@@ -277,6 +298,11 @@ describe('Security Tests', () => {
         
         // Should either succeed or fail due to duplicate, but not validation error
         expect([201, 409]).to.include(response.statusCode);
+        
+        // Track successful user creations for cleanup
+        if (response.statusCode === 201 && response.body.data?.id) {
+          testUsers.push(response.body.data.id);
+        }
       }
     });
   });

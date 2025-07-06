@@ -88,6 +88,7 @@ class ApiClient {
                 errors: []
             };
         }
+        
         const contentType = response.headers.get('content-type');
         let data;
         if (contentType && contentType.includes('application/json')) {
@@ -100,6 +101,7 @@ class ApiClient {
                 errors: [`HTTP ${response.status}: ${response.statusText}`]
             };
         }
+        
         if (!data.hasOwnProperty('success')) {
             data = {
                 success: response.ok,
@@ -108,6 +110,17 @@ class ApiClient {
                 errors: response.ok ? [] : [`HTTP ${response.status}: ${response.statusText}`]
             };
         }
+        
+        // Auto-handle unauthorized responses
+        if (response.status === 401 || 
+            (data.errors && data.errors.some(err => 
+                err.toLowerCase().includes('unauthorized') || 
+                err.toLowerCase().includes('token') ||
+                err.toLowerCase().includes('expired')
+            ))) {
+            this.handleAuthError(data);
+        }
+        
         return data;
     }
 
@@ -303,8 +316,30 @@ class ApiClient {
         try {
             // Basic JWT validation (check if it's not expired)
             const payload = JSON.parse(atob(token.split('.')[1]));
-            return payload.exp * 1000 > Date.now();
+            const isExpired = payload.exp * 1000 <= Date.now();
+            
+            // Auto-clear expired tokens
+            if (isExpired) {
+                console.log('[ApiClient] Token expired, clearing...');
+                this.setAuthToken(null);
+                
+                // Show message only if not on login page
+                if (!window.location.pathname.includes('/login') && window.messages) {
+                    window.messages.warning('Your session has expired.', { toast: true });
+                }
+                return false;
+            }
+            
+            return true;
         } catch (error) {
+            // Clear invalid tokens
+            console.error('[ApiClient] Invalid token format, clearing...', error);
+            this.setAuthToken(null);
+            
+            // Show message only if not on login page
+            if (!window.location.pathname.includes('/login') && window.messages) {
+                window.messages.warning('Invalid session detected.', { toast: true });
+            }
             return false;
         }
     }
@@ -313,15 +348,15 @@ class ApiClient {
      * Handle authentication errors
      */
     handleAuthError(response) {
-        if (response && (response.status === 401 || response.errors?.some(err => err.includes('Unauthorized')))) {
-            this.setAuthToken(null);
-            // Redirect to login if not already there
-            if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login';
-            }
-            return true;
+        // Clear the invalid token
+        this.setAuthToken(null);
+        
+        // Show user-friendly message
+        if (window.messages) {
+            window.messages.warning('Your session has expired.', { toast: true });
         }
-        return false;
+        
+        return true;
     }
 
     /**
@@ -329,7 +364,7 @@ class ApiClient {
      */
     logout() {
         this.setAuthToken(null);
-        window.location.href = '/login';
+        window.location.href = '/';
     }
 
     /**

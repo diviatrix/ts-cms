@@ -17,7 +17,10 @@
       <div class="row">
         <div class="col-lg-10 offset-lg-1">
           <h1 id="recordTitle" class="mb-3"></h1>
-          <button id="editRecordButton" class="btn btn-warning btn-sm mb-3 d-none">Edit Record</button>
+          <div class="mb-3">
+            <button id="editRecordButton" class="btn btn-warning btn-sm d-none">Edit Record</button>
+            <button id="downloadRecordButton" class="btn btn-info btn-sm ms-2" title="Download as Markdown">📥</button>
+          </div>
           <p id="recordDescription" class="lead text-muted mb-4"></p>
           <div id="recordContent" class="markdown-body"></div>
           <div class="mt-5 text-muted">

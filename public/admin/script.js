@@ -53,6 +53,7 @@ class AdminController {
             recordServerAnswerTextarea: document.getElementById('recordServerAnswerTextarea'),
             recordSaveButton: document.getElementById('recordSaveButton'),
             recordDeleteButton: document.getElementById('recordDeleteButton'),
+            recordDownloadButton: document.getElementById('recordDownloadButton'),
             newRecordButton: document.getElementById('newRecordButton'),
 
             // Tab elements

@@ -3,6 +3,7 @@ import { RecordsAPI, AuthAPI } from '../js/api-client.js';
 import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 import { messages } from '../js/ui-utils.js';
+import { DownloadUtils } from '../js/utils/download-utils.js';
 
 /**
  * Record Display Controller
@@ -35,7 +36,8 @@ class RecordDisplayController extends BasePageController {
       content: document.getElementById('recordContent'),
       author: document.getElementById('recordAuthor'),
       date: document.getElementById('recordDate'),
-      editButton: document.getElementById('editRecordButton')
+      editButton: document.getElementById('editRecordButton'),
+      downloadButton: document.getElementById('downloadRecordButton')
     };
   }
 
@@ -102,6 +104,9 @@ class RecordDisplayController extends BasePageController {
     this.elements.content.innerHTML = marked.parse(record.content);
     this.elements.author.textContent = record.public_name;
     this.elements.date.textContent = new Date(record.created_at).toLocaleDateString();
+    
+    // Setup download feature for authenticated users
+    this.setupDownloadFeature(record);
   }
 
   /**
@@ -116,6 +121,26 @@ class RecordDisplayController extends BasePageController {
     this.elements.editButton.addEventListener('click', () => {
       this.handleEditRecord(record.id);
     });
+  }
+
+  /**
+   * Setup download functionality for all authenticated users
+   */
+  setupDownloadFeature(record) {
+    if (!this.authAPI.isAuthenticated()) {
+      return;
+    }
+
+    this.elements.downloadButton.addEventListener('click', () => {
+      this.handleRecordDownload(record);
+    });
+  }
+
+  /**
+   * Handle record download as markdown
+   */
+  handleRecordDownload(record) {
+    DownloadUtils.downloadAsMarkdown(record.title, record.content);
   }
 
   /**
