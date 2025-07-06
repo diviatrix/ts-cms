@@ -1,5 +1,5 @@
 /**
- * Centralized API Client for ts-cms Frontend
+ * Centralized API Client for ts-cms Frontend (Simplified)
  * Handles standardized backend responses and provides consistent error handling
  */
 
@@ -32,11 +32,11 @@ const API_CONFIG = {
  * Centralized API Client
  */
 class ApiClient {
-    constructor() {
-        this.baseURL = API_CONFIG.baseURL;
-        this.timeout = API_CONFIG.timeout;
-        this.retryAttempts = API_CONFIG.retryAttempts;
-        this.retryDelay = API_CONFIG.retryDelay;
+    constructor(config = {}) {
+        this.baseURL = config.baseURL || API_CONFIG.baseURL;
+        this.timeout = config.timeout || API_CONFIG.timeout;
+        this.retryAttempts = config.retryAttempts || API_CONFIG.retryAttempts;
+        this.retryDelay = config.retryDelay || API_CONFIG.retryDelay;
     }
 
     /**
@@ -60,16 +60,13 @@ class ApiClient {
     /**
      * Create request headers with authentication
      */
-    getHeaders(includeAuth = true) {
+    getHeaders(auth = true) {
         const headers = {
             'Content-Type': 'application/json',
         };
 
-        if (includeAuth) {
-            const token = this.getAuthToken();
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
+        if (auth && this.getAuthToken()) {
+            headers['Authorization'] = `Bearer ${this.getAuthToken()}`;
         }
 
         return headers;
@@ -112,12 +109,7 @@ class ApiClient {
         }
         
         // Auto-handle unauthorized responses
-        if (response.status === 401 || 
-            (data.errors && data.errors.some(err => 
-                err.toLowerCase().includes('unauthorized') || 
-                err.toLowerCase().includes('token') ||
-                err.toLowerCase().includes('expired')
-            ))) {
+        if (response.status === 401) {
             this.handleAuthError(data);
         }
         
@@ -158,7 +150,7 @@ class ApiClient {
     /**
      * Make HTTP request with retry logic
      */
-    async makeRequest(url, options = {}, attempt = 1) {
+    async request(url, { method = 'GET', data, auth = true, ...opts } = {}, attempt = 1) {
         const fullUrl = url.startsWith('http') ? url : `${this.baseURL}${url}`;
         
         try {
@@ -167,12 +159,11 @@ class ApiClient {
             const timeoutId = setTimeout(() => controller.abort(), this.timeout);
             
             const response = await fetch(fullUrl, {
-                ...options,
+                method,
+                body: data && method !== 'GET' ? JSON.stringify(data) : undefined,
+                headers: this.getHeaders(auth),
                 signal: controller.signal,
-                headers: {
-                    ...this.getHeaders(options.includeAuth !== false),
-                    ...options.headers
-                }
+                ...opts
             });
 
             clearTimeout(timeoutId);
@@ -191,7 +182,7 @@ class ApiClient {
                 if (attempt < this.retryAttempts) {
                     console.warn(`Request timeout, retrying... (${attempt}/${this.retryAttempts})`);
                     await this.delay(this.retryDelay * attempt);
-                    return this.makeRequest(url, options, attempt + 1);
+                    return this.request(url, { method, data, auth, ...opts }, attempt + 1);
                 }
 
                 return timeoutError;
@@ -208,7 +199,7 @@ class ApiClient {
             if (attempt < this.retryAttempts) {
                 console.warn(`Network error, retrying... (${attempt}/${this.retryAttempts})`);
                 await this.delay(this.retryDelay * attempt);
-                return this.makeRequest(url, options, attempt + 1);
+                return this.request(url, { method, data, auth, ...opts }, attempt + 1);
             }
 
             return networkError;
@@ -229,7 +220,7 @@ class ApiClient {
         const queryString = new URLSearchParams(params).toString();
         const fullUrl = queryString ? `${url}?${queryString}` : url;
         
-        return this.makeRequest(fullUrl, {
+        return this.request(fullUrl, {
             method: 'GET'
         });
     }
@@ -280,10 +271,10 @@ class ApiClient {
      * POST request
      */
     async post(url, data = {}, includeAuth = true) {
-        return this.makeRequest(url, {
+        return this.request(url, {
             method: 'POST',
             body: JSON.stringify(data),
-            includeAuth
+            auth: includeAuth
         });
     }
 
@@ -291,7 +282,7 @@ class ApiClient {
      * PUT request
      */
     async put(url, data = {}) {
-        return this.makeRequest(url, {
+        return this.request(url, {
             method: 'PUT',
             body: JSON.stringify(data)
         });
@@ -301,7 +292,7 @@ class ApiClient {
      * DELETE request
      */
     async delete(url) {
-        return this.makeRequest(url, {
+        return this.request(url, {
             method: 'DELETE'
         });
     }
@@ -325,7 +316,7 @@ class ApiClient {
                 
                 // Show message only if not on login page
                 if (!window.location.pathname.includes('/login') && window.messages) {
-                    window.messages.warning('Your session has expired.', { toast: true });
+                    window.messages.warning('Your session has expired.');
                 }
                 return false;
             }
@@ -338,7 +329,7 @@ class ApiClient {
             
             // Show message only if not on login page
             if (!window.location.pathname.includes('/login') && window.messages) {
-                window.messages.warning('Invalid session detected.', { toast: true });
+                window.messages.warning('Invalid session detected.');
             }
             return false;
         }
@@ -361,7 +352,7 @@ class ApiClient {
 
         // Show user-friendly message only if not redirecting
         if (window.messages) {
-            window.messages.warning('Your session has expired.', { toast: true });
+            window.messages.warning('Your session has expired.');
         }
         return true;
     }
@@ -381,7 +372,7 @@ class ApiClient {
         const operationKey = `${options.method || 'GET'}_${url}`;
         
         try {
-            const response = await this.makeRequest(url, options);
+            const response = await this.request(url, options);
             
             // Clear retry count on success
             if (window.errorHandler) {

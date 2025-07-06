@@ -31,7 +31,7 @@ class AuthPageController extends BasePageController {
      * Handle successful authentication
      */
     handleAuthSuccess(redirectTo = '/') {
-        messages.success('Login successful!', { toast: true });
+        messages.success('Login successful!');
         window.location.href = redirectTo;
     }
 
@@ -41,11 +41,11 @@ class AuthPageController extends BasePageController {
     handleAuthFailure(response) {
         // Handle different types of authentication errors
         if (response.status === 401) {
-            messages.error('Invalid login credentials. Please try again.', { toast: true });
+            messages.error('Invalid login credentials. Please try again.');
         } else if (response.errors && response.errors.length > 0) {
-            messages.error(response.errors.join(', '), { toast: true });
+            messages.error(response.errors.join(', '));
         } else {
-            messages.error(response.message || 'Authentication failed. Please try again.', { toast: true });
+            messages.error(response.message || 'Authentication failed. Please try again.');
         }
     }
 }
@@ -92,7 +92,7 @@ class ProtectedPageController extends BasePageController {
             
             if (!hasRequiredRole) {
                 console.log('ProtectedPageController: User does not have required role, redirecting');
-                messages.error('You do not have permission to access this page.', { toast: true });
+                messages.error('You do not have permission to access this page.');
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 3000);

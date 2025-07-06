@@ -5,6 +5,7 @@
 import { apiClient } from '/js/api-client.js';
 import { messages } from '/js/ui-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
+import { ConfirmationDialog } from '../../js/utils/dialogs.js';
 
 export class ThemeManagement extends BaseAdminController {
     constructor(responseLog) {
@@ -26,7 +27,7 @@ export class ThemeManagement extends BaseAdminController {
 
     setupEventHandlers() {
         // Bind direct element events (only those always present)
-        this.bindEventConfig({
+        this.bindEvents({
             '#newThemeButton': {
                 click: () => this.showNewThemeForm()
             },
@@ -144,7 +145,7 @@ export class ThemeManagement extends BaseAdminController {
         if (editTab) {
             editTab.classList.remove('d-none');
             // Bind form button events only when form is shown
-            this.bindEventConfig({
+            this.bindEvents({
                 '#themeSaveButton': {
                     click: () => this.saveTheme()
                 },
@@ -341,9 +342,14 @@ export class ThemeManagement extends BaseAdminController {
     async deleteTheme() {
         if (!this.currentTheme) return;
 
-        if (!confirm(`Are you sure you want to delete the theme "${this.currentTheme.name}"?`)) {
-            return;
-        }
+        const confirmed = await ConfirmationDialog.show({
+            title: 'Delete Theme',
+            message: `Are you sure you want to delete the theme "${this.currentTheme.name}"? This action cannot be undone.`,
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            confirmBtnClass: 'btn-danger'
+        });
+        if (!confirmed) return;
 
         const deleteBtn = document.querySelector('.delete-theme-btn.btn-danger');
         const response = await this.safeApiCall(
@@ -412,7 +418,7 @@ export class ThemeManagement extends BaseAdminController {
         // Preview favicon and logo
         this.previewFaviconAndLogo();
         
-        messages.info('Theme preview applied. Refresh page to revert.', { toast: true });
+        messages.info('Theme preview applied. Refresh page to revert.');
     }
 
     generateThemeCSS() {

@@ -2,6 +2,7 @@ import { ProfileAPI, AuthAPI } from '../js/api-client.js';
 import { loadingManager, messages } from '../js/ui-utils.js';
 import { initResponseLog } from '/js/shared-components/response-log-init.js';
 import { jwtDecode } from '../js/jwt-decode.js';
+import { setImagePreview } from '../js/utils/image-preview.js';
 
 /**
  * Profile Page Controller
@@ -17,6 +18,7 @@ class ProfileController {
       // Profile form elements
       publicName: document.getElementById('publicName'),
       profilePictureUrl: document.getElementById('profilePictureUrl'),
+      profilePicturePreview: document.getElementById('profilePicturePreview'),
       bio: document.getElementById('bio'),
       saveButton: document.getElementById('saveButton'),
       messageDiv: document.getElementById('messageDiv'),
@@ -68,6 +70,7 @@ class ProfileController {
     
     // Profile form event listeners
     this.elements.saveButton.addEventListener('click', () => this.saveProfile());
+    this.elements.profilePictureUrl.addEventListener('input', () => setImagePreview(this.elements.profilePicturePreview, this.elements.profilePictureUrl.value, 'Profile picture preview'));
     
     // Password change event listeners
     this.elements.changePasswordButton.addEventListener('click', () => this.handlePasswordUpdate());
@@ -126,7 +129,7 @@ class ProfileController {
       
       if (!response.success) {
         console.error('Error fetching profile:', response);
-        messages.error(response.message || 'Failed to load profile', { toast: true });
+        messages.error(response.message || 'Failed to load profile');
         return;
       }
 
@@ -137,12 +140,13 @@ class ProfileController {
       this.elements.publicName.value = profileData.public_name || '';
       this.elements.profilePictureUrl.value = profileData.profile_picture_url || '';
       this.elements.bio.value = profileData.bio || '';
+      setImagePreview(this.elements.profilePicturePreview, this.elements.profilePictureUrl.value, 'Profile picture preview');
       
-      messages.success('Profile loaded successfully', { toast: true });
+      messages.success('Profile loaded successfully');
       
     } catch (error) {
       console.error('Error loading profile:', error);
-      messages.error('Network error occurred. Please try again.', { toast: true });
+      messages.error('Network error occurred. Please try again.');
     }
   }
 
@@ -160,19 +164,19 @@ class ProfileController {
       
       loadingManager.setLoading(this.elements.saveButton, true, 'Saving...');
       
-      const response = await this.profileAPI.update(profileData);
+      const response = await this.profileAPI.update({ profile: profileData });
       
       if (response.success) {
-        messages.success('Profile saved successfully', { toast: true });
+        messages.success('Profile saved successfully');
         // Reload profile to show updated data
         await this.loadProfile();
       } else {
-        messages.error(response.message || 'Failed to save profile', { toast: true });
+        messages.error(response.message || 'Failed to save profile');
       }
       
     } catch (error) {
       console.error('Error saving profile:', error);
-      messages.error('Network error occurred. Please try again.', { toast: true });
+      messages.error('Network error occurred. Please try again.');
     } finally {
       loadingManager.setLoading(this.elements.saveButton, false);
     }
@@ -182,7 +186,6 @@ class ProfileController {
    * Handle password update
    */
   async handlePasswordUpdate() {
-    const currentPassword = this.elements.currentPassword.value;
     const newPassword = this.elements.newPassword.value;
     const confirmPassword = this.elements.confirmPassword.value;
 
@@ -192,21 +195,18 @@ class ProfileController {
 
     try {
       loadingManager.setLoading(this.elements.changePasswordButton, true, 'Updating...');
-      
       const response = await this.profileAPI.updatePassword({
-        currentPassword: currentPassword,
         newPassword: newPassword
       });
-
       if (response.success) {
-        messages.success('Password updated successfully', { toast: true });
+        messages.success('Password updated successfully');
         this.clearPasswordForm();
       } else {
-        messages.error(response.message || 'Failed to update password', { toast: true });
+        messages.error(response.message || 'Failed to update password');
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      messages.error('Network error occurred. Please try again.', { toast: true });
+      messages.error('Network error occurred. Please try again.');
     } finally {
       loadingManager.setLoading(this.elements.changePasswordButton, false);
     }
@@ -218,19 +218,19 @@ class ProfileController {
   validatePassword(newPassword, confirmPassword) {
     // Check if passwords match
     if (newPassword !== confirmPassword) {
-      messages.error('Passwords do not match.', { toast: true });
+      messages.error('Passwords do not match.');
       return false;
     }
 
     // Check password length
     if (newPassword.length < 6) {
-      messages.error('Password must be at least 6 characters long.', { toast: true });
+      messages.error('Password must be at least 6 characters long.');
       return false;
     }
 
     // Check if password is not empty
     if (!newPassword.trim()) {
-      messages.error('Password cannot be empty.', { toast: true });
+      messages.error('Password cannot be empty.');
       return false;
     }
 
@@ -241,7 +241,6 @@ class ProfileController {
    * Clear password form after successful update
    */
   clearPasswordForm() {
-    this.elements.currentPassword.value = '';
     this.elements.newPassword.value = '';
     this.elements.confirmPassword.value = '';
   }

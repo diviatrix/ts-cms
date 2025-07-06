@@ -3,6 +3,7 @@ import { messages } from '../js/ui-utils.js';
 import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 import { initResponseLog } from '/js/shared-components/response-log-init.js';
+import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
 
 /**
  * Front Page Controller
@@ -36,7 +37,7 @@ class FrontPageController extends BasePageController {
       if (!response.success) {
         console.error('Error fetching records:', response);
         this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
-        messages.error(response.message || 'Failed to load posts', { toast: true });
+        messages.error(response.message || 'Failed to load posts');
         return;
       }
       
@@ -44,7 +45,7 @@ class FrontPageController extends BasePageController {
     } catch (error) {
       console.error('Error fetching records:', error);
       this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
-      messages.error('Network error occurred. Please try again.', { toast: true });
+      messages.error('Network error occurred. Please try again.');
     }
   }
 
@@ -138,7 +139,7 @@ class FrontPageController extends BasePageController {
             <div class="card-body flex-grow-1">
               <h5 class="card-title">${this.escapeHtml(record.title)}</h5>
               <h6 class="card-subtitle mb-2 text-muted">${this.escapeHtml(record.description)}</h6>
-              <p class="card-text">${this.escapeHtml(truncatedContent)}...</p>
+              <div class="card-text">${marked.parse(truncatedContent)}...</div>
             </div>
             <div class="card-footer d-flex justify-content-between align-items-center mt-auto">
               <small class="neon-green-text">By ${this.escapeHtml(record.public_name)} on ${formattedDate}</small>

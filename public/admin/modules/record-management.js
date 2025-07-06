@@ -26,7 +26,7 @@ export class RecordManagement extends BaseAdminController {
      */
     setupEventHandlers() {
         // Bind direct element events
-        this.bindEventConfig({
+        this.bindEvents({
             newRecordButton: {
                 click: () => this.handleNewRecord()
             },
@@ -51,7 +51,7 @@ export class RecordManagement extends BaseAdminController {
                         this.displayRecordForEdit(recordData);
                     } catch (error) {
                         console.error('Error parsing record data:', error);
-                        messages.error('Error loading record data', { toast: true });
+                        messages.error('Error loading record data');
                     }
                 }
             }
@@ -200,7 +200,7 @@ export class RecordManagement extends BaseAdminController {
     async handleRecordDelete(recordId) {
         const idToDelete = recordId || this.elements.recordEditInfo.dataset.currentRecordId;
         if (!idToDelete) {
-            messages.error('No record selected for deletion.', { toast: true });
+            messages.error('No record selected for deletion.');
             return;
         }
         
@@ -256,8 +256,6 @@ export class RecordManagement extends BaseAdminController {
     }
 
     setupRecordActions() {
-        // Track the currently confirming button
-        let confirmingBtn = null;
         document.querySelectorAll('.edit-record-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const recordId = btn.getAttribute('data-record-id');
@@ -267,57 +265,28 @@ export class RecordManagement extends BaseAdminController {
                     if (response.success) {
                         this.displayRecordForEdit(response.data);
                     } else {
-                        messages.error('Failed to load record for editing.', { toast: true });
+                        messages.error('Failed to load record for editing.');
                     }
                 } catch (error) {
-                    messages.error('Error loading record for editing.', { toast: true });
+                    messages.error('Error loading record for editing.');
                 }
             });
         });
         document.querySelectorAll('.delete-record-btn').forEach(btn => {
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-secondary');
-            btn.setAttribute('title', 'Click again to confirm deletion');
-            btn.dataset.confirming = 'false';
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                // Reset other buttons
-                document.querySelectorAll('.delete-record-btn').forEach(otherBtn => {
-                    if (otherBtn !== btn) {
-                        otherBtn.classList.remove('btn-danger');
-                        otherBtn.classList.add('btn-secondary');
-                        otherBtn.setAttribute('title', 'Click again to confirm deletion');
-                        otherBtn.dataset.confirming = 'false';
-                    }
+                const recordId = btn.getAttribute('data-record-id');
+                const confirmed = await ConfirmationDialog.show({
+                    title: 'Delete Record',
+                    message: 'Are you sure you want to delete this record? This action cannot be undone.',
+                    confirmText: 'Delete',
+                    cancelText: 'Cancel',
+                    confirmBtnClass: 'btn-danger'
                 });
-                if (btn.dataset.confirming === 'true') {
-                    // Confirmed, delete
-                    btn.classList.remove('btn-danger');
-                    btn.classList.add('btn-secondary');
-                    btn.setAttribute('title', 'Click again to confirm deletion');
-                    btn.dataset.confirming = 'false';
-                    const recordId = btn.getAttribute('data-record-id');
+                if (confirmed) {
                     await this.handleRecordDelete(recordId);
-                } else {
-                    // First click, set to confirm state
-                    btn.classList.remove('btn-secondary');
-                    btn.classList.add('btn-danger');
-                    btn.setAttribute('title', 'Click again to permanently delete');
-                    btn.dataset.confirming = 'true';
-                    confirmingBtn = btn;
                 }
             });
-        });
-        // Reset confirm state if user clicks elsewhere
-        document.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('delete-record-btn')) {
-                document.querySelectorAll('.delete-record-btn').forEach(btn => {
-                    btn.classList.remove('btn-danger');
-                    btn.classList.add('btn-secondary');
-                    btn.setAttribute('title', 'Click again to confirm deletion');
-                    btn.dataset.confirming = 'false';
-                });
-            }
         });
     }
 
@@ -327,7 +296,7 @@ export class RecordManagement extends BaseAdminController {
     handleRecordDownload() {
         const recordId = this.elements.recordEditInfo.dataset.currentRecordId;
         if (!recordId) {
-            messages.error('No record selected for download.', { toast: true });
+            messages.error('No record selected for download.');
             return;
         }
 

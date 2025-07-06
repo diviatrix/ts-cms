@@ -1,5 +1,5 @@
 /**
- * Base Admin Controller
+ * Base Admin Controller (Simplified)
  * Common functionality for all admin panel modules
  */
 
@@ -12,17 +12,13 @@ import { AuthAPI } from '../../js/api-client.js';
  * Provides common functionality for admin modules
  */
 export class BaseAdminController {
-    constructor(options = {}) {
-        this.elements = options.elements || {};
-        this.responseLog = options.responseLog;
-        this.messageDisplay = new MessageDisplay(options.messageDiv);
-        this.apiClient = options.apiClient;
-        
-        // Common state
+    constructor({ elements = {}, responseLog, messageDiv, apiClient } = {}) {
+        this.elements = elements;
+        this.responseLog = responseLog;
+        this.messageDisplay = new MessageDisplay(messageDiv);
+        this.apiClient = apiClient;
         this.currentItem = null;
         this.items = [];
-        
-        // Initialize common functionality
         this.setupCommonHandlers();
     }
 
@@ -30,29 +26,25 @@ export class BaseAdminController {
      * Get themed card styles using theme API
      */
     getThemedCardStyles() {
-        const colors = getThemeColors();
-        return `border-radius: 10px; margin-bottom: 1em; padding: 1em; background: ${colors.surfaceColor}; color: ${colors.textColor}; border: 1px solid ${colors.borderColor}; min-height: 3.5em;`;
+        const c = getThemeColors();
+        return `border-radius:10px;margin-bottom:1em;padding:1em;background:${c.surfaceColor};color:${c.textColor};border:1px solid ${c.borderColor};min-height:3.5em;`;
     }
 
     /**
      * Get themed secondary text styles using theme API
      */
     getThemedSecondaryStyles() {
-        const colors = getThemeColors();
-        return `color: ${colors.secondaryColor}; font-size: 0.9em;`;
+        return `color:${getThemeColors().secondaryColor};font-size:0.9em;`;
     }
 
     /**
      * Setup common event handlers
      */
     setupCommonHandlers() {
-        // Handle authentication redirects
         this.handleAuthRedirect();
-        
-        // Set up global error handler for unhandled promise rejections
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('Unhandled promise rejection:', event.reason);
-            messages.error('An unexpected error occurred. Please refresh the page.', { toast: true });
+        window.addEventListener('unhandledrejection', e => {
+            console.error('Unhandled promise rejection:', e.reason);
+            messages.error('An unexpected error occurred. Please refresh the page.');
         });
     }
 
@@ -67,34 +59,23 @@ export class BaseAdminController {
      * Bind a single event handler with error handling
      */
     bindEvent(element, eventType, handler, options = {}) {
-        if (!element) {
-            console.warn(`Element not found for event binding: ${eventType}`);
-            return;
-        }
-
-        const wrappedHandler = async (event) => {
-            try {
-                await handler.call(this, event);
-            } catch (error) {
+        if (!element) return;
+        element.addEventListener(eventType, async event => {
+            try { await handler.call(this, event); }
+            catch (error) {
                 console.error(`Error in event handler for ${eventType}:`, error);
-                messages.error('An error occurred while processing your request.', { toast: true });
+                messages.error('An error occurred while processing your request.');
             }
-        };
-
-        element.addEventListener(eventType, wrappedHandler, options);
-        return wrappedHandler;
+        }, options);
     }
 
     /**
      * Bind multiple events from a configuration object
      */
-    bindEventConfig(eventConfig) {
-        Object.keys(eventConfig).forEach(selector => {
+    bindEvents(config) {
+        Object.entries(config).forEach(([selector, events]) => {
             const element = this.elements[selector] || document.querySelector(selector);
-            const events = eventConfig[selector];
-            
-            Object.keys(events).forEach(eventType => {
-                const handler = events[eventType];
+            Object.entries(events).forEach(([eventType, handler]) => {
                 this.bindEvent(element, eventType, handler);
             });
         });
@@ -131,18 +112,11 @@ export class BaseAdminController {
      */
     setupDelegatedEvents(container, eventConfig) {
         if (!container) return;
-
-        Object.keys(eventConfig).forEach(selector => {
-            const events = eventConfig[selector];
-            
-            Object.keys(events).forEach(eventType => {
-                const handler = events[eventType];
-                
-                container.addEventListener(eventType, (event) => {
+        Object.entries(eventConfig).forEach(([selector, events]) => {
+            Object.entries(events).forEach(([eventType, handler]) => {
+                container.addEventListener(eventType, event => {
                     const target = event.target.closest(selector);
-                    if (target) {
-                        handler.call(this, event, target);
-                    }
+                    if (target) handler.call(this, event, target);
                 });
             });
         });
@@ -169,7 +143,7 @@ export class BaseAdminController {
      */
     checkAuthentication() {
         if (!AuthAPI.isAuthenticated()) {
-            messages.error('Not authenticated. Please log in.', { toast: true });
+            messages.error('Not authenticated. Please log in.');
             window.location.href = '/login';
             return false;
         }
@@ -206,182 +180,79 @@ export class BaseAdminController {
     /**
      * Safe API call with error handling and response logging
      */
-    async safeApiCall(apiCall, options = {}) {
-        const {
-            loadingElements = [],
-            loadingText = 'Loading...',
-            successCallback = null,
-            errorCallback = null,
-            operationName = 'API Operation',
-            requestData = null
-        } = options;
-
+    async safeApiCall(apiCall, { loadingElements = [], loadingText = 'Loading...', successCallback, errorCallback, operationName = 'API Operation', requestData = null } = {}) {
         try {
-            // Set loading state
-            if (loadingElements.length > 0) {
-                loadingElements.forEach(element => {
-                    loadingManager.setLoading(element, true, loadingText);
-                });
-            }
-
-            // Make API call
+            loadingElements.forEach(el => loadingManager.setLoading(el, true, loadingText));
             const response = await apiCall();
-
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(response, operationName, requestData);
-            }
-
-            // Handle response
+            this.responseLog?.addResponse(response, operationName, requestData);
             if (response.success) {
-                if (successCallback) {
-                    successCallback(response.data);
-                }
+                successCallback?.(response.data);
                 return response;
             } else {
-                // Handle API errors
-                if (response.errors && response.errors.length > 0) {
-                    messages.error(response.errors.join(', '), { toast: true });
-                } else {
-                    messages.error(response.message || 'Operation failed', { toast: true });
-                }
+                messages.error(response.errors?.join(', ') || response.message || 'Operation failed');
                 errorHandler.handleApiError(response, this.messageDisplay);
-                
-                if (errorCallback) {
-                    errorCallback(response);
-                }
+                errorCallback?.(response);
                 return response;
             }
-
         } catch (error) {
-            console.error('API call error:', error);
-            
-            // Handle network errors with unified messages
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                messages.error('Unable to connect to the server. Please check your internet connection and try again.', { toast: true });
-            } else {
-                messages.error(error.message || 'Network error occurred. Please try again.', { toast: true });
-            }
-
+            messages.error(error.message || 'Network error occurred. Please try again.');
             errorHandler.handleNetworkError(error, this.messageDisplay);
-
-            return {
-                success: false,
-                message: error.message || 'Network error occurred',
-                errors: [error.message || 'Network error occurred']
-            };
-
+            return { success: false, message: error.message || 'Network error occurred', errors: [error.message || 'Network error occurred'] };
         } finally {
-            // Clear loading state
-            if (loadingElements.length > 0) {
-                loadingElements.forEach(element => {
-                    loadingManager.setLoading(element, false);
-                });
-            }
+            loadingElements.forEach(el => loadingManager.setLoading(el, false));
         }
     }
 
     /**
      * Handle item display for editing
      */
-    displayItemForEdit(item, options = {}) {
-        const {
-            editTabSelector,
-            formFields = {},
-            hideMessage = true
-        } = options;
-
-        // Show edit tab
+    displayItemForEdit(item, { editTabSelector, formFields = {}, hideMessage = true } = {}) {
         if (editTabSelector) {
             const editTab = document.querySelector(editTabSelector);
-            if (editTab) {
-                editTab.classList.remove('d-none');
-            }
+            if (editTab) editTab.classList.remove('d-none');
         }
-
-        // Populate form fields
         Object.keys(formFields).forEach(fieldName => {
             const element = this.elements[fieldName];
             if (element) {
                 const value = item[formFields[fieldName]] || '';
-                if (element.type === 'checkbox') {
-                    element.checked = Boolean(value);
-                } else {
-                    element.value = value;
-                }
+                if (element.type === 'checkbox') element.checked = Boolean(value);
+                else element.value = value;
             }
         });
-
-        // Store current item
         this.currentItem = item;
-
-        // Hide message if requested
-        if (hideMessage) {
-            this.messageDisplay.hide();
-        }
+        if (hideMessage) this.messageDisplay.hide();
     }
 
     /**
      * Handle new item creation
      */
-    handleNewItem(options = {}) {
-        const {
-            editTabSelector,
-            formFields = {},
-            hideMessage = true
-        } = options;
-
-        // Show edit tab
+    handleNewItem({ editTabSelector, formFields = {}, hideMessage = true } = {}) {
         if (editTabSelector) {
             const editTab = document.querySelector(editTabSelector);
-            if (editTab) {
-                editTab.classList.remove('d-none');
-            }
+            if (editTab) editTab.classList.remove('d-none');
         }
-
-        // Clear form fields
         Object.keys(formFields).forEach(fieldName => {
             const element = this.elements[fieldName];
             if (element) {
-                if (element.type === 'checkbox') {
-                    element.checked = false;
-                } else {
-                    element.value = '';
-                }
+                if (element.type === 'checkbox') element.checked = false;
+                else element.value = '';
             }
         });
-
-        // Clear current item
         this.currentItem = null;
-
-        // Hide message if requested
-        if (hideMessage) {
-            this.messageDisplay.hide();
-        }
+        if (hideMessage) this.messageDisplay.hide();
     }
 
     /**
      * Setup confirmation buttons with double-click logic
      */
-    setupConfirmationButtons(buttonSelector, options = {}) {
-        const {
-            confirmClass = 'btn-danger',
-            defaultClass = 'btn-secondary',
-            confirmTitle = 'Click again to confirm',
-            defaultTitle = 'Click again to confirm deletion',
-            onConfirm = null
-        } = options;
-
+    setupConfirmationButtons(buttonSelector, { confirmClass = 'btn-danger', defaultClass = 'btn-secondary', confirmTitle = 'Click again to confirm', defaultTitle = 'Click again to confirm deletion', onConfirm = null } = {}) {
         document.querySelectorAll(buttonSelector).forEach(btn => {
             btn.classList.remove(confirmClass);
             btn.classList.add(defaultClass);
             btn.setAttribute('title', defaultTitle);
             btn.dataset.confirming = 'false';
-            
-            btn.addEventListener('click', async (e) => {
+            btn.addEventListener('click', async e => {
                 e.stopPropagation();
-                
-                // Reset other buttons
                 document.querySelectorAll(buttonSelector).forEach(otherBtn => {
                     if (otherBtn !== btn) {
                         otherBtn.classList.remove(confirmClass);
@@ -390,19 +261,13 @@ export class BaseAdminController {
                         otherBtn.dataset.confirming = 'false';
                     }
                 });
-
                 if (btn.dataset.confirming === 'true') {
-                    // Execute confirmation
                     btn.classList.remove(confirmClass);
                     btn.classList.add(defaultClass);
                     btn.setAttribute('title', defaultTitle);
                     btn.dataset.confirming = 'false';
-                    
-                    if (onConfirm) {
-                        await onConfirm(btn);
-                    }
+                    if (onConfirm) await onConfirm(btn);
                 } else {
-                    // Set confirmation state
                     btn.classList.remove(defaultClass);
                     btn.classList.add(confirmClass);
                     btn.setAttribute('title', confirmTitle);
@@ -410,9 +275,7 @@ export class BaseAdminController {
                 }
             });
         });
-
-        // Reset confirmation states when clicking elsewhere
-        document.addEventListener('click', (e) => {
+        document.addEventListener('click', e => {
             if (!e.target.matches(buttonSelector)) {
                 document.querySelectorAll(buttonSelector).forEach(btn => {
                     btn.classList.remove(confirmClass);
@@ -428,10 +291,12 @@ export class BaseAdminController {
      * Refresh data after successful operation
      */
     refreshData(callback, delay = 1000) {
-        setTimeout(() => {
-            if (callback) {
-                callback();
-            }
-        }, delay);
+        setTimeout(() => { if (callback) callback(); }, delay);
+    }
+
+    showContainerState(container, message, type = 'info') {
+        if (!container) return;
+        const color = type === 'error' ? 'text-danger' : 'themed';
+        container.innerHTML = `<div class="${color}" style="padding:1em;">${message}</div>`;
     }
 } 

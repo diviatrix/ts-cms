@@ -21,7 +21,6 @@ class AdminController {
         this.initializeDataTables();
         this.initializeModules();
         this.initializeEventHandlers();
-        this.setupKeyboardShortcuts();
         this.loadInitialData();
     }
 
@@ -215,15 +214,6 @@ class AdminController {
     }
 
     /**
-     * Setup keyboard shortcuts
-     */
-    setupKeyboardShortcuts() {
-        AdminUtils.setupKeyboardShortcuts(() => {
-            this.loadInitialData();
-        });
-    }
-
-    /**
      * Load initial data based on active tab
      */
     loadInitialData() {
@@ -260,7 +250,7 @@ class AdminController {
                 }
             } catch (error) {
                 console.error('Error loading record from URL:', error);
-                messages.error('Error loading the requested record.', { toast: true });
+                messages.error('Error loading the requested record.');
             }
         }
     }

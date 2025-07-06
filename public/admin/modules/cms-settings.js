@@ -6,6 +6,7 @@ import { apiClient } from '/js/api-client.js';
 import { messages } from '/js/ui-utils.js';
 import { cmsIntegration } from '/js/utils/cms-integration.js';
 import { BaseAdminController } from './base-admin-controller.js';
+import { ConfirmationDialog } from '../../js/utils/dialogs.js';
 
 export class CMSSettings extends BaseAdminController {
     constructor(responseLog) {
@@ -30,7 +31,7 @@ export class CMSSettings extends BaseAdminController {
 
     setupEventHandlers() {
         // Bind direct element events
-        this.bindEventConfig({
+        this.bindEvents({
             '#saveGeneralSettings': {
                 click: () => this.saveGeneralSettings()
             },
@@ -90,7 +91,7 @@ export class CMSSettings extends BaseAdminController {
             await this.loadCurrentWebsiteTheme();
 
         } catch (error) {
-            messages.error('Error loading CMS settings: ' + error.message, { toast: true });
+            messages.error('Error loading CMS settings: ' + error.message);
         }
     }
 
@@ -367,9 +368,14 @@ export class CMSSettings extends BaseAdminController {
             return;
         }
 
-        if (!confirm(`Are you sure you want to set "${selectedTheme.name}" as the website theme? This will change the appearance for all visitors.`)) {
-            return;
-        }
+        const confirmed = await ConfirmationDialog.show({
+            title: 'Apply Website Theme',
+            message: `Are you sure you want to set "${selectedTheme.name}" as the website theme? This will change the appearance for all visitors.`,
+            confirmText: 'Apply',
+            cancelText: 'Cancel',
+            confirmBtnClass: 'btn-primary'
+        });
+        if (!confirmed) return;
 
         // Disable save button during apply
         if (saveButton) {

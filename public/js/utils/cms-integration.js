@@ -33,8 +33,7 @@ class CMSIntegration {
         try {
             const response = await fetch(SETTINGS_JSON_URL, { cache: 'reload' });
             if (!response.ok) throw new Error('Failed to fetch cms-settings.json');
-            const data = await response.json();
-            this.settings = data || {};
+            this.settings = await response.json() || {};
         } catch (error) {
             this.settings = {};
             console.warn('Error loading CMS settings from JSON:', error);
@@ -45,117 +44,42 @@ class CMSIntegration {
      * Apply CMS settings to the current page
      */
     applySettings() {
-        this.updatePageTitle();
-        this.updateMetaTags();
-        this.updateNavigation();
-        this.updatePageContent();
-    }
-
-    /**
-     * Apply settings after navigation is loaded
-     */
-    applySettingsAfterNavigation() {
-        this.updateNavigation();
-        this.updatePageContent();
-    }
-
-    /**
-     * Update page title with site name
-     */
-    updatePageTitle() {
-        const siteName = this.settings.site_name;
-        if (!siteName) return;
-
-        const currentTitle = document.title;
-        const pageName = this.getPageName();
-        
-        // Update title format: "Page Name - Site Name"
-        if (pageName && pageName !== siteName) {
-            document.title = `${pageName} - ${siteName}`;
-        } else {
-            document.title = siteName;
+        const { site_name, site_description } = this.settings;
+        // Title
+        if (site_name) {
+            const pageName = this.getPageName();
+            document.title = pageName && pageName !== site_name ? `${pageName} - ${site_name}` : site_name;
+        }
+        // Meta tags
+        if (site_description) {
+            this.setMeta('description', site_description);
+            this.setMeta('og:description', site_description, 'property');
+        }
+        if (site_name) this.setMeta('og:title', site_name, 'property');
+        // Navbar/brand
+        const logo = document.querySelector('.navbar-brand .logo');
+        if (logo && site_name) logo.textContent = site_name;
+        // Footer
+        const footer = document.querySelector('footer p.mb-0');
+        if (footer && site_name) {
+            footer.innerHTML = `&copy; ${new Date().getFullYear()} ${site_name}. All rights reserved.`;
+        }
+        // Welcome message
+        if (site_description) {
+            document.querySelectorAll('h1, h2, h3').forEach(el => {
+                if (el.textContent.includes('Welcome to the Frontpage')) el.textContent = site_description;
+            });
         }
     }
 
-    /**
-     * Update meta tags with site description
-     */
-    updateMetaTags() {
-        const siteDescription = this.settings.site_description;
-        if (!siteDescription) return;
-
-        // Update or create meta description
-        let metaDescription = document.querySelector('meta[name="description"]');
-        if (!metaDescription) {
-            metaDescription = document.createElement('meta');
-            metaDescription.name = 'description';
-            document.head.appendChild(metaDescription);
+    setMeta(name, content, attr = 'name') {
+        let meta = document.querySelector(`meta[${attr}="${name}"]`);
+        if (!meta) {
+            meta = document.createElement('meta');
+            meta.setAttribute(attr, name);
+            document.head.appendChild(meta);
         }
-        metaDescription.content = siteDescription;
-
-        // Update or create Open Graph description
-        let ogDescription = document.querySelector('meta[property="og:description"]');
-        if (!ogDescription) {
-            ogDescription = document.createElement('meta');
-            ogDescription.setAttribute('property', 'og:description');
-            document.head.appendChild(ogDescription);
-        }
-        ogDescription.content = siteDescription;
-
-        // Update or create Open Graph title
-        const siteName = this.settings.site_name;
-        if (siteName) {
-            let ogTitle = document.querySelector('meta[property="og:title"]');
-            if (!ogTitle) {
-                ogTitle = document.createElement('meta');
-                ogTitle.setAttribute('property', 'og:title');
-                document.head.appendChild(ogTitle);
-            }
-            ogTitle.content = siteName;
-        }
-    }
-
-    /**
-     * Update navigation with site name
-     */
-    updateNavigation() {
-        const siteName = this.settings.site_name;
-        if (!siteName) return;
-
-        // Update navbar brand
-        const navbarBrand = document.querySelector('.navbar-brand .logo');
-        if (navbarBrand) {
-            navbarBrand.textContent = siteName;
-        }
-
-        // Update footer copyright
-        const footerCopyright = document.querySelector('footer p.mb-0');
-        if (footerCopyright) {
-            const currentYear = new Date().getFullYear();
-            footerCopyright.innerHTML = `&copy; ${currentYear} ${siteName}. All rights reserved.`;
-        }
-    }
-
-    /**
-     * Update page content with site description
-     */
-    updatePageContent() {
-        const siteDescription = this.settings.site_description;
-        if (!siteDescription) return;
-
-        // Update frontpage welcome message
-        const welcomeHeading = document.querySelector('h1.mt-4');
-        if (welcomeHeading && welcomeHeading.textContent.includes('Welcome to the Frontpage')) {
-            welcomeHeading.textContent = siteDescription;
-        }
-
-        // Update other potential welcome messages
-        const welcomeElements = document.querySelectorAll('h1, h2, h3');
-        welcomeElements.forEach(element => {
-            if (element.textContent.includes('Welcome to the Frontpage')) {
-                element.textContent = siteDescription;
-            }
-        });
+        meta.content = content;
     }
 
     /**
@@ -163,8 +87,6 @@ class CMSIntegration {
      */
     getPageName() {
         const path = window.location.pathname;
-        
-        // Map paths to page names
         const pageNames = {
             '/': 'Home',
             '/login': 'Login',
@@ -174,22 +96,7 @@ class CMSIntegration {
             '/password': 'Password',
             '/nav': 'Navigation'
         };
-
-        return pageNames[path] || this.getPageNameFromTitle();
-    }
-
-    /**
-     * Extract page name from current document title
-     */
-    getPageNameFromTitle() {
-        const currentTitle = document.title;
-        if (!currentTitle) return '';
-
-        // Remove common suffixes
-        return currentTitle
-            .replace(/\s*-\s*Admin\s*Panel\s*$/, '')
-            .replace(/\s*-\s*TypeScript\s*CMS\s*$/, '')
-            .trim();
+        return pageNames[path] || document.title.replace(/\s*-\s*Admin\s*Panel\s*$/, '').replace(/\s*-\s*TypeScript\s*CMS\s*$/, '').trim();
     }
 
     /**
@@ -212,6 +119,4 @@ if (document.readyState === 'loading') {
 }
 
 // Listen for navigation loaded event
-document.addEventListener('navigationLoaded', () => {
-    cmsIntegration.applySettingsAfterNavigation();
-}); 
+document.addEventListener('navigationLoaded', () => cmsIntegration.applySettings()); 

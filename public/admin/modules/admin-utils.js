@@ -3,45 +3,7 @@
  * Shared utilities and helpers for the admin panel
  */
 
-import { keyboardShortcuts } from '../../js/ui-utils.js';
-
 export class AdminUtils {
-    /**
-     * Setup keyboard shortcuts for admin panel
-     */
-    static setupKeyboardShortcuts(loadDataCallback) {
-        // Refresh data
-        keyboardShortcuts.register('f5', () => {
-            loadDataCallback();
-        }, 'Refresh all data');
-
-        keyboardShortcuts.register('ctrl+r', () => {
-            loadDataCallback();
-        }, 'Refresh all data');
-
-        // Navigation shortcuts (using Alt+key to avoid browser conflicts)
-        keyboardShortcuts.register('alt+u', () => {
-            document.querySelector('[data-bs-target="#users"]')?.click();
-        }, 'Switch to Users tab (Alt+U)');
-
-        keyboardShortcuts.register('alt+r', () => {
-            document.querySelector('[data-bs-target="#records"]')?.click();
-        }, 'Switch to Records tab (Alt+R)');
-
-        keyboardShortcuts.register('alt+p', () => {
-            document.querySelector('[data-bs-target="#profile"]')?.click();
-        }, 'Switch to Profile tab (Alt+P)');
-
-        // Help shortcut (using a non-conflicting key combination)
-        keyboardShortcuts.register('ctrl+shift+h', () => {
-            keyboardShortcuts.showHelp();
-        }, 'Show keyboard shortcuts help');
-
-        keyboardShortcuts.register('ctrl+/', () => {
-            keyboardShortcuts.showHelp();
-        }, 'Show keyboard shortcuts help');
-    }
-
     /**
      * Setup save shortcut for profile editing
      */

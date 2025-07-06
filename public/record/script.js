@@ -5,6 +5,7 @@ import { jwtDecode } from '../js/jwt-decode.js';
 import { messages } from '../js/ui-utils.js';
 import { DownloadUtils } from '../js/utils/download-utils.js';
 import { initResponseLog } from '/js/shared-components/response-log-init.js';
+import { setImagePreview } from '../js/utils/image-preview.js';
 
 /**
  * Record Display Controller
@@ -48,7 +49,8 @@ class RecordDisplayController extends BasePageController {
       author: document.getElementById('recordAuthor'),
       date: document.getElementById('recordDate'),
       editButton: document.getElementById('editRecordButton'),
-      downloadButton: document.getElementById('downloadRecordButton')
+      downloadButton: document.getElementById('downloadRecordButton'),
+      imagePreview: document.getElementById('recordImagePreview')
     };
   }
 
@@ -130,27 +132,15 @@ class RecordDisplayController extends BasePageController {
       this.elements.description.textContent = record.description;
     }
     if (this.elements.content) {
-      // Create image HTML if image_url exists
-      const imageHtml = record.image_url ? `
-        <div class="text-center mb-4">
-          <img src="${record.image_url}" 
-               class="img-fluid rounded" 
-               alt="${record.title}"
-               style="max-height: 400px; object-fit: cover;"
-               onerror="this.style.display='none'">
-        </div>
-      ` : '';
-
-      // Preserve the card structure and add content with proper padding
       this.elements.content.innerHTML = `
         <div class="card-body">
           <div class="px-4 py-3">
-            ${imageHtml}
             ${marked.parse(record.content)}
           </div>
         </div>
       `;
     }
+    setImagePreview(this.elements.imagePreview, record.image_url, record.title);
     if (this.elements.author) {
       this.elements.author.textContent = record.public_name;
     }
@@ -234,7 +224,7 @@ class RecordDisplayController extends BasePageController {
     if (this.elements.description) {
       this.elements.description.textContent = description;
     }
-    messages.error('Record not found: ' + description, { toast: true });
+    messages.error('Record not found: ' + description);
   }
 
   /**

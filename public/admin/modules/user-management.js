@@ -65,7 +65,7 @@ export class UserManagement extends BaseAdminController {
      */
     setupEventHandlers() {
         // Bind direct element events
-        this.bindEventConfig({
+        this.bindEvents({
             adminSaveButton: {
                 click: () => this.handleUserSave()
             }
@@ -81,14 +81,14 @@ export class UserManagement extends BaseAdminController {
                         this.displayUserProfile(userData);
                     } catch (error) {
                         console.error('Error parsing user data:', error);
-                        messages.error('Error loading user data', { toast: true });
+                        messages.error('Error loading user data');
                     }
                 }
             }
         });
 
         // Filter button handlers
-        this.bindEventConfig({
+        this.bindEvents({
             '#showActiveUsers': {
                 click: () => {
                     const showActiveBtn = document.getElementById('showActiveUsers');
@@ -179,7 +179,7 @@ export class UserManagement extends BaseAdminController {
     async handleUserSave() {
         const userIdToUpdate = this.elements.adminProfileInfo.dataset.currentUserId;
         if (!userIdToUpdate) {
-            messages.error('No user selected for saving.', { toast: true });
+            messages.error('No user selected for saving.');
             return;
         }
 
@@ -193,7 +193,7 @@ export class UserManagement extends BaseAdminController {
             };
         } catch (e) {
             console.error('Invalid JSON format:', e);
-            messages.error('Invalid JSON format.', { toast: true });
+            messages.error('Invalid JSON format.');
             return;
         }
 
@@ -268,7 +268,7 @@ export class UserManagement extends BaseAdminController {
 
     async handleUserToggle(userId, action) {
         if (!userId || !action) {
-            messages.error('Invalid user or action.', { toast: true });
+            messages.error('Invalid user or action.');
             return;
         }
 

@@ -3,6 +3,8 @@
  * Provides modal confirmation dialogs
  */
 
+import { getThemeColors } from './theme-api.js';
+
 /**
  * Confirmation Dialog Utility
  */
@@ -13,42 +15,78 @@ class ConfirmationDialog {
             message = 'Are you sure?',
             confirmText = 'Confirm',
             cancelText = 'Cancel',
-            confirmClass = 'btn-primary',
-            cancelClass = 'btn-secondary'
         } = options;
 
-        return new Promise((resolve) => {
-            const overlay = document.createElement('div');
-            overlay.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
-            overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
-            overlay.style.zIndex = '9999';
+        // Remove any existing dialog
+        const existing = document.getElementById('confirmationDialogModal');
+        if (existing) existing.remove();
 
-            overlay.innerHTML = `
-                <div class="bg-white p-4 rounded shadow-lg" style="max-width: 400px;">
-                    <h5 class="mb-3">${title}</h5>
-                    <p class="mb-4">${message}</p>
-                    <div class="text-end">
-                        <button class="btn ${cancelClass} me-2" data-action="cancel">${cancelText}</button>
-                        <button class="btn ${confirmClass}" data-action="confirm">${confirmText}</button>
+        // Get theme colors
+        const theme = getThemeColors();
+        const surface = theme.surfaceColor || '#fff';
+        const text = theme.textColor || '#222';
+        const border = theme.borderColor || '#00FF00';
+        const primary = theme.primaryColor || '#00FF00';
+        const font = theme.fontFamily || 'inherit';
+
+        // Create modal HTML
+        const modal = document.createElement('div');
+        modal.id = 'confirmationDialogModal';
+        modal.className = 'modal fade show';
+        modal.tabIndex = -1;
+        modal.style.display = 'block';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        modal.style.zIndex = '9999';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+                <div class="modal-content" style="background:${surface};color:${text};border:2px solid ${border};font-family:${font};">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title">${title}</h5>
+                    </div>
+                    <div class="modal-body">
+                        <p>${message}</p>
+                    </div>
+                    <div class="modal-footer border-0 d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" data-action="cancel">${cancelText}</button>
+                        <button type="button" class="btn btn-primary" style="background:${primary};border-color:${primary}" data-action="confirm">${confirmText}</button>
                     </div>
                 </div>
-            `;
+            </div>
+        `;
+        document.body.appendChild(modal);
 
-            document.body.appendChild(overlay);
+        // Focus confirm button
+        setTimeout(() => {
+            const confirmBtn = modal.querySelector('[data-action="confirm"]');
+            if (confirmBtn) confirmBtn.focus();
+        }, 10);
 
-            overlay.addEventListener('click', (e) => {
+        // Promise for result
+        return new Promise(resolve => {
+            const handler = (e) => {
                 const action = e.target.dataset.action;
                 if (action === 'confirm') {
                     resolve(true);
-                    overlay.remove();
-                } else if (action === 'cancel' || e.target === overlay) {
+                    close();
+                } else if (action === 'cancel') {
                     resolve(false);
-                    overlay.remove();
+                    close();
+                }
+            };
+            function close() {
+                modal.removeEventListener('click', handler);
+                modal.remove();
+                document.body.classList.remove('modal-open');
+            }
+            modal.addEventListener('click', handler);
+            // Dismiss on backdrop click
+            modal.addEventListener('mousedown', (e) => {
+                if (e.target === modal) {
+                    resolve(false);
+                    close();
                 }
             });
-
-            // Focus confirm button
-            overlay.querySelector('[data-action="confirm"]').focus();
+            document.body.classList.add('modal-open');
         });
     }
 }

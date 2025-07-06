@@ -15,7 +15,7 @@ export class DownloadUtils {
         const safeContent = content || '';
         
         if (!safeContent.trim()) {
-            messages.error('No content to download.', { toast: true });
+            messages.error('No content to download.');
             return;
         }
 
@@ -33,6 +33,6 @@ export class DownloadUtils {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        messages.success('Record downloaded successfully!', { toast: true });
+        messages.success('Record downloaded successfully!');
     }
 } 
