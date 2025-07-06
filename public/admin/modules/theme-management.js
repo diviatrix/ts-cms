@@ -3,101 +3,73 @@
  */
 
 import { apiClient } from '/js/api-client.js';
-import { MessageDisplay, ErrorHandler, messages, loadingManager } from '/js/ui-utils.js';
-import { getThemeColors } from '/js/utils/theme-api.js';
+import { messages } from '/js/ui-utils.js';
+import { BaseAdminController } from './base-admin-controller.js';
 
-export class ThemeManagement {
+export class ThemeManagement extends BaseAdminController {
     constructor(responseLog) {
-        this.apiClient = apiClient;
-        this.responseLog = responseLog;
-        this.messageDisplay = new MessageDisplay();
+        super({
+            responseLog,
+            apiClient
+        });
+        
         this.currentTheme = null;
         this.themes = [];
         
         this.init();
     }
 
-    /**
-     * Get themed card styles using theme API
-     */
-    getThemedCardStyles() {
-        const colors = getThemeColors();
-        return `border-radius: 10px; margin-bottom: 1em; padding: 1em; background: ${colors.surfaceColor}; color: ${colors.textColor}; border: 1px solid ${colors.borderColor}; min-height: 3.5em;`;
-    }
-
-    /**
-     * Get themed secondary text styles using theme API
-     */
-    getThemedSecondaryStyles() {
-        const colors = getThemeColors();
-        return `color: ${colors.secondaryColor}; font-size: 0.9em;`;
-    }
-
     init() {
-        this.bindEvents();
+        this.setupEventHandlers();
         // Don't load themes immediately - wait for tab activation
     }
 
-    bindEvents() {
-        // New theme button
-        document.getElementById('newThemeButton')?.addEventListener('click', () => {
-            this.showNewThemeForm();
-        });
-
-        // Save theme button
-        document.getElementById('themeSaveButton')?.addEventListener('click', () => {
-            this.saveTheme();
-        });
-
-        // Delete theme button
-        document.getElementById('themeDeleteButton')?.addEventListener('click', () => {
-            this.deleteTheme();
-        });
-
-        // Preview theme button
-        document.getElementById('themePreviewButton')?.addEventListener('click', () => {
-            this.previewTheme();
-        });
-
-        // Active theme checkbox
-        document.getElementById('themeIsActive')?.addEventListener('change', (e) => {
-            // This checkbox only controls the theme's is_active property
-            // The actual website theme is controlled by CMS settings
-            if (e.target.checked && this.currentTheme) {
-                this.setThemeAsActive(this.currentTheme.id);
-            } else if (!e.target.checked && this.currentTheme) {
-                this.setThemeAsInactive(this.currentTheme.id);
+    setupEventHandlers() {
+        // Bind direct element events
+        this.bindEventConfig({
+            '#newThemeButton': {
+                click: () => this.showNewThemeForm()
+            },
+            '#themeSaveButton': {
+                click: () => this.saveTheme()
+            },
+            '#themeDeleteButton': {
+                click: () => this.deleteTheme()
+            },
+            '#themePreviewButton': {
+                click: () => this.previewTheme()
+            },
+            '#themeIsActive': {
+                change: (e) => {
+                    // This checkbox only controls the theme's is_active property
+                    // The actual website theme is controlled by CMS settings
+                    if (e.target.checked && this.currentTheme) {
+                        this.setThemeAsActive(this.currentTheme.id);
+                    } else if (!e.target.checked && this.currentTheme) {
+                        this.setThemeAsInactive(this.currentTheme.id);
+                    }
+                }
             }
         });
     }
 
     async loadThemes() {
         const themeList = document.getElementById('themeList');
-        if (themeList) {
-            themeList.innerHTML = '<div class="text-muted p-3">Loading themes...</div>';
-        }
-        try {
-            const result = await this.apiClient.get('/themes');
-            
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(result, 'Load Themes');
-            }
-            
-            if (result.success) {
-                this.themes = result.data;
-                this.renderThemeList();
-            } else {
-                if (themeList) {
-                    themeList.innerHTML = '<div class="text-danger p-3">Failed to load themes: ' + result.message + '</div>';
+        this.showContainerLoading(themeList, 'Loading themes...');
+        
+        const response = await this.safeApiCall(
+            () => this.apiClient.get('/themes'),
+            {
+                operationName: 'Load Themes',
+                successCallback: (data) => {
+                    this.themes = data;
+                    this.renderThemeList();
                 }
-                messages.error('Failed to load themes: ' + result.message, { toast: true });
             }
-        } catch (error) {
-            if (themeList) {
-                themeList.innerHTML = '<div class="text-danger p-3">Error loading themes: ' + error.message + '</div>';
-            }
-            messages.error('Error loading themes: ' + error.message, { toast: true });
+        );
+
+        if (!response.success) {
+            this.showContainerError(themeList, 'Failed to load themes: ' + response.message);
         }
     }
 
@@ -139,54 +111,19 @@ export class ThemeManagement {
     }
 
     setupThemeActions() {
-        document.querySelectorAll('.edit-theme-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+        // Bind edit buttons
+        this.bindEventsBySelector('.edit-theme-btn', 'click', (event) => {
+            const btn = event.target;
+            const themeId = btn.getAttribute('data-theme-id');
+            const theme = this.themes.find(t => t.id === themeId);
+            if (theme) this.editTheme(theme);
+        });
+
+        // Setup double-click-to-confirm delete logic
+        this.setupConfirmationButtons('.delete-theme-btn', {
+            onConfirm: (btn) => {
                 const themeId = btn.getAttribute('data-theme-id');
-                const theme = this.themes.find(t => t.id === themeId);
-                if (theme) this.editTheme(theme);
-            });
-        });
-        // Double-click-to-confirm delete logic
-        let confirmingBtn = null;
-        document.querySelectorAll('.delete-theme-btn').forEach(btn => {
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-secondary');
-            btn.setAttribute('title', 'Click again to confirm deletion');
-            btn.dataset.confirming = 'false';
-            btn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                document.querySelectorAll('.delete-theme-btn').forEach(otherBtn => {
-                    if (otherBtn !== btn) {
-                        otherBtn.classList.remove('btn-danger');
-                        otherBtn.classList.add('btn-secondary');
-                        otherBtn.setAttribute('title', 'Click again to confirm deletion');
-                        otherBtn.dataset.confirming = 'false';
-                    }
-                });
-                if (btn.dataset.confirming === 'true') {
-                    btn.classList.remove('btn-danger');
-                    btn.classList.add('btn-secondary');
-                    btn.setAttribute('title', 'Click again to confirm deletion');
-                    btn.dataset.confirming = 'false';
-                    const themeId = btn.getAttribute('data-theme-id');
-                    this.deleteThemeById(themeId);
-                } else {
-                    btn.classList.remove('btn-secondary');
-                    btn.classList.add('btn-danger');
-                    btn.setAttribute('title', 'Click again to permanently delete');
-                    btn.dataset.confirming = 'true';
-                    confirmingBtn = btn;
-                }
-            });
-        });
-        document.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('delete-theme-btn')) {
-                document.querySelectorAll('.delete-theme-btn').forEach(btn => {
-                    btn.classList.remove('btn-danger');
-                    btn.classList.add('btn-secondary');
-                    btn.setAttribute('title', 'Click again to confirm deletion');
-                    btn.dataset.confirming = 'false';
-                });
+                this.deleteThemeById(themeId);
             }
         });
     }
@@ -305,13 +242,12 @@ export class ThemeManagement {
 
     async saveTheme() {
         const saveBtn = document.getElementById('themeSaveBtn');
-        if (saveBtn) loadingManager.setLoading(saveBtn, true, 'Saving...');
         const name = document.getElementById('themeName').value.trim();
         const description = document.getElementById('themeDescription').value.trim();
         const isActive = document.getElementById('themeIsActive').checked;
 
         if (!name) {
-            messages.error('Theme name is required', { toast: true });
+            this.showError('Theme name is required');
             return;
         }
 
@@ -321,48 +257,36 @@ export class ThemeManagement {
             is_active: isActive
         };
 
-        try {
-            let result;
-            if (this.currentTheme) {
-                // Update existing theme
-                result = await this.apiClient.put(`/themes/${this.currentTheme.id}`, themeData);
-            } else {
-                // Create new theme
-                result = await this.apiClient.post('/themes', themeData);
-            }
+        const apiCall = this.currentTheme 
+            ? () => this.apiClient.put(`/themes/${this.currentTheme.id}`, themeData)
+            : () => this.apiClient.post('/themes', themeData);
 
-            // Log the response
-            if (this.responseLog) {
-                const operation = this.currentTheme ? 'Update Theme' : 'Create Theme';
-                this.responseLog.addResponse(result, operation, themeData);
-            }
-
-            if (result.success) {
-                messages.success(
-                    'Theme saved successfully! The theme is now available for use.',
-                    { toast: true }
-                );
-                
-                // Save theme settings
-                const themeId = this.currentTheme ? this.currentTheme.id : result.data.id;
-                await this.saveThemeSettings(themeId);
-                
-                this.loadThemes();
-                this.hideThemeForm();
-                
-                // Dispatch theme change event if this theme was set as active
-                if (isActive) {
-                    document.dispatchEvent(new CustomEvent('themeChanged', { 
-                        detail: { themeId: themeId } 
-                    }));
+        const response = await this.safeApiCall(
+            apiCall,
+            {
+                operationName: this.currentTheme ? 'Update Theme' : 'Create Theme',
+                loadingElement: saveBtn,
+                loadingText: 'Saving...',
+                successCallback: async (data) => {
+                    // Save theme settings
+                    const themeId = this.currentTheme ? this.currentTheme.id : data.id;
+                    await this.saveThemeSettings(themeId);
+                    
+                    this.loadThemes();
+                    this.hideThemeForm();
+                    
+                    // Dispatch theme change event if this theme was set as active
+                    if (isActive) {
+                        document.dispatchEvent(new CustomEvent('themeChanged', { 
+                            detail: { themeId: themeId } 
+                        }));
+                    }
                 }
-            } else {
-                messages.error('Failed to save theme: ' + result.message, { toast: true });
             }
-        } catch (error) {
-            messages.error('Error saving theme: ' + error.message, { toast: true });
-        } finally {
-            if (saveBtn) loadingManager.setLoading(saveBtn, false);
+        );
+
+        if (!response.success) {
+            this.showError('Failed to save theme: ' + response.message);
         }
     }
 
@@ -411,73 +335,63 @@ export class ThemeManagement {
     }
 
     async deleteTheme() {
-        const deleteBtn = document.querySelector('.delete-theme-btn.btn-danger');
-        if (deleteBtn) loadingManager.setLoading(deleteBtn, true, 'Deleting...');
         if (!this.currentTheme) return;
 
         if (!confirm(`Are you sure you want to delete the theme "${this.currentTheme.name}"?`)) {
             return;
         }
 
-        try {
-            const result = await this.apiClient.delete(`/themes/${this.currentTheme.id}`);
-            
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(result, 'Delete Theme', { themeId: this.currentTheme.id, themeName: this.currentTheme.name });
+        const deleteBtn = document.querySelector('.delete-theme-btn.btn-danger');
+        const response = await this.safeApiCall(
+            () => this.apiClient.delete(`/themes/${this.currentTheme.id}`),
+            {
+                operationName: 'Delete Theme',
+                loadingElement: deleteBtn,
+                loadingText: 'Deleting...',
+                successCallback: () => {
+                    this.loadThemes();
+                    this.hideThemeForm();
+                }
             }
-            
-            if (result.success) {
-                messages.success('Theme deleted successfully', { toast: true });
-                this.loadThemes();
-                this.hideThemeForm();
-            } else {
-                messages.error('Failed to delete theme: ' + result.message, { toast: true });
-            }
-        } catch (error) {
-            messages.error('Error deleting theme: ' + error.message, { toast: true });
-        } finally {
-            if (deleteBtn) loadingManager.setLoading(deleteBtn, false);
+        );
+
+        if (!response.success) {
+            this.showError('Failed to delete theme: ' + response.message);
         }
     }
 
     async setThemeAsActive(themeId) {
         const activeBtn = document.getElementById('themeIsActive');
-        if (activeBtn) loadingManager.setLoading(activeBtn, true, 'Setting as Active...');
-        try {
-            // Set this theme as active in the themes table (is_active property only)
-            const result = await this.apiClient.put(`/themes/${themeId}`, { is_active: true });
-            
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(result, 'Set Theme as Active', { themeId: themeId });
+        const response = await this.safeApiCall(
+            () => this.apiClient.put(`/themes/${themeId}`, { is_active: true }),
+            {
+                operationName: 'Set Theme as Active',
+                loadingElement: activeBtn,
+                loadingText: 'Setting as Active...',
+                successCallback: () => {
+                    this.loadThemes();
+                }
             }
-            
-            if (result.success) {
-                messages.success('Theme set as active', { toast: true });
-                this.loadThemes();
-            } else {
-                messages.error('Failed to set theme as active: ' + result.message, { toast: true });
-            }
-        } catch (error) {
-            messages.error('Error setting theme as active: ' + error.message, { toast: true });
-        } finally {
-            if (activeBtn) loadingManager.setLoading(activeBtn, false);
+        );
+
+        if (!response.success) {
+            this.showError('Failed to set theme as active: ' + response.message);
         }
     }
 
     async setThemeAsInactive(themeId) {
-        const result = await this.apiClient.put(`/themes/${themeId}`, { is_active: false });
-        
-        if (this.responseLog) {
-            this.responseLog.addResponse(result, 'Set Theme as Inactive', { themeId: themeId });
-        }
-        
-        if (result.success) {
-            messages.success('Theme set as inactive', { toast: true });
-            this.loadThemes();
-        } else {
-            messages.error('Failed to set theme as inactive: ' + result.message, { toast: true });
+        const response = await this.safeApiCall(
+            () => this.apiClient.put(`/themes/${themeId}`, { is_active: false }),
+            {
+                operationName: 'Set Theme as Inactive',
+                successCallback: () => {
+                    this.loadThemes();
+                }
+            }
+        );
+
+        if (!response.success) {
+            this.showError('Failed to set theme as inactive: ' + response.message);
             document.getElementById('themeIsActive').checked = true;
         }
     }

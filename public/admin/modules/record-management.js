@@ -4,68 +4,55 @@
  */
 
 import { RecordsAPI, AuthAPI } from '../../js/api-client.js';
-import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, ConfirmationDialog, messages } from '../../js/ui-utils.js';
-import { getThemeColors } from '../../js/utils/theme-api.js';
+import { ConfirmationDialog, messages } from '../../js/ui-utils.js';
 import { DownloadUtils } from '../../js/utils/download-utils.js';
+import { BaseAdminController } from './base-admin-controller.js';
 
-export class RecordManagement {
+export class RecordManagement extends BaseAdminController {
     constructor(elements, dataTable, responseLog) {
-        this.elements = elements;
+        super({
+            elements,
+            responseLog,
+            messageDiv: elements.recordMessageDiv
+        });
+        
         this.recordsTable = dataTable;
-        this.responseLog = responseLog;
-        this.recordMessage = new MessageDisplay(elements.recordMessageDiv);
         
         this.setupEventHandlers();
-    }
-
-    /**
-     * Get themed card styles using theme API
-     */
-    getThemedCardStyles() {
-        const colors = getThemeColors();
-        return `border-radius: 10px; margin-bottom: 1em; padding: 1em; background: ${colors.surfaceColor}; color: ${colors.textColor}; border: 1px solid ${colors.borderColor}; min-height: 3.5em;`;
-    }
-
-    /**
-     * Get themed secondary text styles using theme API
-     */
-    getThemedSecondaryStyles() {
-        const colors = getThemeColors();
-        return `color: ${colors.secondaryColor}; font-size: 0.9em;`;
     }
 
     /**
      * Setup record management event handlers
      */
     setupEventHandlers() {
-        // Record CRUD buttons
-        if (this.elements.newRecordButton) {
-            this.elements.newRecordButton.addEventListener('click', () => this.handleNewRecord());
-        }
-        
-        if (this.elements.recordSaveButton) {
-            this.elements.recordSaveButton.addEventListener('click', () => this.handleRecordSave());
-        }
-        
-        if (this.elements.recordDeleteButton) {
-            this.elements.recordDeleteButton.addEventListener('click', () => this.handleRecordDelete());
-        }
-        
-        if (this.elements.recordDownloadButton) {
-            this.elements.recordDownloadButton.addEventListener('click', () => this.handleRecordDownload());
-        }
+        // Bind direct element events
+        this.bindEventConfig({
+            newRecordButton: {
+                click: () => this.handleNewRecord()
+            },
+            recordSaveButton: {
+                click: () => this.handleRecordSave()
+            },
+            recordDeleteButton: {
+                click: () => this.handleRecordDelete()
+            },
+            recordDownloadButton: {
+                click: () => this.handleRecordDownload()
+            }
+        });
 
-        // Record link clicks in the data table
-        this.elements.recordListContainer.addEventListener('click', (e) => {
-            const recordLink = e.target.closest('.record-link');
-            if (recordLink) {
-                e.preventDefault();
-                try {
-                    const recordData = JSON.parse(recordLink.dataset.record);
-                    this.displayRecordForEdit(recordData);
-                } catch (error) {
-                    console.error('Error parsing record data:', error);
-                    messages.error('Error loading record data', { toast: true });
+        // Setup delegated events for dynamic content
+        this.setupDelegatedEvents(this.elements.recordListContainer, {
+            '.record-link': {
+                click: (event, target) => {
+                    event.preventDefault();
+                    try {
+                        const recordData = JSON.parse(target.dataset.record);
+                        this.displayRecordForEdit(recordData);
+                    } catch (error) {
+                        console.error('Error parsing record data:', error);
+                        messages.error('Error loading record data', { toast: true });
+                    }
                 }
             }
         });
@@ -75,50 +62,44 @@ export class RecordManagement {
      * Load records and populate the data table
      */
     async loadRecords() {
-        try {
-            if (!AuthAPI.isAuthenticated()) {
-                messages.error('Not authenticated. Please log in.', { toast: true });
-                window.location.href = '/login';
-                return;
+        if (!this.checkAuthentication()) {
+            return;
+        }
+
+        this.messageDisplay.hide();
+        this.showContainerLoading(this.elements.recordListContainer, 'Loading records...');
+        
+        const response = await this.safeApiCall(
+            () => RecordsAPI.getAll(),
+            {
+                operationName: 'Load Records',
+                successCallback: (data) => {
+                    const records = data || [];
+                    if (records.length === 0) {
+                        this.showContainerEmpty(this.elements.recordListContainer, 'No records found');
+                    } else {
+                        this.elements.recordListContainer.innerHTML = records.map(record => `
+                            <div class="record-card themed" style="${this.getThemedCardStyles()}">
+                                <div class="record-title-row" style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em; cursor: pointer;">
+                                    ${record.title || 'Untitled'}
+                                </div>
+                                <div class="record-meta-row" style="display: flex; align-items: center; gap: 1em;">
+                                    <span class="record-date" style="${this.getThemedSecondaryStyles()}">${new Date(record.created_at).toLocaleDateString()}</span>
+                                    <span class="badge ${record.is_published ? 'bg-success' : 'bg-secondary'}">${record.is_published ? 'Published' : 'Draft'}</span>
+                                    <span style="flex: 1"></span>
+                                    <button class="icon-btn edit-record-btn btn btn-sm btn-primary" data-record-id="${record.id}" title="Edit">✏️</button>
+                                    <button class="icon-btn delete-record-btn btn btn-sm btn-secondary" data-record-id="${record.id}" title="Delete">🗑️</button>
+                                </div>
+                            </div>
+                        `).join('');
+                        this.setupRecordActions();
+                    }
+                }
             }
-            this.recordMessage.hide();
-            this.elements.recordListContainer.innerHTML = '<div class="themed" style="padding:1em;">Loading records...</div>';
-            const response = await RecordsAPI.getAll();
-            
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(response, 'Load Records');
-            }
-            
-            if (!response.success) {
-                messages.error('Failed to load records', { toast: true });
-                errorHandler.handleApiError(response, this.recordMessage);
-                return;
-            }
-            const records = response.data || [];
-            if (records.length === 0) {
-                this.elements.recordListContainer.innerHTML = '<div class="themed" style="padding:1em;">No records found</div>';
-            } else {
-                this.elements.recordListContainer.innerHTML = records.map(record => `
-                    <div class="record-card themed" style="${this.getThemedCardStyles()}">
-                        <div class="record-title-row" style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em; cursor: pointer;">
-                            ${record.title || 'Untitled'}
-                        </div>
-                        <div class="record-meta-row" style="display: flex; align-items: center; gap: 1em;">
-                            <span class="record-date" style="${this.getThemedSecondaryStyles()}">${new Date(record.created_at).toLocaleDateString()}</span>
-                            <span class="badge ${record.is_published ? 'bg-success' : 'bg-secondary'}">${record.is_published ? 'Published' : 'Draft'}</span>
-                            <span style="flex: 1"></span>
-                            <button class="icon-btn edit-record-btn btn btn-sm btn-primary" data-record-id="${record.id}" title="Edit">✏️</button>
-                            <button class="icon-btn delete-record-btn btn btn-sm btn-secondary" data-record-id="${record.id}" title="Delete">🗑️</button>
-                        </div>
-                    </div>
-                `).join('');
-                this.setupRecordActions();
-            }
-        } catch (error) {
-            console.error('Error fetching records:', error);
-            messages.error('Network error occurred', { toast: true });
-            errorHandler.handleNetworkError(error, this.recordMessage);
+        );
+
+        if (!response.success) {
+            this.showContainerError(this.elements.recordListContainer, 'Failed to load records');
         }
     }
 
@@ -126,30 +107,46 @@ export class RecordManagement {
      * Display record for editing
      */
     displayRecordForEdit(record) {
-        this.elements.recordEditTab.classList.remove('d-none');
+        this.displayItemForEdit(record, {
+            editTabSelector: '#recordEditTab',
+            formFields: {
+                recordTitle: 'title',
+                recordDescription: 'description',
+                recordImageUrl: 'image_url',
+                recordContent: 'content',
+                recordTags: 'tags',
+                recordCategories: 'categories',
+                recordIsPublished: 'is_published'
+            }
+        });
+        
+        // Handle special field types
         this.elements.recordEditInfo.dataset.currentRecordId = record.id || '';
-        this.elements.recordTitle.value = record.title || '';
-        this.elements.recordDescription.value = record.description || '';
-        this.elements.recordContent.value = record.content || '';
         this.elements.recordTags.value = (record.tags && record.tags.join(', ')) || '';
         this.elements.recordCategories.value = (record.categories && record.categories.join(', ')) || '';
-        this.elements.recordIsPublished.checked = record.is_published || false;
-        this.recordMessage.hide();
     }
 
     /**
      * Handle new record creation
      */
     handleNewRecord() {
-        this.elements.recordEditTab.classList.remove('d-none');
+        this.handleNewItem({
+            editTabSelector: '#recordEditTab',
+            formFields: {
+                recordTitle: 'title',
+                recordDescription: 'description',
+                recordImageUrl: 'image_url',
+                recordContent: 'content',
+                recordTags: 'tags',
+                recordCategories: 'categories',
+                recordIsPublished: 'is_published'
+            }
+        });
+        
+        // Handle special field types
         this.elements.recordEditInfo.dataset.currentRecordId = '';
-        this.elements.recordTitle.value = '';
-        this.elements.recordDescription.value = '';
-        this.elements.recordContent.value = '';
         this.elements.recordTags.value = '';
         this.elements.recordCategories.value = '';
-        this.elements.recordIsPublished.checked = false;
-        this.recordMessage.hide();
     }
 
     /**
@@ -158,54 +155,42 @@ export class RecordManagement {
     async handleRecordSave() {
         const recordId = this.elements.recordEditInfo.dataset.currentRecordId;
         
-        // Check authentication
-        if (!AuthAPI.isAuthenticated()) {
-            messages.error('Not authenticated. Please log in.', { toast: true });
-            window.location.href = '/login';
+        if (!this.checkAuthentication()) {
             return;
         }
 
         const recordData = {
             title: this.elements.recordTitle.value,
             description: this.elements.recordDescription.value,
+            image_url: this.elements.recordImageUrl.value || null,
             content: this.elements.recordContent.value,
             tags: this.elements.recordTags.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
             categories: this.elements.recordCategories.value.split(',').map(cat => cat.trim()).filter(cat => cat.length > 0),
             is_published: this.elements.recordIsPublished.checked,
         };
 
-        try {
-            loadingManager.setLoading(this.elements.recordSaveButton, true, 'Saving...');
-            
-            let response;
-            if (recordId) {
-                response = await RecordsAPI.update(recordId, recordData);
-            } else {
-                response = await RecordsAPI.create(recordData);
-            }
+        const operation = recordId ? 'Update Record' : 'Create Record';
+        const apiCall = recordId ? 
+            () => RecordsAPI.update(recordId, recordData) : 
+            () => RecordsAPI.create(recordData);
 
-            // Log the response
-            if (this.responseLog) {
-                const operation = recordId ? 'Update Record' : 'Create Record';
-                this.responseLog.addResponse(response, operation, recordData);
-            }
-
-            this.recordMessage.showApiResponse(response);
-            
-            if (response.success) {
-                // Show success feedback and refresh the list
-                setTimeout(() => {
-                    this.loadRecords();
-                }, 1000); // Small delay to let user see the success message
-                if (!recordId && response.data?.id) {
-                    this.elements.recordEditInfo.dataset.currentRecordId = response.data.id;
+        const response = await this.safeApiCall(
+            apiCall,
+            {
+                loadingElements: [this.elements.recordSaveButton],
+                loadingText: 'Saving...',
+                operationName: operation,
+                requestData: recordData,
+                successCallback: () => {
+                    this.refreshData(() => this.loadRecords());
                 }
             }
-        } catch (error) {
-            console.error('Error saving record:', error);
-            errorHandler.handleNetworkError(error, this.recordMessage);
-        } finally {
-            loadingManager.setLoading(this.elements.recordSaveButton, false);
+        );
+
+        this.messageDisplay.showApiResponse(response);
+        
+        if (response.success && !recordId && response.data?.id) {
+            this.elements.recordEditInfo.dataset.currentRecordId = response.data.id;
         }
     }
 
@@ -218,33 +203,26 @@ export class RecordManagement {
             messages.error('No record selected for deletion.', { toast: true });
             return;
         }
-        if (!AuthAPI.isAuthenticated()) {
-            messages.error('Not authenticated. Please log in.', { toast: true });
-            window.location.href = '/login';
+        
+        if (!this.checkAuthentication()) {
             return;
         }
-        try {
-            loadingManager.setLoading(this.elements.recordDeleteButton, true, 'Deleting...');
-            const response = await RecordsAPI.delete(idToDelete);
-            
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(response, 'Delete Record', { recordId: idToDelete });
+
+        const response = await this.safeApiCall(
+            () => RecordsAPI.delete(idToDelete),
+            {
+                loadingElements: [this.elements.recordDeleteButton],
+                loadingText: 'Deleting...',
+                operationName: 'Delete Record',
+                requestData: { recordId: idToDelete },
+                successCallback: () => {
+                    this.elements.recordEditTab.classList.add('d-none');
+                    this.refreshData(() => this.loadRecords());
+                }
             }
-            
-            this.recordMessage.showApiResponse(response);
-            if (response.success) {
-                this.elements.recordEditTab.classList.add('d-none');
-                setTimeout(() => {
-                    this.loadRecords();
-                }, 1000);
-            }
-        } catch (error) {
-            console.error('Error deleting record:', error);
-            errorHandler.handleNetworkError(error, this.recordMessage);
-        } finally {
-            loadingManager.setLoading(this.elements.recordDeleteButton, false);
-        }
+        );
+
+        this.messageDisplay.showApiResponse(response);
     }
 
     /**

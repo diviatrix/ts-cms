@@ -45,6 +45,7 @@ class AdminController {
             recordEditInfo: document.getElementById('recordInfo'),
             recordTitle: document.getElementById('recordTitle'),
             recordDescription: document.getElementById('recordDescription'),
+            recordImageUrl: document.getElementById('recordImageUrl'),
             recordContent: document.getElementById('recordContent'),
             recordTags: document.getElementById('recordTags'),
             recordCategories: document.getElementById('recordCategories'),

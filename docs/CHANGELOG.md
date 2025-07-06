@@ -3,6 +3,8 @@
 ## [2025-07-06] - Log Button Simplification
 - Replaced triangle/graphics with a minimal circular button showing only the 🖥️ emoji
 - Uses only Bootstrap and theme classes, no custom graphics or backgrounds 
+- Probably everything works
+- Big frontend rework to same design system, still could be better.
 
 ## [2025-07-06] - Design System Optimization
 

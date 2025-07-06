@@ -3,14 +3,17 @@
  */
 
 import { apiClient } from '/js/api-client.js';
-import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, messages } from '/js/ui-utils.js';
+import { messages } from '/js/ui-utils.js';
 import { cmsIntegration } from '/js/utils/cms-integration.js';
+import { BaseAdminController } from './base-admin-controller.js';
 
-export class CMSSettings {
+export class CMSSettings extends BaseAdminController {
     constructor(responseLog) {
-        this.apiClient = apiClient;
-        this.responseLog = responseLog;
-        this.messageDisplay = new MessageDisplay();
+        super({
+            responseLog,
+            apiClient
+        });
+        
         this.currentSettings = {};
         this.availableThemes = [];
         this.currentWebsiteTheme = null;
@@ -19,30 +22,26 @@ export class CMSSettings {
     }
 
     init() {
-        this.bindEvents();
+        this.setupEventHandlers();
         this.setupCharacterCounters();
         // Don't load settings immediately - wait for tab activation
     }
 
-    bindEvents() {
-        // Save general settings button
-        document.getElementById('saveGeneralSettings')?.addEventListener('click', () => {
-            this.saveGeneralSettings();
-        });
-
-        // Apply website theme button
-        document.getElementById('applyWebsiteTheme')?.addEventListener('click', () => {
-            this.applyWebsiteTheme();
-        });
-
-        // Listen for CMS settings tab activation
-        document.getElementById('cms-settings-tab')?.addEventListener('shown.bs.tab', () => {
-            this.loadCMSSettings();
-        });
-
-        // Theme selection change
-        document.getElementById('activeThemeSelect')?.addEventListener('change', (e) => {
-            this.onThemeSelectionChange(e.target.value);
+    setupEventHandlers() {
+        // Bind direct element events
+        this.bindEventConfig({
+            '#saveGeneralSettings': {
+                click: () => this.saveGeneralSettings()
+            },
+            '#applyWebsiteTheme': {
+                click: () => this.applyWebsiteTheme()
+            },
+            '#cms-settings-tab': {
+                'shown.bs.tab': () => this.loadCMSSettings()
+            },
+            '#activeThemeSelect': {
+                change: (e) => this.onThemeSelectionChange(e.target.value)
+            }
         });
     }
 
@@ -63,28 +62,25 @@ export class CMSSettings {
     }
 
     async loadSettings() {
-        try {
-            const result = await this.apiClient.get('/cms/settings');
-            
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(result, 'Load CMS Settings');
-            }
-            
-            if (result.success) {
-                this.currentSettings = {};
-                
-                // Convert array to object for easier access
-                result.data.forEach(setting => {
-                    this.currentSettings[setting.setting_key] = setting;
-                });
+        const response = await this.safeApiCall(
+            () => this.apiClient.get('/cms/settings'),
+            {
+                operationName: 'Load CMS Settings',
+                successCallback: (data) => {
+                    this.currentSettings = {};
+                    
+                    // Convert array to object for easier access
+                    data.forEach(setting => {
+                        this.currentSettings[setting.setting_key] = setting;
+                    });
 
-                this.populateSettingsForm();
-            } else {
-                messages.error('Failed to load settings: ' + result.message, { toast: true });
+                    this.populateSettingsForm();
+                }
             }
-        } catch (error) {
-            messages.error('Error loading settings: ' + error.message, { toast: true });
+        );
+
+        if (!response.success) {
+            this.showError('Failed to load settings: ' + response.message);
         }
     }
 
@@ -108,16 +104,19 @@ export class CMSSettings {
     }
 
     async loadAvailableThemes() {
-        try {
-            const result = await this.apiClient.get('/themes');
-            if (result.success) {
-                this.availableThemes = result.data;
-                this.populateThemeSelector();
-            } else {
-                messages.error('Failed to load themes: ' + result.message, { toast: true });
+        const response = await this.safeApiCall(
+            () => this.apiClient.get('/themes'),
+            {
+                operationName: 'Load Available Themes',
+                successCallback: (data) => {
+                    this.availableThemes = data;
+                    this.populateThemeSelector();
+                }
             }
-        } catch (error) {
-            messages.error('Error loading themes: ' + error.message, { toast: true });
+        );
+
+        if (!response.success) {
+            this.showError('Failed to load themes: ' + response.message);
         }
     }
 
@@ -164,44 +163,53 @@ export class CMSSettings {
     }
 
     async loadCurrentWebsiteTheme() {
-        try {
-            const result = await this.apiClient.get('/cms/active-theme');
-            if (result.success && result.data) {
-                this.currentWebsiteTheme = result.data;
-                this.updateCurrentThemeDisplay();
-                
-                // Update theme selector
-                const themeSelect = document.getElementById('activeThemeSelect');
-                if (themeSelect) {
-                    themeSelect.value = this.currentWebsiteTheme.id;
-                }
-            }
-        } catch (error) {
-            // If no active theme is set, apply the default theme first
-            console.log('No website theme set, applying default theme...');
-            try {
-                // Find the default theme from available themes
-                const defaultTheme = this.availableThemes.find(theme => theme.is_default);
-                if (defaultTheme) {
-                    const applyResult = await this.apiClient.put('/cms/active-theme', { theme_id: defaultTheme.id });
-                    if (applyResult.success) {
-                        console.log('Default theme applied successfully');
-                        this.currentWebsiteTheme = defaultTheme;
+        const response = await this.safeApiCall(
+            () => this.apiClient.get('/cms/active-theme'),
+            {
+                operationName: 'Load Current Website Theme',
+                successCallback: (data) => {
+                    if (data) {
+                        this.currentWebsiteTheme = data;
                         this.updateCurrentThemeDisplay();
                         
                         // Update theme selector
                         const themeSelect = document.getElementById('activeThemeSelect');
                         if (themeSelect) {
-                            themeSelect.value = defaultTheme.id;
+                            themeSelect.value = this.currentWebsiteTheme.id;
                         }
-                    } else {
-                        console.log('Failed to apply default theme:', applyResult.message);
                     }
-                } else {
-                    console.log('No default theme found in available themes');
                 }
-            } catch (applyError) {
-                console.log('Error applying default theme:', applyError.message);
+            }
+        );
+
+        if (!response.success) {
+            // If no active theme is set, apply the default theme first
+            console.log('No website theme set, applying default theme...');
+            const defaultTheme = this.availableThemes.find(theme => theme.is_default);
+            if (defaultTheme) {
+                const applyResponse = await this.safeApiCall(
+                    () => this.apiClient.put('/cms/active-theme', { theme_id: defaultTheme.id }),
+                    {
+                        operationName: 'Apply Default Theme',
+                        successCallback: () => {
+                            console.log('Default theme applied successfully');
+                            this.currentWebsiteTheme = defaultTheme;
+                            this.updateCurrentThemeDisplay();
+                            
+                            // Update theme selector
+                            const themeSelect = document.getElementById('activeThemeSelect');
+                            if (themeSelect) {
+                                themeSelect.value = defaultTheme.id;
+                            }
+                        }
+                    }
+                );
+
+                if (!applyResponse.success) {
+                    console.log('Failed to apply default theme:', applyResponse.message);
+                }
+            } else {
+                console.log('No default theme found in available themes');
             }
         }
     }
@@ -237,83 +245,69 @@ export class CMSSettings {
         const saveButton = document.getElementById('saveGeneralSettings');
         const applyButton = document.getElementById('applyWebsiteTheme');
         
-        try {
-            // Set loading state
-            if (saveButton) {
-                loadingManager.setLoading(saveButton, true, 'Saving...');
-            }
-            if (applyButton) {
-                applyButton.disabled = true;
-            }
+        const siteName = document.getElementById('siteName').value.trim();
+        const siteDescription = document.getElementById('siteDescription').value.trim();
 
-            const siteName = document.getElementById('siteName').value.trim();
-            const siteDescription = document.getElementById('siteDescription').value.trim();
+        // Validation
+        const errors = [];
+        if (!siteName) {
+            errors.push('Site name is required');
+        } else if (siteName.length > 100) {
+            errors.push('Site name must be 100 characters or less');
+        }
+        
+        if (siteDescription.length > 500) {
+            errors.push('Site description must be 500 characters or less');
+        }
 
-            // Validation
-            const errors = [];
-            if (!siteName) {
-                errors.push('Site name is required');
-            } else if (siteName.length > 100) {
-                errors.push('Site name must be 100 characters or less');
-            }
-            
-            if (siteDescription.length > 500) {
-                errors.push('Site description must be 500 characters or less');
-            }
+        if (errors.length > 0) {
+            this.showError('Validation errors: ' + errors.join(', '));
+            return;
+        }
 
-            if (errors.length > 0) {
-                messages.error('Validation errors: ' + errors.join(', '), { toast: true });
-                return;
-            }
+        const settings = {
+            site_name: siteName,
+            site_description: siteDescription
+        };
 
-            const settings = {
-                site_name: siteName,
-                site_description: siteDescription
-            };
+        // Disable apply button during save
+        if (applyButton) {
+            applyButton.disabled = true;
+        }
 
-            let allSuccessful = true;
-            const saveErrors = [];
+        let allSuccessful = true;
+        const saveErrors = [];
 
-            // Save each setting individually
-            for (const [key, value] of Object.entries(settings)) {
-                try {
-                    const result = await this.apiClient.put(`/cms/settings/${key}`, { value, type: 'string' });
-                    
-                    // Log the response
-                    if (this.responseLog) {
-                        this.responseLog.addResponse(result, `Save CMS Setting: ${key}`, { key, value, type: 'string' });
-                    }
-                    
-                    if (!result.success) {
-                        allSuccessful = false;
-                        saveErrors.push(`Failed to save ${key}: ${result.message}`);
-                    }
-                } catch (error) {
-                    allSuccessful = false;
-                    saveErrors.push(`Error saving ${key}: ${error.message}`);
+        // Save each setting individually
+        for (const [key, value] of Object.entries(settings)) {
+            const response = await this.safeApiCall(
+                () => this.apiClient.put(`/cms/settings/${key}`, { value, type: 'string' }),
+                {
+                    operationName: `Save CMS Setting: ${key}`,
+                    loadingElement: saveButton,
+                    loadingText: 'Saving...'
                 }
-            }
+            );
 
-            if (allSuccessful) {
-                messages.success('General settings saved successfully', { toast: true });
-                // Reload settings to reflect changes
-                await this.loadSettings();
-                // Refresh CMS integration across all pages
-                await cmsIntegration.refresh();
-            } else {
-                messages.error('Some settings failed to save: ' + saveErrors.join(', '), { toast: true });
+            if (!response.success) {
+                allSuccessful = false;
+                saveErrors.push(`Failed to save ${key}: ${response.message}`);
             }
+        }
 
-        } catch (error) {
-            messages.error('Error saving general settings: ' + error.message, { toast: true });
-        } finally {
-            // Clear loading state
-            if (saveButton) {
-                loadingManager.setLoading(saveButton, false);
-            }
-            if (applyButton) {
-                applyButton.disabled = false;
-            }
+        if (allSuccessful) {
+            this.showSuccess('General settings saved successfully');
+            // Reload settings to reflect changes
+            await this.loadSettings();
+            // Refresh CMS integration across all pages
+            await cmsIntegration.refresh();
+        } else {
+            this.showError('Some settings failed to save: ' + saveErrors.join(', '));
+        }
+
+        // Re-enable apply button
+        if (applyButton) {
+            applyButton.disabled = false;
         }
     }
 
@@ -325,18 +319,18 @@ export class CMSSettings {
         const saveButton = document.getElementById('saveGeneralSettings');
         
         if (!themeSelect || !themeSelect.value) {
-            messages.warning('Please select a theme to apply', { toast: true });
+            this.showWarning('Please select a theme to apply');
             return;
         }
 
         const selectedTheme = this.availableThemes.find(theme => theme.id === themeSelect.value);
         if (!selectedTheme) {
-            messages.error('Selected theme not found', { toast: true });
+            this.showError('Selected theme not found');
             return;
         }
 
         if (this.currentWebsiteTheme && this.currentWebsiteTheme.id === selectedTheme.id) {
-            messages.info('This theme is already the active website theme', { toast: true });
+            this.showInfo('This theme is already the active website theme');
             return;
         }
 
@@ -344,47 +338,37 @@ export class CMSSettings {
             return;
         }
 
-        try {
-            // Set loading state
-            if (applyButton) {
-                loadingManager.setLoading(applyButton, true, 'Applying...');
-            }
-            if (saveButton) {
-                saveButton.disabled = true;
-            }
+        // Disable save button during apply
+        if (saveButton) {
+            saveButton.disabled = true;
+        }
 
-            const result = await this.apiClient.put('/cms/active-theme', { theme_id: selectedTheme.id });
-            
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(result, 'Apply Website Theme', { themeId: selectedTheme.id, themeName: selectedTheme.name });
+        const response = await this.safeApiCall(
+            () => this.apiClient.put('/cms/active-theme', { theme_id: selectedTheme.id }),
+            {
+                operationName: 'Apply Website Theme',
+                loadingElement: applyButton,
+                loadingText: 'Applying...',
+                successCallback: () => {
+                    // Update current theme info
+                    this.currentWebsiteTheme = selectedTheme;
+                    this.updateCurrentThemeDisplay();
+                    
+                    // Dispatch theme change event for immediate UI update
+                    document.dispatchEvent(new CustomEvent('themeChanged', { 
+                        detail: { themeId: selectedTheme.id } 
+                    }));
+                }
             }
-            
-            if (result.success) {
-                messages.success(`Website theme set to "${selectedTheme.name}" successfully`, { toast: true });
-                
-                // Update current theme info
-                this.currentWebsiteTheme = selectedTheme;
-                this.updateCurrentThemeDisplay();
-                
-                // Dispatch theme change event for immediate UI update
-                document.dispatchEvent(new CustomEvent('themeChanged', { 
-                    detail: { themeId: selectedTheme.id } 
-                }));
-                
-            } else {
-                messages.error('Failed to set website theme: ' + result.message, { toast: true });
-            }
-        } catch (error) {
-            messages.error('Error setting website theme: ' + error.message, { toast: true });
-        } finally {
-            // Clear loading state
-            if (applyButton) {
-                loadingManager.setLoading(applyButton, false);
-            }
-            if (saveButton) {
-                saveButton.disabled = false;
-            }
+        );
+
+        if (!response.success) {
+            this.showError('Failed to set website theme: ' + response.message);
+        }
+
+        // Re-enable save button
+        if (saveButton) {
+            saveButton.disabled = false;
         }
     }
 

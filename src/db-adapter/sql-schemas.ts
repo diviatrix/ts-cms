@@ -13,6 +13,7 @@ export default {
             title TEXT NOT NULL,
             description TEXT NOT NULL,
             content TEXT NOT NULL,
+            image_url TEXT,
             user_id TEXT NOT NULL,
             tags TEXT NOT NULL DEFAULT '[]',
             categories TEXT NOT NULL DEFAULT '[]',

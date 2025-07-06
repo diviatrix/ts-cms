@@ -178,13 +178,14 @@ class Database {
     }
 
     public async createRecord(record: IRecord): Promise<IResolve<IRecord>> {
-        const columns = ['id', 'title', 'description', 'content', 'user_id', 'tags', 'categories', 'is_published', 'created_at', 'updated_at'].join(', ');
-        const placeholders = ['?', '?', '?', '?', '?', '?', '?', '?', '?', '?'].join(', ');
+        const columns = ['id', 'title', 'description', 'content', 'image_url', 'user_id', 'tags', 'categories', 'is_published', 'created_at', 'updated_at'].join(', ');
+        const placeholders = ['?', '?', '?', '?', '?', '?', '?', '?', '?', '?', '?'].join(', ');
         const values = [
             record.id,
             record.title,
             record.description,
             record.content,
+            record.image_url || null,
             record.user_id,
             JSON.stringify(record.tags),
             JSON.stringify(record.categories),
@@ -255,7 +256,7 @@ class Database {
     public async getAllRecords(publishedOnly: boolean = false): Promise<IResolve<(IRecord & { public_name: string })[] | undefined>> {
         let query = `
             SELECT
-                r.id, r.title, r.description, r.content, r.user_id,
+                r.id, r.title, r.description, r.content, r.image_url, r.user_id,
                 r.tags, r.categories, r.is_published, r.created_at, r.updated_at,
                 COALESCE(up.public_name, 'Admin') as public_name
             FROM records r

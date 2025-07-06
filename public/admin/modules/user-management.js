@@ -4,33 +4,21 @@
  */
 
 import { AdminAPI, AuthAPI, ProfileAPI } from '../../js/api-client.js';
-import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, messages } from '../../js/ui-utils.js';
-import { getThemeColors } from '../../js/utils/theme-api.js';
+import { loadingManager, messages } from '../../js/ui-utils.js';
+import { BaseAdminController } from './base-admin-controller.js';
 
-export class UserManagement {
+export class UserManagement extends BaseAdminController {
     constructor(elements, dataTable, responseLog) {
-        this.elements = elements;
+        super({
+            elements,
+            responseLog,
+            messageDiv: elements.adminMessageDiv
+        });
+        
         this.usersTable = dataTable;
-        this.responseLog = responseLog;
-        this.adminMessage = new MessageDisplay(elements.adminMessageDiv);
+        this.allUsers = [];
         
         this.setupEventHandlers();
-    }
-
-    /**
-     * Get themed card styles using theme API
-     */
-    getThemedCardStyles() {
-        const colors = getThemeColors();
-        return `border-radius: 10px; margin-bottom: 1em; padding: 1em; background: ${colors.surfaceColor}; color: ${colors.textColor}; border: 1px solid ${colors.borderColor}; min-height: 3.5em;`;
-    }
-
-    /**
-     * Get themed secondary text styles using theme API
-     */
-    getThemedSecondaryStyles() {
-        const colors = getThemeColors();
-        return `color: ${colors.secondaryColor}; font-size: 0.9em;`;
     }
 
     showActiveUsers() {
@@ -76,98 +64,96 @@ export class UserManagement {
      * Setup user management event handlers
      */
     setupEventHandlers() {
-        // Save button for user profiles
-        if (this.elements.adminSaveButton) {
-            this.elements.adminSaveButton.addEventListener('click', () => this.handleUserSave());
-        }
+        // Bind direct element events
+        this.bindEventConfig({
+            adminSaveButton: {
+                click: () => this.handleUserSave()
+            }
+        });
 
-        // User link clicks in the data table
-        this.elements.userListContainer.addEventListener('click', (e) => {
-            const userLink = e.target.closest('.user-link');
-            if (userLink) {
-                e.preventDefault();
-                try {
-                    const userData = JSON.parse(userLink.dataset.user);
-                    this.displayUserProfile(userData);
-                } catch (error) {
-                    console.error('Error parsing user data:', error);
-                    messages.error('Error loading user data', { toast: true });
+        // Setup delegated events for dynamic content
+        this.setupDelegatedEvents(this.elements.userListContainer, {
+            '.user-link': {
+                click: (event, target) => {
+                    event.preventDefault();
+                    try {
+                        const userData = JSON.parse(target.dataset.user);
+                        this.displayUserProfile(userData);
+                    } catch (error) {
+                        console.error('Error parsing user data:', error);
+                        messages.error('Error loading user data', { toast: true });
+                    }
                 }
             }
         });
 
         // Filter button handlers
-        const showActiveBtn = document.getElementById('showActiveUsers');
-        const showInactiveBtn = document.getElementById('showInactiveUsers');
-        
-        if (showActiveBtn) {
-            showActiveBtn.addEventListener('click', () => {
-                showActiveBtn.classList.remove('btn-outline-secondary');
-                showActiveBtn.classList.add('btn-outline-primary');
-                showInactiveBtn.classList.remove('btn-outline-primary');
-                showInactiveBtn.classList.add('btn-outline-secondary');
-                this.showActiveUsers();
-            });
-        }
-        
-        if (showInactiveBtn) {
-            showInactiveBtn.addEventListener('click', () => {
-                showInactiveBtn.classList.remove('btn-outline-secondary');
-                showInactiveBtn.classList.add('btn-outline-primary');
-                showActiveBtn.classList.remove('btn-outline-primary');
-                showActiveBtn.classList.add('btn-outline-secondary');
-                this.showInactiveUsers();
-            });
-        }
+        this.bindEventConfig({
+            '#showActiveUsers': {
+                click: () => {
+                    const showActiveBtn = document.getElementById('showActiveUsers');
+                    const showInactiveBtn = document.getElementById('showInactiveUsers');
+                    
+                    showActiveBtn.classList.remove('btn-outline-secondary');
+                    showActiveBtn.classList.add('btn-outline-primary');
+                    showInactiveBtn.classList.remove('btn-outline-primary');
+                    showInactiveBtn.classList.add('btn-outline-secondary');
+                    this.showActiveUsers();
+                }
+            },
+            '#showInactiveUsers': {
+                click: () => {
+                    const showActiveBtn = document.getElementById('showActiveUsers');
+                    const showInactiveBtn = document.getElementById('showInactiveUsers');
+                    
+                    showInactiveBtn.classList.remove('btn-outline-secondary');
+                    showInactiveBtn.classList.add('btn-outline-primary');
+                    showActiveBtn.classList.remove('btn-outline-primary');
+                    showActiveBtn.classList.add('btn-outline-secondary');
+                    this.showInactiveUsers();
+                }
+            }
+        });
     }
 
     /**
      * Load users and populate the data table
      */
     async loadUsers() {
-        try {
-            if (!AuthAPI.isAuthenticated()) {
-                messages.error('Not authenticated. Please log in.', { toast: true });
-                window.location.href = '/login';
-                return;
-            }
-            this.adminMessage.hide();
-            this.elements.userListContainer.innerHTML = '<div class="themed" style="padding:1em;">Loading users...</div>';
-            
-            const response = await AdminAPI.getUsers();
-            
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(response, 'Load Users');
-            }
-            
-            if (!response.success) {
-                messages.error('Failed to load users', { toast: true });
-                errorHandler.handleApiError(response, this.adminMessage);
-                return;
-            }
-            
-            let users = [];
-            if (Array.isArray(response.data)) {
-                users = response.data;
-            } else if (response.data && typeof response.data === 'object') {
-                if (Array.isArray(response.data.users)) {
-                    users = response.data.users;
-                } else if (Array.isArray(response.data.data)) {
-                    users = response.data.data;
-                } else {
-                    users = Object.values(response.data);
+        if (!this.checkAuthentication()) {
+            return;
+        }
+
+        this.messageDisplay.hide();
+        this.showContainerLoading(this.elements.userListContainer, 'Loading users...');
+        
+        const response = await this.safeApiCall(
+            () => AdminAPI.getUsers(),
+            {
+                operationName: 'Load Users',
+                successCallback: (data) => {
+                    let users = [];
+                    if (Array.isArray(data)) {
+                        users = data;
+                    } else if (data && typeof data === 'object') {
+                        if (Array.isArray(data.users)) {
+                            users = data.users;
+                        } else if (Array.isArray(data.data)) {
+                            users = data.data;
+                        } else {
+                            users = Object.values(data);
+                        }
+                    }
+                    
+                    // Store users for filtering
+                    this.allUsers = users;
+                    this.showActiveUsers(); // Default to showing active users
                 }
             }
-            
-            // Store users for filtering
-            this.allUsers = users;
-            this.showActiveUsers(); // Default to showing active users
-            
-        } catch (error) {
-            console.error('Error fetching users:', error);
-            messages.error('Network error occurred', { toast: true });
-            errorHandler.handleNetworkError(error, this.adminMessage);
+        );
+
+        if (!response.success) {
+            this.showContainerError(this.elements.userListContainer, 'Failed to load users');
         }
     }
 
@@ -175,10 +161,16 @@ export class UserManagement {
      * Display user profile for editing
      */
     displayUserProfile(user) {
-        this.elements.profileEditTab.classList.remove('d-none');
+        this.displayItemForEdit(user, {
+            editTabSelector: '#profileEditTab',
+            formFields: {
+                adminServerAnswerTextarea: 'json' // Special case for JSON display
+            }
+        });
+        
+        // Handle JSON display
         this.elements.adminServerAnswerTextarea.value = JSON.stringify(user, null, 2);
         this.elements.adminProfileInfo.dataset.currentUserId = user.base?.id || user.id;
-        this.adminMessage.hide();
     }
 
     /**
@@ -205,31 +197,21 @@ export class UserManagement {
             return;
         }
 
-        try {
-            loadingManager.setLoading(this.elements.adminSaveButton, true, 'Saving...');
-            
-            const response = await ProfileAPI.update(updatedData);
-            
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(response, 'Update User Profile', updatedData);
+        const response = await this.safeApiCall(
+            () => ProfileAPI.update(updatedData),
+            {
+                loadingElements: [this.elements.adminSaveButton],
+                loadingText: 'Saving...',
+                operationName: 'Update User Profile',
+                requestData: updatedData,
+                successCallback: () => {
+                    this.refreshData(() => this.loadUsers());
+                }
             }
-            
-            // Show user-friendly message
-            this.adminMessage.showApiResponse(response);
-            
-            if (response.success) {
-                // Show success feedback and refresh the users list
-                setTimeout(() => {
-                    this.loadUsers();
-                }, 1000); // Small delay to let user see the success message
-            }
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            errorHandler.handleNetworkError(error, this.adminMessage);
-        } finally {
-            loadingManager.setLoading(this.elements.adminSaveButton, false);
-        }
+        );
+
+        // Show user-friendly message
+        this.messageDisplay.showApiResponse(response);
     }
 
 
@@ -290,49 +272,37 @@ export class UserManagement {
             return;
         }
 
-        if (!AuthAPI.isAuthenticated()) {
-            messages.error('Not authenticated. Please log in.', { toast: true });
-            window.location.href = '/login';
+        if (!this.checkAuthentication()) {
             return;
         }
 
         const isActivating = action === 'activate';
         const btn = document.querySelector(`[data-user-id="${userId}"].toggle-user-btn`);
-        if (btn) {
-            loadingManager.setLoading(btn, true, isActivating ? 'Activating...' : 'Deactivating...');
-        }
+        
+        const updateData = {
+            user_id: userId,
+            base: {
+                is_active: isActivating
+            }
+        };
 
-        try {
-            const updateData = {
-                user_id: userId,
-                base: {
-                    is_active: isActivating
+        const response = await this.safeApiCall(
+            () => ProfileAPI.update(updateData),
+            {
+                loadingElements: btn ? [btn] : [],
+                loadingText: isActivating ? 'Activating...' : 'Deactivating...',
+                operationName: `Toggle User Status (${action})`,
+                requestData: updateData,
+                successCallback: () => {
+                    if (this.elements.adminProfileInfo.dataset.currentUserId === userId) {
+                        this.elements.profileEditTab.classList.add('d-none');
+                    }
+                    this.refreshData(() => this.loadUsers());
                 }
-            };
+            }
+        );
 
-            const response = await ProfileAPI.update(updateData);
-            
-            // Log the response
-            if (this.responseLog) {
-                this.responseLog.addResponse(response, `Toggle User Status (${action})`, updateData);
-            }
-            
-            if (response.success) {
-                messages.success(`User ${isActivating ? 'activated' : 'deactivated'} successfully`, { toast: true });
-                if (this.elements.adminProfileInfo.dataset.currentUserId === userId) {
-                    this.elements.profileEditTab.classList.add('d-none');
-                }
-                setTimeout(() => this.loadUsers(), 1000);
-            } else {
-                ErrorHandler.handleApiError(response, this.adminMessage);
-            }
-        } catch (error) {
-            console.error(`Error ${action}ing user:`, error);
-            errorHandler.handleNetworkError(error, this.adminMessage);
-        } finally {
-            if (btn) {
-                loadingManager.setLoading(btn, false);
-            }
-        }
+        // Show user-friendly message
+        this.messageDisplay.showApiResponse(response);
     }
 }

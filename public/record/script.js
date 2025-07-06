@@ -130,10 +130,22 @@ class RecordDisplayController extends BasePageController {
       this.elements.description.textContent = record.description;
     }
     if (this.elements.content) {
+      // Create image HTML if image_url exists
+      const imageHtml = record.image_url ? `
+        <div class="text-center mb-4">
+          <img src="${record.image_url}" 
+               class="img-fluid rounded" 
+               alt="${record.title}"
+               style="max-height: 400px; object-fit: cover;"
+               onerror="this.style.display='none'">
+        </div>
+      ` : '';
+
       // Preserve the card structure and add content with proper padding
       this.elements.content.innerHTML = `
         <div class="card-body">
           <div class="px-4 py-3">
+            ${imageHtml}
             ${marked.parse(record.content)}
           </div>
         </div>
