@@ -350,12 +350,19 @@ class ApiClient {
     handleAuthError(response) {
         // Clear the invalid token
         this.setAuthToken(null);
-        
-        // Show user-friendly message
+
+        // If already on login page or about to redirect, do not show a warning or log
+        const isOnLoginPage = window.location.pathname.includes('/login');
+        const isRedirecting = typeof this.isRedirectingToLogin === 'function' && this.isRedirectingToLogin();
+        if (isOnLoginPage || isRedirecting) {
+            // Silently handle 401: do not log anything to the browser console
+            return true;
+        }
+
+        // Show user-friendly message only if not redirecting
         if (window.messages) {
             window.messages.warning('Your session has expired.', { toast: true });
         }
-        
         return true;
     }
 
@@ -521,3 +528,8 @@ const UtilityAPI = {
  * Export for use in other scripts
  */
 export { apiClient, AuthAPI, RecordsAPI, AdminAPI, ProfileAPI, UtilityAPI, ApiResponse };
+
+if (window.AuthAPI?.isAuthenticated?.() === true) {
+  // Only fetch settings if authenticated
+  apiClient.get('/api/cms/settings');
+}

@@ -184,9 +184,12 @@ class RecordDisplayController extends BasePageController {
       return;
     }
 
-    this.elements.downloadButton.addEventListener('click', () => {
-      this.handleRecordDownload(record);
-    });
+    if (this.elements.downloadButton) {
+      this.elements.downloadButton.classList.remove('d-none');
+      this.elements.downloadButton.addEventListener('click', () => {
+        this.handleRecordDownload(record);
+      });
+    }
   }
 
   /**

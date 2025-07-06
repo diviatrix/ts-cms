@@ -34,6 +34,48 @@ const DEFAULT_THEME = {
     }
 };
 
+const THEME_CACHE_KEY = 'unifiedThemeSettingsCache';
+const THEME_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+const THEME_LAST_APPLIED_KEY = 'unifiedThemeLastApplied';
+
+function getCachedThemeSettings() {
+    try {
+        const cache = JSON.parse(localStorage.getItem(THEME_CACHE_KEY));
+        if (!cache) return null;
+        if (Date.now() - cache.timestamp > THEME_CACHE_TTL) {
+            localStorage.removeItem(THEME_CACHE_KEY);
+            return null;
+        }
+        return cache.settings;
+    } catch {
+        return null;
+    }
+}
+
+function setCachedThemeSettings(settings) {
+    localStorage.setItem(THEME_CACHE_KEY, JSON.stringify({
+        settings,
+        timestamp: Date.now()
+    }));
+}
+
+function getLastAppliedThemeSettings() {
+    try {
+        return JSON.parse(localStorage.getItem(THEME_LAST_APPLIED_KEY));
+    } catch {
+        return null;
+    }
+}
+
+function setLastAppliedThemeSettings(settings) {
+    localStorage.setItem(THEME_LAST_APPLIED_KEY, JSON.stringify(settings));
+}
+
+function invalidateThemeCache() {
+    localStorage.removeItem(THEME_CACHE_KEY);
+    localStorage.removeItem(THEME_LAST_APPLIED_KEY);
+}
+
 class UnifiedThemeSystem {
     constructor() {
         this.currentTheme = null;
@@ -41,20 +83,21 @@ class UnifiedThemeSystem {
         this.styleElement = null;
         this.loadPromise = null;
         this.retryAttempts = 0;
+        this.lastAppliedSettings = null;
         
         this.init();
     }
 
     init() {
-        console.log('[UnifiedTheme] Initializing simplified theme system...');
-        this.loadTheme(); // Apply theme immediately
-        
-        // Listen for theme changes from CMS settings
+        console.log('[theme-system] Initializing simplified theme system...');
+        // Invalidate cache on themeChanged
         document.addEventListener('themeChanged', () => {
-            console.log('[UnifiedTheme] Theme change detected, reloading...');
+            console.log('[theme-system] Theme change detected, invalidating cache and reloading...');
+            invalidateThemeCache();
             this.loadPromise = null; // Reset cache
             this.loadTheme();
         });
+        this.loadTheme(); // Apply theme immediately
     }
 
     setupStyles() {
@@ -71,36 +114,59 @@ class UnifiedThemeSystem {
         this.styleElement.type = 'text/css';
         document.head.appendChild(this.styleElement);
         
-        console.log('[UnifiedTheme] Style element created and positioned');
+        console.log('[theme-system] Style element created and positioned');
     }
 
     async loadTheme() {
         if (this.loadPromise) return this.loadPromise;
-        
         this.loadPromise = this.loadThemeInternal();
         return this.loadPromise;
     }
 
     async loadThemeInternal() {
         this.themeState = THEME_STATES.LOADING;
-        
+        // Try cache first
+        const cachedSettings = getCachedThemeSettings();
+        const lastApplied = getLastAppliedThemeSettings();
+        if (cachedSettings) {
+            console.log('[theme-system] Using cached theme settings');
+            await this.injectCSS(cachedSettings);
+            this.applyElements(cachedSettings);
+            if (!lastApplied || JSON.stringify(cachedSettings) !== JSON.stringify(lastApplied)) {
+                setLastAppliedThemeSettings(cachedSettings);
+                this.forceRefresh();
+            } else {
+                console.log('[theme-system] Cached settings unchanged, skipping force refresh');
+            }
+            this.themeState = THEME_STATES.LOADED;
+            return;
+        }
         try {
-            console.log('[UnifiedTheme] Loading active theme...');
+            console.log('[theme-system] Loading active theme...');
             await loadDependencies();
-            const result = await apiClient.get('/cms/active-theme'); // Use CMS website theme, not themes.is_active
-            
+            const result = await apiClient.get('/cms/active-theme');
             if (result.success && result.data) {
-                console.log('[UnifiedTheme] Website theme loaded:', result.data.name);
-                
+                console.log('[theme-system] Website theme loaded:', result.data.name);
                 // Fetch the full theme data with settings
                 const themeResult = await apiClient.get(`/themes/${result.data.id}`);
                 if (themeResult.success && themeResult.data) {
                     this.currentTheme = themeResult.data;
                     this.themeState = THEME_STATES.LOADED;
                     this.retryAttempts = 0;
-                    
+                    // Only cache the settings used for CSS injection
+                    let settings = themeResult.data.settings;
+                    if (Array.isArray(settings)) {
+                        const settingsObj = {};
+                        settings.forEach(setting => {
+                            settingsObj[setting.setting_key] = setting.setting_value;
+                        });
+                        settings = settingsObj;
+                    }
+                    setCachedThemeSettings(settings);
                     await this.applyTheme(themeResult.data);
-                    console.log('[UnifiedTheme] Theme applied successfully');
+                    setLastAppliedThemeSettings(settings);
+                    this.forceRefresh();
+                    console.log('[theme-system] Theme applied successfully');
                 } else {
                     throw new Error('Failed to load theme details');
                 }
@@ -108,9 +174,8 @@ class UnifiedThemeSystem {
                 throw new Error(result.message || 'Failed to load website theme');
             }
         } catch (error) {
-            console.error('[UnifiedTheme] Theme loading failed:', error);
+            console.error('[theme-system] Theme loading failed:', error);
             this.retryAttempts++;
-            
             if (this.retryAttempts < 3) {
                 setTimeout(() => {
                     this.loadPromise = null;
@@ -125,7 +190,7 @@ class UnifiedThemeSystem {
     }
 
     async applyTheme(themeData) {
-        console.log('[UnifiedTheme] ApplyTheme called with:', themeData);
+        console.log('[theme-system] ApplyTheme called with:', themeData);
         let settings = themeData.settings;
         
         // Handle different response structures
@@ -140,38 +205,38 @@ class UnifiedThemeSystem {
                 settingsObj[setting.setting_key] = setting.setting_value;
             });
             settings = settingsObj;
-            console.log('[UnifiedTheme] Converted array settings to object:', settings);
+            console.log('[theme-system] Converted array settings to object:', settings);
         }
         
-        console.log('[UnifiedTheme] Final settings to apply:', settings);
+        console.log('[theme-system] Final settings to apply:', settings);
         
         // Fetch settings if not provided
         if (!settings && themeData.id) {
             try {
-                console.log('[UnifiedTheme] Fetching settings for theme:', themeData.id);
+                console.log('[theme-system] Fetching settings for theme:', themeData.id);
                 const { apiClient } = await import('../api-client.js');
                 const result = await apiClient.get(`/themes/${themeData.id}/settings`);
                 if (result.success) {
                     settings = result.data;
-                    console.log('[UnifiedTheme] Fetched settings:', settings);
+                    console.log('[theme-system] Fetched settings:', settings);
                 }
             } catch (error) {
-                console.error('[UnifiedTheme] Failed to fetch theme settings:', error);
+                console.error('[theme-system] Failed to fetch theme settings:', error);
             }
         }
         
         if (settings && Object.keys(settings).length > 0) {
-            console.log('[UnifiedTheme] About to inject CSS with settings:', settings);
+            console.log('[theme-system] About to inject CSS with settings:', settings);
             await this.injectCSS(settings);
             this.applyElements(settings);
             this.forceRefresh();
         } else {
-            console.error('[UnifiedTheme] No valid settings available to apply!');
+            console.error('[theme-system] No valid settings available to apply!');
         }
     }
 
     applyFallback() {
-        console.log('[UnifiedTheme] Applying fallback theme');
+        console.log('[theme-system] Applying fallback theme');
         this.currentTheme = DEFAULT_THEME;
         this.themeState = THEME_STATES.FALLBACK;
         this.injectCSS(DEFAULT_THEME.settings);
@@ -190,7 +255,7 @@ class UnifiedThemeSystem {
         this.styleElement.textContent = css;
         document.head.appendChild(this.styleElement);
         
-        console.log('[UnifiedTheme] Theme CSS applied');
+        console.log('[theme-system] Theme CSS applied');
     }
 
     async generateCSS(settings) {
@@ -222,7 +287,7 @@ class UnifiedThemeSystem {
                 .replace(/{{FONT_FAMILY}}/g, font_family)
                 .replace(/\/\* {{CUSTOM_CSS}} \*\//g, custom_css);
         } catch (error) {
-            console.error('[UnifiedTheme] Failed to load design system template:', error);
+            console.error('[theme-system] Failed to load design system template:', error);
             // Fallback to simple CSS generation
             return this.generateFallbackCSS(settings);
         }
@@ -340,10 +405,10 @@ class UnifiedThemeSystem {
                         }
                         footerContainer.appendChild(linkElement);
                     });
-                    console.log('[UnifiedTheme] Applied footer links:', footerLinks.length);
+                    console.log('[theme-system] Applied footer links:', footerLinks.length);
                 }
             } catch (error) {
-                console.error('[UnifiedTheme] Failed to parse footer_links JSON:', error);
+                console.error('[theme-system] Failed to parse footer_links JSON:', error);
             }
         }
 
@@ -381,16 +446,16 @@ class UnifiedThemeSystem {
                             navContainer.appendChild(listItem);
                         }
                     });
-                    console.log('[UnifiedTheme] Applied menu links:', menuLinks.length);
+                    console.log('[theme-system] Applied menu links:', menuLinks.length);
                 }
             } catch (error) {
-                console.error('[UnifiedTheme] Failed to parse menu_links JSON:', error);
+                console.error('[theme-system] Failed to parse menu_links JSON:', error);
             }
         }
     }
 
     forceRefresh() {
-        console.log('[UnifiedTheme] Starting force refresh...');
+        console.log('[theme-system] Starting force refresh...');
         
         // Update CSS custom property to trigger recalculation
         document.documentElement.style.setProperty('--theme-refresh', Date.now().toString());
@@ -403,19 +468,19 @@ class UnifiedThemeSystem {
         // Force recalculation of CSS variables
         const computedStyle = getComputedStyle(document.documentElement);
         const primaryColor = computedStyle.getPropertyValue('--theme-primary');
-        console.log('[UnifiedTheme] After refresh, --theme-primary:', primaryColor);
+        console.log('[theme-system] After refresh, --theme-primary:', primaryColor);
         
         // Trigger a repaint by changing a harmless property
         document.body.classList.add('theme-refreshing');
         requestAnimationFrame(() => {
             document.body.classList.remove('theme-refreshing');
-            console.log('[UnifiedTheme] Force refresh completed');
+            console.log('[theme-system] Force refresh completed');
         });
     }
 
     // Legacy compatibility methods
     async switchTheme(themeId) {
-        console.log(`[UnifiedTheme] Switching to theme: ${themeId}`);
+        console.log(`[theme-system] Switching to theme: ${themeId}`);
         
         try {
             await loadDependencies();
@@ -436,7 +501,7 @@ class UnifiedThemeSystem {
             }
             throw new Error(result.message || 'Failed to switch theme');
         } catch (error) {
-            console.error('[UnifiedTheme] Switch failed:', error);
+            console.error('[theme-system] Switch failed:', error);
             // Better error message handling
             let errorMessage = 'Failed to switch theme';
             if (error.message) {
@@ -454,7 +519,7 @@ class UnifiedThemeSystem {
     }
 
     async previewTheme(themeId) {
-        console.log(`[UnifiedTheme] Previewing theme: ${themeId}`);
+        console.log(`[theme-system] Previewing theme: ${themeId}`);
         
         try {
             await loadDependencies();
@@ -469,7 +534,7 @@ class UnifiedThemeSystem {
                 
                 // Auto-restore after 10 seconds
                 setTimeout(() => {
-                    console.log('[UnifiedTheme] Auto-restoring original theme after preview');
+                    console.log('[theme-system] Auto-restoring original theme after preview');
                     this.removePreviewStyles();
                     if (originalTheme) {
                         this.applyTheme(originalTheme);
@@ -482,13 +547,13 @@ class UnifiedThemeSystem {
             }
             throw new Error(result.message || 'Failed to fetch theme');
         } catch (error) {
-            console.error('[UnifiedTheme] Preview failed:', error);
+            console.error('[theme-system] Preview failed:', error);
             return { success: false, message: error.message };
         }
     }
 
     applyPreviewStyles(themeData) {
-        console.log('[UnifiedTheme] Applying preview styles for:', themeData.theme?.name);
+        console.log('[theme-system] Applying preview styles for:', themeData.theme?.name);
         
         // Remove existing preview styles
         const existingPreview = document.getElementById('theme-preview-styles');
@@ -523,9 +588,9 @@ class UnifiedThemeSystem {
         // Also apply elements for preview
         this.applyElements(settings);
         
-        console.log('[UnifiedTheme] Preview styles applied');
-        console.log('[UnifiedTheme] Preview CSS length:', css.length);
-        console.log('[UnifiedTheme] Preview CSS first 200 chars:', css.substring(0, 200));
+        console.log('[theme-system] Preview styles applied');
+        console.log('[theme-system] Preview CSS length:', css.length);
+        console.log('[theme-system] Preview CSS first 200 chars:', css.substring(0, 200));
         
         // Force immediate visual update (no fancy tricks, just basic reflow)
         document.body.offsetHeight;
@@ -592,7 +657,7 @@ class UnifiedThemeSystem {
         const previewStyle = document.getElementById('theme-preview-styles');
         if (previewStyle) {
             previewStyle.remove();
-            console.log('[UnifiedTheme] Preview styles removed');
+            console.log('[theme-system] Preview styles removed');
             
             // Force refresh after removal
             document.body.offsetHeight;
@@ -601,7 +666,7 @@ class UnifiedThemeSystem {
 
     // Public API methods
     async reloadTheme() {
-        console.log('[UnifiedTheme] Reloading theme...');
+        console.log('[theme-system] Reloading theme...');
         this.loadPromise = null;
         this.retryAttempts = 0;
         return this.loadTheme();

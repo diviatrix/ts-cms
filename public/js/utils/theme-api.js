@@ -20,11 +20,11 @@ class SimpleThemeAPI {
         if (typeof window !== 'undefined' && typeof document !== 'undefined') {
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', () => {
-                    console.log('[SimpleTheme] Auto-initializing theme system');
+                    console.log('[theme-api] Auto-initializing theme system');
                     new SimpleThemeAPI();
                 });
             } else {
-                console.log('[SimpleTheme] Auto-initializing theme system');
+                console.log('[theme-api] Auto-initializing theme system');
                 new SimpleThemeAPI();
             }
         }

@@ -399,8 +399,7 @@ export class BaseAdminController {
                     btn.dataset.confirming = 'false';
                     
                     if (onConfirm) {
-                        const itemId = btn.getAttribute('data-item-id');
-                        await onConfirm(itemId, btn);
+                        await onConfirm(btn);
                     }
                 } else {
                     // Set confirmation state

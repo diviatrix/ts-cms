@@ -24,6 +24,7 @@ export class CMSSettings extends BaseAdminController {
     init() {
         this.setupEventHandlers();
         this.setupCharacterCounters();
+        this.setupDownloadSettingsButton();
         // Don't load settings immediately - wait for tab activation
     }
 
@@ -43,6 +44,38 @@ export class CMSSettings extends BaseAdminController {
                 change: (e) => this.onThemeSelectionChange(e.target.value)
             }
         });
+    }
+
+    setupDownloadSettingsButton() {
+        const btn = document.getElementById('downloadSettingsJsonButton');
+        if (btn) {
+            btn.addEventListener('click', () => this.downloadSettingsJson());
+        }
+    }
+
+    downloadSettingsJson() {
+        // Prepare a plain object with key-value pairs only
+        const settingsObj = {};
+        for (const [key, val] of Object.entries(this.currentSettings)) {
+            settingsObj[key] = val.setting_value;
+        }
+        const json = JSON.stringify(settingsObj, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cms-settings.json';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+        // Show message
+        const msgDiv = document.getElementById('cmsSettingsMessageDiv');
+        if (msgDiv) {
+            msgDiv.innerHTML = '<span class="text-success">Downloaded <code>cms-settings.json</code>. Upload this file to your server\'s <code>public/</code> directory to update site settings for all users.</span>';
+        }
     }
 
     async loadCMSSettings() {
@@ -296,11 +329,13 @@ export class CMSSettings extends BaseAdminController {
         }
 
         if (allSuccessful) {
-            this.showSuccess('General settings saved successfully');
+            messages.success('General settings saved successfully');
             // Reload settings to reflect changes
             await this.loadSettings();
             // Refresh CMS integration across all pages
             await cmsIntegration.refresh();
+            // Download JSON after save
+            this.downloadSettingsJson();
         } else {
             this.showError('Some settings failed to save: ' + saveErrors.join(', '));
         }
@@ -310,8 +345,6 @@ export class CMSSettings extends BaseAdminController {
             applyButton.disabled = false;
         }
     }
-
-
 
     async applyWebsiteTheme() {
         const themeSelect = document.getElementById('activeThemeSelect');

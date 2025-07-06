@@ -145,9 +145,6 @@ class AdminController {
         // Initialize record management module  
         this.recordManagement = new RecordManagement(this.elements, this.recordsTable, this.responseLog);
 
-        // Initialize theme management module
-        this.themeManagement = new ThemeManagement(this.responseLog);
-        
         // Initialize CMS settings module
         this.cmsSettings = new CMSSettings(this.responseLog);
     }
@@ -211,9 +208,6 @@ class AdminController {
             case 'records-tab':
                 this.recordManagement.loadRecords();
                 break;
-            case 'themes-tab':
-                this.themeManagement.loadThemes();
-                break;
             case 'cms-settings-tab':
                 this.cmsSettings.loadSettings();
                 break;
@@ -272,9 +266,33 @@ class AdminController {
     }
 }
 
-
+// Shared utility for lazy-loading admin modules on tab activation
+function lazyLoadModule(tabSelector, moduleInitFn) {
+    let initialized = false;
+    const tabBtn = document.querySelector(tabSelector);
+    if (!tabBtn) return;
+    tabBtn.addEventListener('shown.bs.tab', () => {
+        if (!initialized) {
+            moduleInitFn();
+            initialized = true;
+        }
+    });
+}
 
 // Wait for DOM to be ready, then initialize
 document.addEventListener('DOMContentLoaded', () => {
     new AdminController();
+    const adminTab = document.getElementById('adminTab');
+    const adminWelcome = document.getElementById('adminWelcome');
+    if (adminTab && adminWelcome) {
+        adminTab.addEventListener('shown.bs.tab', () => {
+            adminWelcome.style.display = 'none';
+        });
+    }
+
+    // Lazy-load ThemeManagement only when Themes tab is shown
+    lazyLoadModule('#themes-tab', () => {
+        // You can extend this pattern for other modules as needed
+        new ThemeManagement();
+    });
 });

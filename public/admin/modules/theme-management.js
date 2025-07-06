@@ -21,23 +21,14 @@ export class ThemeManagement extends BaseAdminController {
 
     init() {
         this.setupEventHandlers();
-        // Don't load themes immediately - wait for tab activation
+        this.loadThemes(); // Load themes immediately when initialized
     }
 
     setupEventHandlers() {
-        // Bind direct element events
+        // Bind direct element events (only those always present)
         this.bindEventConfig({
             '#newThemeButton': {
                 click: () => this.showNewThemeForm()
-            },
-            '#themeSaveButton': {
-                click: () => this.saveTheme()
-            },
-            '#themeDeleteButton': {
-                click: () => this.deleteTheme()
-            },
-            '#themePreviewButton': {
-                click: () => this.previewTheme()
             },
             '#themeIsActive': {
                 change: (e) => {
@@ -62,6 +53,7 @@ export class ThemeManagement extends BaseAdminController {
             {
                 operationName: 'Load Themes',
                 successCallback: (data) => {
+                    console.log('[theme-management] /themes response:', data);
                     this.themes = data;
                     this.renderThemeList();
                 }
@@ -151,6 +143,18 @@ export class ThemeManagement extends BaseAdminController {
         const editTab = document.getElementById('themeEditTab');
         if (editTab) {
             editTab.classList.remove('d-none');
+            // Bind form button events only when form is shown
+            this.bindEventConfig({
+                '#themeSaveButton': {
+                    click: () => this.saveTheme()
+                },
+                '#themeDeleteButton': {
+                    click: () => this.deleteTheme()
+                },
+                '#themePreviewButton': {
+                    click: () => this.previewTheme()
+                }
+            });
         }
     }
 

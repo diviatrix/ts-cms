@@ -3,7 +3,7 @@
  * Handles integration of CMS settings (site name, description) across frontend pages
  */
 
-import { apiClient } from '/js/api-client.js';
+const SETTINGS_JSON_URL = '/cms-settings.json';
 
 class CMSIntegration {
     constructor() {
@@ -27,19 +27,17 @@ class CMSIntegration {
     }
 
     /**
-     * Load CMS settings from the API
+     * Load CMS settings from static JSON file
      */
     async loadSettings() {
         try {
-            const result = await apiClient.get('/cms/settings');
-            if (result.success) {
-                this.settings = {};
-                result.data.forEach(setting => {
-                    this.settings[setting.setting_key] = setting.setting_value;
-                });
-            }
+            const response = await fetch(SETTINGS_JSON_URL, { cache: 'reload' });
+            if (!response.ok) throw new Error('Failed to fetch cms-settings.json');
+            const data = await response.json();
+            this.settings = data || {};
         } catch (error) {
-            console.warn('Error loading CMS settings:', error);
+            this.settings = {};
+            console.warn('Error loading CMS settings from JSON:', error);
         }
     }
 
