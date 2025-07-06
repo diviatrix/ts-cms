@@ -1,16 +1,22 @@
 // Reusable image preview utility
 export function setImagePreview(imgElement, url, altText = '') {
-  if (imgElement) {
+  const wrapper = imgElement.parentElement;
+  if (imgElement && wrapper) {
+    wrapper.style.display = 'none'; // Hide wrapper by default
     if (url) {
+      imgElement.onload = () => {
+        wrapper.style.display = '';
+      };
+      imgElement.onerror = () => {
+        imgElement.src = '';
+        wrapper.style.display = 'none';
+      };
       imgElement.src = url;
       imgElement.alt = altText;
-      imgElement.style.display = '';
-      imgElement.onerror = () => {
-        imgElement.style.display = 'none';
-      };
     } else {
       imgElement.src = '';
-      imgElement.style.display = 'none';
+      imgElement.alt = altText;
+      wrapper.style.display = 'none';
     }
   }
 } 
