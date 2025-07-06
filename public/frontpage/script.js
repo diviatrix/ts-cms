@@ -2,6 +2,7 @@ import { RecordsAPI, AuthAPI } from '../js/api-client.js';
 import { messages } from '../js/ui-utils.js';
 import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
+import { initResponseLog } from '/js/shared-components/response-log-init.js';
 
 /**
  * Front Page Controller
@@ -69,6 +70,7 @@ class FrontPageController extends BasePageController {
 
     if (isAdmin) {
       this.setupEditButtons();
+      initResponseLog();
     }
   }
 

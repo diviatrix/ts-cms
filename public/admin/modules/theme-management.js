@@ -3,12 +3,13 @@
  */
 
 import { apiClient } from '/js/api-client.js';
-import { MessageDisplay, ErrorHandler, messages } from '/js/ui-utils.js';
+import { MessageDisplay, ErrorHandler, messages, loadingManager } from '/js/ui-utils.js';
 import { getThemeColors } from '/js/utils/theme-api.js';
 
 export class ThemeManagement {
-    constructor() {
+    constructor(responseLog) {
         this.apiClient = apiClient;
+        this.responseLog = responseLog;
         this.messageDisplay = new MessageDisplay();
         this.currentTheme = null;
         this.themes = [];
@@ -60,8 +61,12 @@ export class ThemeManagement {
 
         // Active theme checkbox
         document.getElementById('themeIsActive')?.addEventListener('change', (e) => {
+            // This checkbox only controls the theme's is_active property
+            // The actual website theme is controlled by CMS settings
             if (e.target.checked && this.currentTheme) {
-                this.setActiveTheme(this.currentTheme.id);
+                this.setThemeAsActive(this.currentTheme.id);
+            } else if (!e.target.checked && this.currentTheme) {
+                this.setThemeAsInactive(this.currentTheme.id);
             }
         });
     }
@@ -73,6 +78,12 @@ export class ThemeManagement {
         }
         try {
             const result = await this.apiClient.get('/themes');
+            
+            // Log the response
+            if (this.responseLog) {
+                this.responseLog.addResponse(result, 'Load Themes');
+            }
+            
             if (result.success) {
                 this.themes = result.data;
                 this.renderThemeList();
@@ -246,6 +257,24 @@ export class ThemeManagement {
         document.getElementById('themeDescription').value = theme.description || '';
         document.getElementById('themeIsActive').checked = theme.is_active;
 
+        // Check if this theme is the current website theme and gray out checkbox if so
+        try {
+            const currentThemeResult = await this.apiClient.get('/cms/active-theme');
+            const isCurrentWebsiteTheme = currentThemeResult.success && currentThemeResult.data && currentThemeResult.data.id === theme.id;
+            
+            const activeCheckbox = document.getElementById('themeIsActive');
+            if (isCurrentWebsiteTheme) {
+                activeCheckbox.disabled = true;
+                activeCheckbox.title = 'Cannot modify: This theme is currently the active website theme';
+            } else {
+                activeCheckbox.disabled = false;
+                activeCheckbox.title = 'Set as Active Theme';
+            }
+        } catch (error) {
+            // If we can't get the current theme, just enable the checkbox
+            document.getElementById('themeIsActive').disabled = false;
+        }
+
         // Load theme settings
         try {
             const settings = await this.apiClient.get(`/themes/${theme.id}/settings`);
@@ -300,6 +329,12 @@ export class ThemeManagement {
             } else {
                 // Create new theme
                 result = await this.apiClient.post('/themes', themeData);
+            }
+
+            // Log the response
+            if (this.responseLog) {
+                const operation = this.currentTheme ? 'Update Theme' : 'Create Theme';
+                this.responseLog.addResponse(result, operation, themeData);
             }
 
             if (result.success) {
@@ -386,6 +421,12 @@ export class ThemeManagement {
 
         try {
             const result = await this.apiClient.delete(`/themes/${this.currentTheme.id}`);
+            
+            // Log the response
+            if (this.responseLog) {
+                this.responseLog.addResponse(result, 'Delete Theme', { themeId: this.currentTheme.id, themeName: this.currentTheme.name });
+            }
+            
             if (result.success) {
                 messages.success('Theme deleted successfully', { toast: true });
                 this.loadThemes();
@@ -400,26 +441,44 @@ export class ThemeManagement {
         }
     }
 
-    async setActiveTheme(themeId) {
+    async setThemeAsActive(themeId) {
         const activeBtn = document.getElementById('themeIsActive');
-        if (activeBtn) loadingManager.setLoading(activeBtn, true, 'Applying...');
+        if (activeBtn) loadingManager.setLoading(activeBtn, true, 'Setting as Active...');
         try {
-            const result = await this.apiClient.post('/themes/active', { theme_id: themeId });
+            // Set this theme as active in the themes table (is_active property only)
+            const result = await this.apiClient.put(`/themes/${themeId}`, { is_active: true });
+            
+            // Log the response
+            if (this.responseLog) {
+                this.responseLog.addResponse(result, 'Set Theme as Active', { themeId: themeId });
+            }
+            
             if (result.success) {
-                messages.success('Active theme updated', { toast: true });
+                messages.success('Theme set as active', { toast: true });
                 this.loadThemes();
-                
-                // Dispatch theme change event
-                document.dispatchEvent(new CustomEvent('themeChanged', { 
-                    detail: { themeId: themeId } 
-                }));
             } else {
-                messages.error('Failed to set active theme: ' + result.message, { toast: true });
+                messages.error('Failed to set theme as active: ' + result.message, { toast: true });
             }
         } catch (error) {
-            messages.error('Error setting active theme: ' + error.message, { toast: true });
+            messages.error('Error setting theme as active: ' + error.message, { toast: true });
         } finally {
             if (activeBtn) loadingManager.setLoading(activeBtn, false);
+        }
+    }
+
+    async setThemeAsInactive(themeId) {
+        const result = await this.apiClient.put(`/themes/${themeId}`, { is_active: false });
+        
+        if (this.responseLog) {
+            this.responseLog.addResponse(result, 'Set Theme as Inactive', { themeId: themeId });
+        }
+        
+        if (result.success) {
+            messages.success('Theme set as inactive', { toast: true });
+            this.loadThemes();
+        } else {
+            messages.error('Failed to set theme as inactive: ' + result.message, { toast: true });
+            document.getElementById('themeIsActive').checked = true;
         }
     }
 

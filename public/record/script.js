@@ -4,6 +4,7 @@ import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 import { messages } from '../js/ui-utils.js';
 import { DownloadUtils } from '../js/utils/download-utils.js';
+import { initResponseLog } from '/js/shared-components/response-log-init.js';
 
 /**
  * Record Display Controller
@@ -14,7 +15,17 @@ class RecordDisplayController extends BasePageController {
     // Create message display for user feedback
     const messageDiv = document.createElement('div');
     messageDiv.className = 'mt-3';
-    document.querySelector('.container').insertBefore(messageDiv, document.querySelector('.card'));
+    const container = document.querySelector('.container');
+    
+    // Find the row that contains the card
+    const row = container.querySelector('.row');
+    if (row) {
+      // Insert message div at the beginning of the row
+      row.insertBefore(messageDiv, row.firstChild);
+    } else {
+      // Fallback: append to container
+      container.appendChild(messageDiv);
+    }
     
     super({ messageDiv });
     
@@ -59,6 +70,19 @@ class RecordDisplayController extends BasePageController {
     }
 
     await this.loadAndDisplayRecord();
+
+    // Admin check and log init after async work
+    let isAdmin = false;
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const decoded = jwtDecode(token);
+        isAdmin = decoded?.roles?.includes('admin');
+      }
+    } catch {}
+    if (isAdmin) {
+      initResponseLog();
+    }
   }
 
   /**
@@ -99,11 +123,28 @@ class RecordDisplayController extends BasePageController {
    * Display the record content
    */
   displayRecord(record) {
-    this.elements.title.textContent = record.title;
-    this.elements.description.textContent = record.description;
-    this.elements.content.innerHTML = marked.parse(record.content);
-    this.elements.author.textContent = record.public_name;
-    this.elements.date.textContent = new Date(record.created_at).toLocaleDateString();
+    if (this.elements.title) {
+      this.elements.title.textContent = record.title;
+    }
+    if (this.elements.description) {
+      this.elements.description.textContent = record.description;
+    }
+    if (this.elements.content) {
+      // Preserve the card structure and add content with proper padding
+      this.elements.content.innerHTML = `
+        <div class="card-body">
+          <div class="px-4 py-3">
+            ${marked.parse(record.content)}
+          </div>
+        </div>
+      `;
+    }
+    if (this.elements.author) {
+      this.elements.author.textContent = record.public_name;
+    }
+    if (this.elements.date) {
+      this.elements.date.textContent = new Date(record.created_at).toLocaleDateString();
+    }
     
     // Setup download feature for authenticated users
     this.setupDownloadFeature(record);
@@ -172,8 +213,12 @@ class RecordDisplayController extends BasePageController {
    * Show record not found message
    */
   showRecordNotFound(description) {
-    this.elements.title.textContent = 'Record Not Found';
-    this.elements.description.textContent = description;
+    if (this.elements.title) {
+      this.elements.title.textContent = 'Record Not Found';
+    }
+    if (this.elements.description) {
+      this.elements.description.textContent = description;
+    }
     messages.error('Record not found: ' + description, { toast: true });
   }
 
@@ -181,16 +226,24 @@ class RecordDisplayController extends BasePageController {
    * Show record error message
    */
   showRecordError(description) {
-    this.elements.title.textContent = 'Error Loading Record';
-    this.elements.description.textContent = description;
+    if (this.elements.title) {
+      this.elements.title.textContent = 'Error Loading Record';
+    }
+    if (this.elements.description) {
+      this.elements.description.textContent = description;
+    }
   }
 
   /**
    * Show network error message
    */
   showNetworkError() {
-    this.elements.title.textContent = 'Network Error';
-    this.elements.description.textContent = 'Unable to load the record. Please check your connection and try again.';
+    if (this.elements.title) {
+      this.elements.title.textContent = 'Network Error';
+    }
+    if (this.elements.description) {
+      this.elements.description.textContent = 'Unable to load the record. Please check your connection and try again.';
+    }
   }
 }
 

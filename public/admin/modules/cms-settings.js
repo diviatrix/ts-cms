@@ -7,8 +7,9 @@ import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, messages } 
 import { cmsIntegration } from '/js/utils/cms-integration.js';
 
 export class CMSSettings {
-    constructor() {
+    constructor(responseLog) {
         this.apiClient = apiClient;
+        this.responseLog = responseLog;
         this.messageDisplay = new MessageDisplay();
         this.currentSettings = {};
         this.availableThemes = [];
@@ -64,6 +65,12 @@ export class CMSSettings {
     async loadSettings() {
         try {
             const result = await this.apiClient.get('/cms/settings');
+            
+            // Log the response
+            if (this.responseLog) {
+                this.responseLog.addResponse(result, 'Load CMS Settings');
+            }
+            
             if (result.success) {
                 this.currentSettings = {};
                 
@@ -92,6 +99,12 @@ export class CMSSettings {
         if (siteDescElement && this.currentSettings.site_description) {
             siteDescElement.value = this.currentSettings.site_description.setting_value;
         }
+
+        // Populate raw JSON view
+        const cmsSettingsTextarea = document.getElementById('cmsSettingsTextarea');
+        if (cmsSettingsTextarea) {
+            cmsSettingsTextarea.value = JSON.stringify(this.currentSettings, null, 2);
+        }
     }
 
     async loadAvailableThemes() {
@@ -114,16 +127,39 @@ export class CMSSettings {
 
         themeSelect.innerHTML = '<option value="">Select a theme...</option>';
 
-        this.availableThemes.forEach(theme => {
+        // Filter themes: show only active themes, or default theme if none are active
+        const activeThemes = this.availableThemes.filter(theme => theme.is_active);
+        const defaultTheme = this.availableThemes.find(theme => theme.is_default);
+        
+        let themesToShow = activeThemes;
+        
+        // If no active themes, include the default theme regardless of its active status
+        if (activeThemes.length === 0 && defaultTheme) {
+            themesToShow = [defaultTheme];
+        }
+
+        themesToShow.forEach(theme => {
             const option = document.createElement('option');
             option.value = theme.id;
-            option.textContent = `${theme.name}${theme.is_active ? ' (Currently Active)' : ''}`;
+            let label = theme.name;
+            
+            // Add status indicators
+            if (theme.is_active) {
+                label += ' (Active)';
+            } else if (theme.is_default) {
+                label += ' (Default)';
+            }
+            
+            option.textContent = label;
             themeSelect.appendChild(option);
         });
 
-        // Set current website theme as selected
+        // Set current website theme as selected if it's in the available options
         if (this.currentWebsiteTheme) {
-            themeSelect.value = this.currentWebsiteTheme.id;
+            const currentThemeOption = Array.from(themeSelect.options).find(option => option.value === this.currentWebsiteTheme.id);
+            if (currentThemeOption) {
+                themeSelect.value = this.currentWebsiteTheme.id;
+            }
         }
     }
 
@@ -141,7 +177,32 @@ export class CMSSettings {
                 }
             }
         } catch (error) {
-            console.warn('No website theme set or error loading theme:', error);
+            // If no active theme is set, apply the default theme first
+            console.log('No website theme set, applying default theme...');
+            try {
+                // Find the default theme from available themes
+                const defaultTheme = this.availableThemes.find(theme => theme.is_default);
+                if (defaultTheme) {
+                    const applyResult = await this.apiClient.put('/cms/active-theme', { theme_id: defaultTheme.id });
+                    if (applyResult.success) {
+                        console.log('Default theme applied successfully');
+                        this.currentWebsiteTheme = defaultTheme;
+                        this.updateCurrentThemeDisplay();
+                        
+                        // Update theme selector
+                        const themeSelect = document.getElementById('activeThemeSelect');
+                        if (themeSelect) {
+                            themeSelect.value = defaultTheme.id;
+                        }
+                    } else {
+                        console.log('Failed to apply default theme:', applyResult.message);
+                    }
+                } else {
+                    console.log('No default theme found in available themes');
+                }
+            } catch (applyError) {
+                console.log('Error applying default theme:', applyError.message);
+            }
         }
     }
 
@@ -218,6 +279,11 @@ export class CMSSettings {
                 try {
                     const result = await this.apiClient.put(`/cms/settings/${key}`, { value, type: 'string' });
                     
+                    // Log the response
+                    if (this.responseLog) {
+                        this.responseLog.addResponse(result, `Save CMS Setting: ${key}`, { key, value, type: 'string' });
+                    }
+                    
                     if (!result.success) {
                         allSuccessful = false;
                         saveErrors.push(`Failed to save ${key}: ${result.message}`);
@@ -288,6 +354,11 @@ export class CMSSettings {
             }
 
             const result = await this.apiClient.put('/cms/active-theme', { theme_id: selectedTheme.id });
+            
+            // Log the response
+            if (this.responseLog) {
+                this.responseLog.addResponse(result, 'Apply Website Theme', { themeId: selectedTheme.id, themeName: selectedTheme.name });
+            }
             
             if (result.success) {
                 messages.success(`Website theme set to "${selectedTheme.name}" successfully`, { toast: true });

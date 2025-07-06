@@ -8,9 +8,10 @@ import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, messages } 
 import { getThemeColors } from '../../js/utils/theme-api.js';
 
 export class UserManagement {
-    constructor(elements, dataTable) {
+    constructor(elements, dataTable, responseLog) {
         this.elements = elements;
         this.usersTable = dataTable;
+        this.responseLog = responseLog;
         this.adminMessage = new MessageDisplay(elements.adminMessageDiv);
         
         this.setupEventHandlers();
@@ -134,6 +135,12 @@ export class UserManagement {
             this.elements.userListContainer.innerHTML = '<div class="themed" style="padding:1em;">Loading users...</div>';
             
             const response = await AdminAPI.getUsers();
+            
+            // Log the response
+            if (this.responseLog) {
+                this.responseLog.addResponse(response, 'Load Users');
+            }
+            
             if (!response.success) {
                 messages.error('Failed to load users', { toast: true });
                 errorHandler.handleApiError(response, this.adminMessage);
@@ -168,7 +175,6 @@ export class UserManagement {
      * Display user profile for editing
      */
     displayUserProfile(user) {
-        console.log('displayUserProfile: user object:', user);
         this.elements.profileEditTab.classList.remove('d-none');
         this.elements.adminServerAnswerTextarea.value = JSON.stringify(user, null, 2);
         this.elements.adminProfileInfo.dataset.currentUserId = user.base?.id || user.id;
@@ -204,11 +210,13 @@ export class UserManagement {
             
             const response = await ProfileAPI.update(updatedData);
             
-            console.log('adminSaveButton: result object:', response);
-            this.elements.adminServerAnswerTextarea.value = JSON.stringify(response, null, 2);
+            // Log the response
+            if (this.responseLog) {
+                this.responseLog.addResponse(response, 'Update User Profile', updatedData);
+            }
             
-            // Show API response using custom method
-            this.showApiResponse(response);
+            // Show user-friendly message
+            this.adminMessage.showApiResponse(response);
             
             if (response.success) {
                 // Show success feedback and refresh the users list
@@ -224,16 +232,7 @@ export class UserManagement {
         }
     }
 
-    /**
-     * Show API response (custom method)
-     */
-    showApiResponse(response) {
-        if (response.success) {
-            messages.success(response.message || 'Operation completed successfully', { toast: true });
-        } else {
-            errorHandler.handleApiError(response, this.adminMessage);
-        }
-    }
+
 
     setupUserActions() {
         // Edit user buttons
@@ -312,6 +311,11 @@ export class UserManagement {
             };
 
             const response = await ProfileAPI.update(updateData);
+            
+            // Log the response
+            if (this.responseLog) {
+                this.responseLog.addResponse(response, `Toggle User Status (${action})`, updateData);
+            }
             
             if (response.success) {
                 messages.success(`User ${isActivating ? 'activated' : 'deactivated'} successfully`, { toast: true });

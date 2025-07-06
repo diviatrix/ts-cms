@@ -6,7 +6,7 @@ import {
     errorHandler 
 } from '../js/ui-utils.js';
 import { jwtDecode } from '../js/jwt-decode.js';
-import { UserManagement, RecordManagement, AdminUtils } from './modules/index.js';
+import { UserManagement, RecordManagement, AdminUtils, ResponseLog } from './modules/index.js';
 import { ThemeManagement } from './modules/theme-management.js';
 import { CMSSettings } from './modules/cms-settings.js';
 import { messages } from '../js/ui-utils.js';
@@ -135,46 +135,88 @@ class AdminController {
      * Initialize modules
      */
     initializeModules() {
+        // Initialize response log module
+        this.responseLog = new ResponseLog();
+
         // Initialize user management module
-        this.userManagement = new UserManagement(this.elements, this.usersTable);
+        this.userManagement = new UserManagement(this.elements, this.usersTable, this.responseLog);
 
         // Initialize record management module  
-        this.recordManagement = new RecordManagement(this.elements, this.recordsTable);
+        this.recordManagement = new RecordManagement(this.elements, this.recordsTable, this.responseLog);
 
         // Initialize theme management module
-        this.themeManagement = new ThemeManagement();
+        this.themeManagement = new ThemeManagement(this.responseLog);
         
         // Initialize CMS settings module
-        this.cmsSettings = new CMSSettings();
+        this.cmsSettings = new CMSSettings(this.responseLog);
     }
 
     /**
      * Initialize event handlers
      */
     initializeEventHandlers() {
-        // Tab switching events
-        if (this.elements.usersTab) {
-            this.elements.usersTab.addEventListener('shown.bs.tab', () => {
-                this.userManagement.loadUsers();
-            });
-        }
-
-        if (this.elements.recordsTab) {
-            this.elements.recordsTab.addEventListener('shown.bs.tab', () => {
-                this.recordManagement.loadRecords();
-            });
-        }
-
-        // Add themes tab event handler
-        const themesTab = document.getElementById('themes-tab');
-        if (themesTab) {
-            themesTab.addEventListener('shown.bs.tab', () => {
-                this.themeManagement.loadThemes();
-            });
-        }
-
+        // Setup tab functionality
+        this.setupTabs();
+        
         // Check URL for direct record access on page load
         this.checkUrlForRecordId();
+    }
+
+    /**
+     * Setup tab functionality without Bootstrap
+     */
+    setupTabs() {
+        const tabButtons = document.querySelectorAll('#adminTab .nav-link');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Remove active class from all buttons and panes
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.setAttribute('aria-selected', 'false');
+                });
+                tabPanes.forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                
+                // Add active class to clicked button
+                button.classList.add('active');
+                button.setAttribute('aria-selected', 'true');
+                
+                // Show corresponding pane
+                const targetId = button.getAttribute('data-bs-target') || button.getAttribute('href');
+                const targetPane = document.querySelector(targetId);
+                if (targetPane) {
+                    targetPane.classList.add('show', 'active');
+                }
+
+                // Load data for the activated tab
+                this.loadTabData(button.id);
+            });
+        });
+    }
+
+    /**
+     * Load data for the specified tab
+     */
+    loadTabData(tabId) {
+        switch (tabId) {
+            case 'users-tab':
+                this.userManagement.loadUsers();
+                break;
+            case 'records-tab':
+                this.recordManagement.loadRecords();
+                break;
+            case 'themes-tab':
+                this.themeManagement.loadThemes();
+                break;
+            case 'cms-settings-tab':
+                this.cmsSettings.loadSettings();
+                break;
+        }
     }
 
     /**

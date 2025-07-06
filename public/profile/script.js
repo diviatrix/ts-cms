@@ -1,5 +1,7 @@
 import { ProfileAPI, AuthAPI } from '../js/api-client.js';
 import { loadingManager, messages } from '../js/ui-utils.js';
+import { initResponseLog } from '/js/shared-components/response-log-init.js';
+import { jwtDecode } from '../js/jwt-decode.js';
 
 /**
  * Profile Page Controller
@@ -12,17 +14,19 @@ class ProfileController {
     
     // Get DOM elements
     this.elements = {
-      // JSON editor elements
-      profileData: document.getElementById('profileData'),
-      fetchButton: document.getElementById('fetchButton'),
+      // Profile form elements
+      publicName: document.getElementById('publicName'),
+      profilePictureUrl: document.getElementById('profilePictureUrl'),
+      bio: document.getElementById('bio'),
       saveButton: document.getElementById('saveButton'),
-      jsonValidation: document.getElementById('jsonValidation'),
+      messageDiv: document.getElementById('messageDiv'),
       
       // Password change elements
+      currentPassword: document.getElementById('currentPassword'),
       newPassword: document.getElementById('newPassword'),
       confirmPassword: document.getElementById('confirmPassword'),
-      savePasswordButton: document.getElementById('savePasswordButton'),
-      passwordMessage: document.getElementById('passwordMessage')
+      changePasswordButton: document.getElementById('changePasswordButton'),
+      passwordMessageDiv: document.getElementById('passwordMessageDiv')
     };
     
     this.init();
@@ -40,19 +44,33 @@ class ProfileController {
 
     this.setupEventListeners();
     await this.loadProfile();
+
+    // Admin check and log init after async work
+    let isAdmin = false;
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const decoded = jwtDecode(token);
+        isAdmin = decoded?.roles?.includes('admin');
+      }
+    } catch {}
+    if (isAdmin) {
+      initResponseLog();
+    }
   }
 
   /**
    * Setup event listeners
    */
   setupEventListeners() {
-    // JSON editor event listeners
-    this.elements.fetchButton.addEventListener('click', () => this.loadProfile());
+    // Tab functionality
+    this.setupTabs();
+    
+    // Profile form event listeners
     this.elements.saveButton.addEventListener('click', () => this.saveProfile());
-    this.elements.profileData.addEventListener('input', () => this.validateJson());
     
     // Password change event listeners
-    this.elements.savePasswordButton.addEventListener('click', () => this.handlePasswordUpdate());
+    this.elements.changePasswordButton.addEventListener('click', () => this.handlePasswordUpdate());
     this.elements.newPassword.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         this.handlePasswordUpdate();
@@ -66,35 +84,65 @@ class ProfileController {
   }
 
   /**
+   * Setup tab functionality without Bootstrap
+   */
+  setupTabs() {
+    const tabButtons = document.querySelectorAll('#profileTab .nav-link');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    tabButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        // Remove active class from all buttons and panes
+        tabButtons.forEach(btn => {
+          btn.classList.remove('active');
+          btn.setAttribute('aria-selected', 'false');
+        });
+        tabPanes.forEach(pane => {
+          pane.classList.remove('show', 'active');
+        });
+        
+        // Add active class to clicked button
+        button.classList.add('active');
+        button.setAttribute('aria-selected', 'true');
+        
+        // Show corresponding pane
+        const targetId = button.getAttribute('data-bs-target') || button.getAttribute('href');
+        const targetPane = document.querySelector(targetId);
+        if (targetPane) {
+          targetPane.classList.add('show', 'active');
+        }
+      });
+    });
+  }
+
+  /**
    * Load profile data from API
    */
   async loadProfile() {
     try {
-      loadingManager.setLoading(this.elements.fetchButton, true, 'Loading...');
-      
       const response = await this.profileAPI.get();
       
       if (!response.success) {
         console.error('Error fetching profile:', response);
         messages.error(response.message || 'Failed to load profile', { toast: true });
-        this.elements.profileData.value = '';
         return;
       }
 
-      // Extract only the actual profile data from the API response
+      // Extract profile data from the API response
       const profileData = response.data || {};
       
-      // Populate JSON editor with the profile data directly
-      this.elements.profileData.value = JSON.stringify(profileData, null, 2);
-      this.validateJson();
+      // Populate form fields with profile data
+      this.elements.publicName.value = profileData.public_name || '';
+      this.elements.profilePictureUrl.value = profileData.profile_picture_url || '';
+      this.elements.bio.value = profileData.bio || '';
+      
       messages.success('Profile loaded successfully', { toast: true });
       
     } catch (error) {
       console.error('Error loading profile:', error);
       messages.error('Network error occurred. Please try again.', { toast: true });
-      this.elements.profileData.value = '';
-    } finally {
-      loadingManager.setLoading(this.elements.fetchButton, false);
     }
   }
 
@@ -103,15 +151,16 @@ class ProfileController {
    */
   async saveProfile() {
     try {
-      // Parse the user's JSON input (should be just the profile data)
-      const userInputData = JSON.parse(this.elements.profileData.value);
+      // Get form data
+      const profileData = {
+        public_name: this.elements.publicName.value.trim(),
+        profile_picture_url: this.elements.profilePictureUrl.value.trim(),
+        bio: this.elements.bio.value.trim()
+      };
       
       loadingManager.setLoading(this.elements.saveButton, true, 'Saving...');
       
-      // Send the user input as the profile data payload
-      const payload = { profile: userInputData };
-      
-      const response = await this.profileAPI.update(payload);
+      const response = await this.profileAPI.update(profileData);
       
       if (response.success) {
         messages.success('Profile saved successfully', { toast: true });
@@ -122,30 +171,10 @@ class ProfileController {
       }
       
     } catch (error) {
-      if (error instanceof SyntaxError) {
-        messages.error('Invalid JSON format. Please check the syntax and try again.', { toast: true });
-      } else {
-        console.error('Error saving profile:', error);
-        messages.error('Network error occurred. Please try again.', { toast: true });
-      }
+      console.error('Error saving profile:', error);
+      messages.error('Network error occurred. Please try again.', { toast: true });
     } finally {
       loadingManager.setLoading(this.elements.saveButton, false);
-    }
-  }
-
-  /**
-   * Validate JSON input and update UI
-   */
-  validateJson() {
-    try {
-      JSON.parse(this.elements.profileData.value);
-      this.elements.jsonValidation.innerHTML = 
-        '<div class="text-success small"><i class="fas fa-check-circle"></i> Valid JSON format</div>';
-      this.elements.saveButton.disabled = false;
-    } catch (error) {
-      this.elements.jsonValidation.innerHTML = 
-        `<div class="text-danger small"><i class="fas fa-exclamation-triangle"></i> Invalid JSON: ${error.message}</div>`;
-      this.elements.saveButton.disabled = true;
     }
   }
 
@@ -153,6 +182,7 @@ class ProfileController {
    * Handle password update
    */
   async handlePasswordUpdate() {
+    const currentPassword = this.elements.currentPassword.value;
     const newPassword = this.elements.newPassword.value;
     const confirmPassword = this.elements.confirmPassword.value;
 
@@ -161,9 +191,10 @@ class ProfileController {
     }
 
     try {
-      loadingManager.setLoading(this.elements.savePasswordButton, true, 'Updating...');
+      loadingManager.setLoading(this.elements.changePasswordButton, true, 'Updating...');
       
       const response = await this.profileAPI.updatePassword({
+        currentPassword: currentPassword,
         newPassword: newPassword
       });
 
@@ -177,7 +208,7 @@ class ProfileController {
       console.error('Error changing password:', error);
       messages.error('Network error occurred. Please try again.', { toast: true });
     } finally {
-      loadingManager.setLoading(this.elements.savePasswordButton, false);
+      loadingManager.setLoading(this.elements.changePasswordButton, false);
     }
   }
 
@@ -210,6 +241,7 @@ class ProfileController {
    * Clear password form after successful update
    */
   clearPasswordForm() {
+    this.elements.currentPassword.value = '';
     this.elements.newPassword.value = '';
     this.elements.confirmPassword.value = '';
   }

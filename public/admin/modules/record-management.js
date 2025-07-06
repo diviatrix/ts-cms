@@ -9,9 +9,10 @@ import { getThemeColors } from '../../js/utils/theme-api.js';
 import { DownloadUtils } from '../../js/utils/download-utils.js';
 
 export class RecordManagement {
-    constructor(elements, dataTable) {
+    constructor(elements, dataTable, responseLog) {
         this.elements = elements;
         this.recordsTable = dataTable;
+        this.responseLog = responseLog;
         this.recordMessage = new MessageDisplay(elements.recordMessageDiv);
         
         this.setupEventHandlers();
@@ -83,6 +84,12 @@ export class RecordManagement {
             this.recordMessage.hide();
             this.elements.recordListContainer.innerHTML = '<div class="themed" style="padding:1em;">Loading records...</div>';
             const response = await RecordsAPI.getAll();
+            
+            // Log the response
+            if (this.responseLog) {
+                this.responseLog.addResponse(response, 'Load Records');
+            }
+            
             if (!response.success) {
                 messages.error('Failed to load records', { toast: true });
                 errorHandler.handleApiError(response, this.recordMessage);
@@ -177,6 +184,12 @@ export class RecordManagement {
                 response = await RecordsAPI.create(recordData);
             }
 
+            // Log the response
+            if (this.responseLog) {
+                const operation = recordId ? 'Update Record' : 'Create Record';
+                this.responseLog.addResponse(response, operation, recordData);
+            }
+
             this.recordMessage.showApiResponse(response);
             
             if (response.success) {
@@ -213,6 +226,12 @@ export class RecordManagement {
         try {
             loadingManager.setLoading(this.elements.recordDeleteButton, true, 'Deleting...');
             const response = await RecordsAPI.delete(idToDelete);
+            
+            // Log the response
+            if (this.responseLog) {
+                this.responseLog.addResponse(response, 'Delete Record', { recordId: idToDelete });
+            }
+            
             this.recordMessage.showApiResponse(response);
             if (response.success) {
                 this.elements.recordEditTab.classList.add('d-none');

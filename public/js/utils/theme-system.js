@@ -162,7 +162,7 @@ class UnifiedThemeSystem {
         
         if (settings && Object.keys(settings).length > 0) {
             console.log('[UnifiedTheme] About to inject CSS with settings:', settings);
-            this.injectCSS(settings);
+            await this.injectCSS(settings);
             this.applyElements(settings);
             this.forceRefresh();
         } else {
@@ -177,8 +177,8 @@ class UnifiedThemeSystem {
         this.injectCSS(DEFAULT_THEME.settings);
     }
 
-    injectCSS(settings) {
-        const css = this.generateCSS(settings);
+    async injectCSS(settings) {
+        const css = await this.generateCSS(settings);
         
         // Remove any existing theme styles
         const existing = document.getElementById('unified-theme-system');
@@ -193,7 +193,52 @@ class UnifiedThemeSystem {
         console.log('[UnifiedTheme] Theme CSS applied');
     }
 
-    generateCSS(settings) {
+    async generateCSS(settings) {
+        const {
+            primary_color = '#00FF00',
+            secondary_color = '#FFD700',
+            background_color = '#222222',
+            surface_color = '#444444',
+            text_color = '#E0E0E0',
+            text_secondary = '#C0C0C0',
+            text_muted = '#A0A0A0',
+            border_color = '#00FF00',
+            font_family = "'Share Tech Mono', monospace",
+            custom_css = ''
+        } = settings;
+
+        try {
+            // Load design system template and replace placeholders
+            const template = await this.loadDesignSystemTemplate();
+            return template
+                .replace(/{{PRIMARY_COLOR}}/g, primary_color)
+                .replace(/{{SECONDARY_COLOR}}/g, secondary_color)
+                .replace(/{{BACKGROUND_COLOR}}/g, background_color)
+                .replace(/{{SURFACE_COLOR}}/g, surface_color)
+                .replace(/{{TEXT_COLOR}}/g, text_color)
+                .replace(/{{TEXT_SECONDARY}}/g, text_secondary)
+                .replace(/{{TEXT_MUTED}}/g, text_muted)
+                .replace(/{{BORDER_COLOR}}/g, border_color)
+                .replace(/{{FONT_FAMILY}}/g, font_family)
+                .replace(/\/\* {{CUSTOM_CSS}} \*\//g, custom_css);
+        } catch (error) {
+            console.error('[UnifiedTheme] Failed to load design system template:', error);
+            // Fallback to simple CSS generation
+            return this.generateFallbackCSS(settings);
+        }
+    }
+
+    async loadDesignSystemTemplate() {
+        try {
+            const response = await fetch('/css/design-system.css');
+            if (!response.ok) throw new Error('Failed to load design system template');
+            return await response.text();
+        } catch (error) {
+            throw new Error('Design system template not found');
+        }
+    }
+
+    generateFallbackCSS(settings) {
         const {
             primary_color = '#00FF00',
             secondary_color = '#FFD700',
@@ -206,130 +251,41 @@ class UnifiedThemeSystem {
         } = settings;
 
         return `
-            /* Unified Theme System CSS - Generated ${new Date().toISOString()} */
+            /* Fallback CSS - Generated ${new Date().toISOString()} */
             :root {
-                --bs-primary: ${primary_color} !important;
-                --bs-secondary: ${secondary_color} !important;
-                --bs-body-bg: ${background_color} !important;
-                --bs-body-color: ${text_color} !important;
-                --bs-font-sans-serif: ${font_family} !important;
-                
-                --theme-primary: ${primary_color} !important;
-                --theme-secondary: ${secondary_color} !important;
-                --theme-background: ${background_color} !important;
-                --theme-surface: ${surface_color} !important;
-                --theme-text: ${text_color} !important;
-                --theme-border: ${border_color} !important;
-                --theme-font: ${font_family} !important;
+                --bs-primary: ${primary_color};
+                --bs-secondary: ${secondary_color};
+                --bs-body-bg: ${background_color};
+                --bs-body-color: ${text_color};
+                --bs-font-sans-serif: ${font_family};
             }
             
-            /* Force high specificity for body styles */
-            html body, body {
-                background-color: ${background_color} !important;
-                color: ${text_color} !important;
-                font-family: ${font_family} !important;
-                transition: all 0.3s ease !important;
+            body {
+                background-color: ${background_color};
+                color: ${text_color};
+                font-family: ${font_family};
             }
             
-            /* Cards with high specificity */
-            .card, div.card, .card-body {
-                background-color: ${surface_color} !important;
-                border: 1px solid ${border_color} !important;
-                color: ${text_color} !important;
+            .card, .card-body {
+                background-color: ${surface_color};
+                border-color: ${border_color};
+                color: ${text_color};
             }
             
-            .card-header {
-                background-color: ${background_color} !important;
-                color: ${primary_color} !important;
-                border-bottom: 1px solid ${border_color} !important;
+            .navbar {
+                background-color: ${surface_color};
             }
             
-            /* Navigation with high specificity */
-            .navbar, #menuBlock, nav.navbar {
-                background-color: ${surface_color} !important;
-                border: 1px solid ${border_color} !important;
+            .btn-primary {
+                background-color: ${primary_color};
+                border-color: ${primary_color};
             }
             
-            .navbar-brand, .nav-link, .navbar .nav-link {
-                color: ${text_color} !important;
+            .btn-secondary {
+                background-color: ${secondary_color};
+                border-color: ${secondary_color};
             }
             
-            .nav-link:hover, .navbar .nav-link:hover {
-                color: ${primary_color} !important;
-            }
-            
-            /* Buttons with high specificity */
-            .btn-primary, button.btn-primary {
-                background-color: ${primary_color} !important;
-                border-color: ${primary_color} !important;
-                color: #000 !important;
-            }
-            
-            .btn-primary:hover, button.btn-primary:hover {
-                background-color: ${primary_color} !important;
-                border-color: ${primary_color} !important;
-                opacity: 0.8 !important;
-            }
-            
-            .btn-secondary, button.btn-secondary {
-                background-color: ${secondary_color} !important;
-                border-color: ${secondary_color} !important;
-                color: #000 !important;
-            }
-            
-            /* Forms with high specificity */
-            .form-control, .form-select, input.form-control, select.form-select {
-                background-color: ${surface_color} !important;
-                border-color: ${border_color} !important;
-                color: ${text_color} !important;
-            }
-            
-            .form-control:focus, .form-select:focus, 
-            input.form-control:focus, select.form-select:focus {
-                background-color: ${surface_color} !important;
-                border-color: ${primary_color} !important;
-                color: ${text_color} !important;
-                box-shadow: 0 0 0 0.2rem rgba(${this.hexToRgb(primary_color)}, 0.25) !important;
-            }
-            
-            .form-label, label.form-label {
-                color: ${text_color} !important;
-            }
-            
-            /* Tables */
-            .table, table.table {
-                color: ${text_color} !important;
-            }
-            
-            .table thead th, table.table thead th {
-                border-color: ${border_color} !important;
-                color: ${primary_color} !important;
-            }
-            
-            .table tbody td, table.table tbody td {
-                border-color: ${border_color} !important;
-                color: ${text_color} !important;
-            }
-            
-            /* Text colors */
-            h1, h2, h3, h4, h5, h6 {
-                color: ${text_color} !important;
-            }
-            
-            p, span, div {
-                color: ${text_color} !important;
-            }
-            
-            /* Links */
-            a {
-                color: ${primary_color} !important;
-            }
-            
-            a:hover {
-                color: ${secondary_color} !important;
-            }
-            
-            /* Custom CSS from theme settings */
             ${custom_css}
         `;
     }

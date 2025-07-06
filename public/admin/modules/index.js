@@ -6,3 +6,4 @@
 export { UserManagement } from './user-management.js';
 export { RecordManagement } from './record-management.js';
 export { AdminUtils } from './admin-utils.js';
+export { ResponseLog } from './response-log.js';

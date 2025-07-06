@@ -30,7 +30,9 @@ class NavigationController extends BasePageController {
       signOutButton: document.getElementById('signOutButton'),
       profileLink: document.getElementById('profileLink'),
       adminLink: document.getElementById('adminLink'),
-      loginLink: document.getElementById('loginLink')
+      loginLink: document.getElementById('loginLink'),
+      navbarToggle: document.getElementById('navbarToggle'),
+      navbarNav: document.getElementById('navbarNav')
     };
   }
 
@@ -41,11 +43,34 @@ class NavigationController extends BasePageController {
     // Get elements after navigation HTML is loaded
     this.elements = this.getNavigationElements();
     
+    // Setup mobile navigation toggle using Bootstrap
+    this.setupMobileToggle();
+    
     if (this.authAPI.isAuthenticated()) {
       this.setupAuthenticatedNavigation();
     } else {
       this.setupUnauthenticatedNavigation();
     }
+  }
+
+  /**
+   * Setup mobile navigation toggle functionality using Bootstrap
+   */
+  setupMobileToggle() {
+    if (!this.elements.navbarToggle || !this.elements.navbarNav) {
+      return;
+    }
+
+    // Bootstrap will handle the mobile toggle automatically
+    // We just need to ensure the data attributes are set correctly
+    this.elements.navbarToggle.setAttribute('data-bs-toggle', 'collapse');
+    this.elements.navbarToggle.setAttribute('data-bs-target', '#navbarNav');
+    this.elements.navbarToggle.setAttribute('aria-controls', 'navbarNav');
+    this.elements.navbarToggle.setAttribute('aria-expanded', 'false');
+    this.elements.navbarToggle.setAttribute('aria-label', 'Toggle navigation');
+    
+    // Ensure navbar nav has the correct classes
+    this.elements.navbarNav.classList.add('collapse', 'navbar-collapse');
   }
 
   /**
@@ -157,25 +182,8 @@ class NavigationController extends BasePageController {
   }
 }
 
-// Initialize navigation controller
-const navController = new NavigationController();
+// Create and export singleton instance
+const navigationController = new NavigationController();
 
-// Also try to initialize immediately in case navigation is already loaded
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-      if (document.getElementById('signOutButton')) {
-        console.log('Navigation elements found after DOM loaded, initializing...');
-        navController.init();
-      }
-    }, 100);
-  });
-} else {
-  // DOM is already loaded
-  setTimeout(() => {
-    if (document.getElementById('signOutButton')) {
-      console.log('Navigation elements found immediately, initializing...');
-      navController.init();
-    }
-  }, 100);
-}
+// Export for potential external use
+export { NavigationController, navigationController };

@@ -9,320 +9,307 @@
       integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
       crossorigin="anonymous"
     />
+    <!-- Design System CSS -->
+    <link href="/css/design-system.css" rel="stylesheet">
   </head>
   <body>
     <div class="main-content">
       <div class="container mt-5">
-      <div class="row justify-content-center">
-        <div class="col-md-10">
-          <!-- Navigation will be included here -->
-          <div id="navPlaceholder"></div>
+        <div class="row">
+          <div class="col-md-10 mx-auto">
+            <!-- Navigation will be included here -->
+            <div id="navPlaceholder"></div>
 
-          <h1 class="mt-4">Admin Panel</h1>
+            <h1 class="mt-4">Admin Panel</h1>
 
-          <ul class="nav nav-tabs" id="adminTab" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="true">Users</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="records-tab" data-bs-toggle="tab" data-bs-target="#records" type="button" role="tab" aria-controls="records" aria-selected="false">Records</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="themes-tab" data-bs-toggle="tab" data-bs-target="#themes" type="button" role="tab" aria-controls="themes" aria-selected="false">Themes</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="cms-settings-tab" data-bs-toggle="tab" data-bs-target="#cms-settings" type="button" role="tab" aria-controls="cms-settings" aria-selected="false">CMS Settings</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              
-            </li>
-          </ul>
+            <ul class="nav nav-tabs" id="adminTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="true">👥 Users</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="records-tab" data-bs-toggle="tab" data-bs-target="#records" type="button" role="tab" aria-controls="records" aria-selected="false">📝 Records</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="themes-tab" data-bs-toggle="tab" data-bs-target="#themes" type="button" role="tab" aria-controls="themes" aria-selected="false">🎨 Themes</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cms-settings-tab" data-bs-toggle="tab" data-bs-target="#cms-settings" type="button" role="tab" aria-controls="cms-settings" aria-selected="false">⚙️ Settings</button>
+              </li>
+            </ul>
 
-          <div class="tab-content" id="adminTabContent">
-            <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="users-tab">
-              <div class="row mt-4">
-                <div class="col-md-4">
-                  <h2>Users</h2>
-                  
-                  <div class="mb-3">
-                    <button class="btn btn-sm btn-outline-primary me-2" id="showActiveUsers">Active</button>
-                    <button class="btn btn-sm btn-outline-secondary" id="showInactiveUsers">Inactive</button>
+            <div class="tab-content" id="adminTabContent">
+              <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="users-tab">
+                <div class="row mt-4">
+                  <div class="col-md-4">
+                    <h2>Users</h2>
+                    
+                    <div class="mb-3">
+                      <button class="btn btn-outline-secondary btn-sm me-2" id="showActiveUsers">Active</button>
+                      <button class="btn btn-outline-secondary btn-sm" id="showInactiveUsers">Inactive</button>
+                    </div>
+                    <ul id="userList" class="list-group">
+                      <!-- User list will be populated by JavaScript -->
+                    </ul>
                   </div>
-                  <ul id="userList" class="list-group">
-                    <!-- User list will be populated by JavaScript -->
-                  </ul>
-                </div>
-                <div class="col-md-8">
-                  <div id="profileEditTab" class="card d-none">
-                    <div class="card-body">
-                      <h2 class="card-title text-center">Edit User Profile</h2>
-                      <div id="adminProfileInfo" data-current-user-id="">
-                        <label for="adminServerAnswerTextarea" class="form-label">Server Answer (editable JSON):</label>
-                        <textarea id="adminServerAnswerTextarea" class="form-control" rows="16"></textarea>
+                  <div class="col-md-8">
+                    <div id="profileEditTab" class="card d-none">
+                      <div class="card-body">
+                        <h2 class="card-title text-center">Edit User Profile</h2>
+                        <div id="adminProfileInfo" data-current-user-id="">
+                          <label for="adminServerAnswerTextarea" class="form-label">Server Answer (editable JSON):</label>
+                          <textarea id="adminServerAnswerTextarea" class="form-control" rows="16"></textarea>
+                        </div>
+                        <button id="adminSaveButton" class="btn btn-success btn-sm mt-3">Save Changes</button>
+                        <div id="adminMessageDiv" class="mt-3 text-center"></div>
                       </div>
-                      <button id="adminSaveButton" class="btn btn-success btn-sm mt-3">Save Changes</button>
-                      <div id="adminMessageDiv" class="mt-3 text-center"></div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="tab-pane fade" id="records" role="tabpanel" aria-labelledby="records-tab">
-              <div class="row mt-4">
-                <div class="col-md-4">
-                  <h2>Records</h2>
-                  <button id="newRecordButton" class="btn btn-primary mb-3">Create New Record</button>
-                  <ul id="recordList" class="list-group">
-                    <!-- Record list will be populated by JavaScript -->
-                  </ul>
-                </div>
-                <div class="col-md-8">
-                  <div id="recordEditTab" class="card d-none">
-                    <div class="card-body">
-                      <h2 class="card-title text-center">Edit Record</h2>
-                      <div id="recordInfo" data-current-record-id="">
-                        <label for="recordTitle" class="form-label">Title:</label>
-                        <input type="text" id="recordTitle" class="form-control mb-2">
-                        <label for="recordDescription" class="form-label">Description:</label>
-                        <input type="text" id="recordDescription" class="form-control mb-2">
-                        <label for="recordContent" class="form-label">Content (Markdown):</label>
-                        <textarea id="recordContent" class="form-control mb-2" rows="10"></textarea>
-                        <label for="recordTags" class="form-label">Tags (comma-separated):</label>
-                        <input type="text" id="recordTags" class="form-control mb-2">
-                        <label for="recordCategories" class="form-label">Categories (comma-separated):</label>
-                        <input type="text" id="recordCategories" class="form-control mb-2">
-                        <div class="form-check mb-3">
-                          <input class="form-check-input" type="checkbox" id="recordIsPublished">
-                          <label class="form-check-label" for="recordIsPublished">
-                            Published
-                          </label>
+              <div class="tab-pane fade" id="records" role="tabpanel" aria-labelledby="records-tab">
+                <div class="row mt-4">
+                  <div class="col-md-4">
+                    <h2>Records</h2>
+                    <button id="newRecordButton" class="btn btn-primary mb-3">Create New Record</button>
+                    <ul id="recordList" class="list-group">
+                      <!-- Record list will be populated by JavaScript -->
+                    </ul>
+                  </div>
+                  <div class="col-md-8">
+                    <div id="recordEditTab" class="card d-none">
+                      <div class="card-body">
+                        <h2 class="card-title text-center">Edit Record</h2>
+                        <div id="recordInfo" data-current-record-id="">
+                          <label for="recordTitle" class="form-label">Title:</label>
+                          <input type="text" id="recordTitle" class="form-control mb-2">
+                          <label for="recordDescription" class="form-label">Description:</label>
+                          <input type="text" id="recordDescription" class="form-control mb-2">
+                          <label for="recordContent" class="form-label">Content (Markdown):</label>
+                          <textarea id="recordContent" class="form-control mb-2" rows="10"></textarea>
+                          <label for="recordTags" class="form-label">Tags (comma-separated):</label>
+                          <input type="text" id="recordTags" class="form-control mb-2">
+                          <label for="recordCategories" class="form-label">Categories (comma-separated):</label>
+                          <input type="text" id="recordCategories" class="form-control mb-2">
+                          <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="recordIsPublished">
+                            <label class="form-check-label" for="recordIsPublished">
+                              Published
+                            </label>
+                          </div>
                         </div>
+                        <button id="recordSaveButton" class="btn btn-success btn-sm mt-3">Save Record</button>
+                        <button id="recordDeleteButton" class="btn btn-danger btn-sm mt-3 ms-2">Delete Record</button>
+                        <button id="recordDownloadButton" class="btn btn-info btn-sm mt-3 ms-2" title="Download as Markdown">📥</button>
+                        <div id="recordMessageDiv" class="mt-3 text-center"></div>
                       </div>
-                      <button id="recordSaveButton" class="btn btn-success btn-sm mt-3">Save Record</button>
-                      <button id="recordDeleteButton" class="btn btn-danger btn-sm mt-3 ms-2">Delete Record</button>
-                      <button id="recordDownloadButton" class="btn btn-info btn-sm mt-3 ms-2" title="Download as Markdown">📥</button>
-                      <div id="recordMessageDiv" class="mt-3 text-center"></div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="tab-pane fade" id="themes" role="tabpanel" aria-labelledby="themes-tab">
-              <div class="row mt-4">
-                <div class="col-md-4">
-                  <h2>Themes</h2>
-                  <button id="newThemeButton" class="btn btn-primary mb-3">Create New Theme</button>
-                  <div id="themeList">
-                    <!-- Theme list will be populated by JavaScript -->
+              <div class="tab-pane fade" id="themes" role="tabpanel" aria-labelledby="themes-tab">
+                <div class="row mt-4">
+                  <div class="col-md-4">
+                    <h2>Themes</h2>
+                    <button id="newThemeButton" class="btn btn-primary mb-3">Create New Theme</button>
+                    <div id="themeList">
+                      <!-- Theme list will be populated by JavaScript -->
+                    </div>
                   </div>
-                </div>
-                <div class="col-md-8">
-                  <div id="themeEditTab" class="card d-none">
-                    <div class="card-body">
-                      <h2 class="card-title text-center">Edit Theme</h2>
-                      <div id="themeInfo" data-current-theme-id="">
-                        <label for="themeName" class="form-label">Theme Name:</label>
-                        <input type="text" id="themeName" class="form-control mb-2">
-                        <label for="themeDescription" class="form-label">Description:</label>
-                        <textarea id="themeDescription" class="form-control mb-2" rows="3"></textarea>
-                        <div class="form-check mb-3">
-                          <input class="form-check-input" type="checkbox" id="themeIsActive">
-                          <label class="form-check-label" for="themeIsActive">
-                            Set as Active Theme
-                          </label>
-                        </div>
-                        <h4>Theme Settings</h4>
-                        <div id="themeSettings">
-                          <div class="row mb-2">
-                            <div class="col-md-6">
-                              <label for="primaryColor" class="form-label">Primary Color:</label>
-                              <input type="color" id="primaryColor" class="form-control form-control-color" value="#00FF00">
-                            </div>
-                            <div class="col-md-6">
-                              <label for="secondaryColor" class="form-label">Secondary Color:</label>
-                              <input type="color" id="secondaryColor" class="form-control form-control-color" value="#FFD700">
-                            </div>
+                  <div class="col-md-8">
+                    <div id="themeEditTab" class="card d-none">
+                      <div class="card-body">
+                        <h2 class="card-title text-center">Edit Theme</h2>
+                        <div id="themeInfo" data-current-theme-id="">
+                          <label for="themeName" class="form-label">Theme Name:</label>
+                          <input type="text" id="themeName" class="form-control mb-2">
+                          <label for="themeDescription" class="form-label">Description:</label>
+                          <textarea id="themeDescription" class="form-control mb-2" rows="3"></textarea>
+                          <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="themeIsActive">
+                            <label class="form-check-label" for="themeIsActive">
+                              Set as Active Theme
+                            </label>
                           </div>
-                          <div class="row mb-2">
-                            <div class="col-md-6">
-                              <label for="backgroundColor" class="form-label">Background Color:</label>
-                              <input type="color" id="backgroundColor" class="form-control form-control-color" value="#222222">
+                          <h4>Theme Settings</h4>
+                          <div id="themeSettings">
+                            <div class="row mb-2">
+                              <div class="col-md-4">
+                                <label for="primaryColor" class="form-label">Primary:</label>
+                                <input type="color" id="primaryColor" class="form-control" value="#00FF00">
+                              </div>
+                              <div class="col-md-4">
+                                <label for="secondaryColor" class="form-label">Secondary:</label>
+                                <input type="color" id="secondaryColor" class="form-control" value="#FFD700">
+                              </div>
+                              <div class="col-md-4">
+                                <label for="backgroundColor" class="form-label">Background:</label>
+                                <input type="color" id="backgroundColor" class="form-control" value="#222222">
+                              </div>
                             </div>
-                            <div class="col-md-6">
-                              <label for="surfaceColor" class="form-label">Surface Color:</label>
-                              <input type="color" id="surfaceColor" class="form-control form-control-color" value="#444444">
+                            <div class="row mb-2">
+                              <div class="col-md-4">
+                                <label for="surfaceColor" class="form-label">Surface:</label>
+                                <input type="color" id="surfaceColor" class="form-control" value="#444444">
+                              </div>
+                              <div class="col-md-4">
+                                <label for="textColor" class="form-label">Text:</label>
+                                <input type="color" id="textColor" class="form-control" value="#E0E0E0">
+                              </div>
+                              <div class="col-md-4">
+                                <label for="borderColor" class="form-label">Border:</label>
+                                <input type="color" id="borderColor" class="form-control" value="#00FF00">
+                              </div>
                             </div>
-                          </div>
-                          <div class="row mb-2">
-                            <div class="col-md-6">
-                              <label for="textColor" class="form-label">Text Color:</label>
-                              <input type="color" id="textColor" class="form-control form-control-color" value="#E0E0E0">
+                            <div class="row mb-2">
+                              <div class="col-md-6">
+                                <label for="textSecondary" class="form-label">Secondary Text:</label>
+                                <input type="color" id="textSecondary" class="form-control" value="#C0C0C0">
+                              </div>
+                              <div class="col-md-6">
+                                <label for="textMuted" class="form-label">Muted Text:</label>
+                                <input type="color" id="textMuted" class="form-control" value="#A0A0A0">
+                              </div>
                             </div>
-                            <div class="col-md-6">
-                              <label for="textSecondary" class="form-label">Secondary Text:</label>
-                              <input type="color" id="textSecondary" class="form-control form-control-color" value="#C0C0C0">
+                            <div class="mb-2">
+                              <label for="fontFamily" class="form-label">Font Family:</label>
+                              <select id="fontFamily" class="form-control">
+                                <option value="'Share Tech Mono', monospace">Share Tech Mono (Default)</option>
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="'Times New Roman', serif">Times New Roman</option>
+                                <option value="'Courier New', monospace">Courier New</option>
+                                <option value="'Roboto', sans-serif">Roboto (Google Font)</option>
+                                <option value="'Open Sans', sans-serif">Open Sans (Google Font)</option>
+                                <option value="'Lato', sans-serif">Lato (Google Font)</option>
+                                <option value="'Fira Code', monospace">Fira Code (Google Font)</option>
+                                <option value="'JetBrains Mono', monospace">JetBrains Mono (Google Font)</option>
+                              </select>
                             </div>
-                          </div>
-                          <div class="row mb-2">
-                            <div class="col-md-6">
-                              <label for="textMuted" class="form-label">Muted Text:</label>
-                              <input type="color" id="textMuted" class="form-control form-control-color" value="#A0A0A0">
+                            <div class="row mb-2">
+                              <div class="col-md-6">
+                                <label for="faviconUrl" class="form-label">Favicon URL:</label>
+                                <input type="url" id="faviconUrl" class="form-control" placeholder="https://example.com/favicon.ico">
+                              </div>
+                              <div class="col-md-6">
+                                <label for="logoUrl" class="form-label">Logo URL:</label>
+                                <input type="url" id="logoUrl" class="form-control" placeholder="https://example.com/logo.png">
+                              </div>
                             </div>
-                            <div class="col-md-6">
-                              <label for="borderColor" class="form-label">Border Color:</label>
-                              <input type="color" id="borderColor" class="form-control form-control-color" value="#00FF00">
+                            
+                            <h5 class="mt-4">Footer Management</h5>
+                            <div class="mb-2">
+                              <label for="footerText" class="form-label">Footer Text:</label>
+                              <textarea id="footerText" class="form-control" rows="3" placeholder="© 2025 Your Site Name. All rights reserved."></textarea>
                             </div>
-                          </div>
-                          <div class="mb-2">
-                            <label for="fontFamily" class="form-label">Font Family:</label>
-                            <select id="fontFamily" class="form-select">
-                              <option value="'Share Tech Mono', monospace">Share Tech Mono (Default)</option>
-                              <option value="Arial, sans-serif">Arial</option>
-                              <option value="'Times New Roman', serif">Times New Roman</option>
-                              <option value="'Courier New', monospace">Courier New</option>
-                              <option value="'Roboto', sans-serif">Roboto (Google Font)</option>
-                              <option value="'Open Sans', sans-serif">Open Sans (Google Font)</option>
-                              <option value="'Lato', sans-serif">Lato (Google Font)</option>
-                              <option value="'Fira Code', monospace">Fira Code (Google Font)</option>
-                              <option value="'JetBrains Mono', monospace">JetBrains Mono (Google Font)</option>
-                            </select>
-                          </div>
-                          <div class="row mb-2">
-                            <div class="col-md-6">
-                              <label for="faviconUrl" class="form-label">Favicon URL:</label>
-                              <input type="url" id="faviconUrl" class="form-control" placeholder="https://example.com/favicon.ico">
+                            <div class="mb-2">
+                              <label for="footerLinks" class="form-label">Footer Links (JSON format):</label>
+                              <textarea id="footerLinks" class="form-control" rows="4" placeholder='[{"text": "Privacy Policy", "url": "/privacy"}, {"text": "Terms of Service", "url": "/terms"}]'></textarea>
                             </div>
-                            <div class="col-md-6">
-                              <label for="logoUrl" class="form-label">Logo URL:</label>
-                              <input type="url" id="logoUrl" class="form-control" placeholder="https://example.com/logo.png">
+                            <div class="mb-2">
+                              <label for="menuLinks" class="form-label">Menu Links (JSON format):</label>
+                              <textarea id="menuLinks" class="form-control" rows="4" placeholder='[{"text": "Home", "url": "/"}, {"text": "About", "url": "/about"}]'></textarea>
                             </div>
-                          </div>
-                          
-                          <h5 class="mt-4">Footer Management</h5>
-                          <div class="mb-2">
-                            <label for="footerText" class="form-label">Footer Text:</label>
-                            <textarea id="footerText" class="form-control" rows="3" placeholder="© 2025 Your Site Name. All rights reserved."></textarea>
-                          </div>
-                          <div class="mb-2">
-                            <label for="footerLinks" class="form-label">Footer Links (JSON format):</label>
-                            <textarea id="footerLinks" class="form-control" rows="4" placeholder='[{"text": "Privacy Policy", "url": "/privacy"}, {"text": "Terms of Service", "url": "/terms"}]'></textarea>
-                            <small class="text-muted">Format: [{"text": "Link Text", "url": "/path", "external": false}]</small>
-                          </div>
-                          
-                          <h5 class="mt-4">Navigation Menu</h5>
-                          <div class="mb-2">
-                            <label for="menuLinks" class="form-label">Custom Menu Links (JSON format):</label>
-                            <textarea id="menuLinks" class="form-control" rows="4" placeholder='[{"text": "About", "url": "/about"}, {"text": "Contact", "url": "/contact"}]'></textarea>
-                            <small class="text-muted">Format: [{"text": "Link Text", "url": "/path", "external": false, "roles": ["user"]}]</small>
-                          </div>
-                          
-                          <div class="mb-2">
-                            <label for="customCss" class="form-label">Custom CSS:</label>
-                            <textarea id="customCss" class="form-control" rows="6" placeholder="Enter custom CSS rules here..."></textarea>
+                            <div class="mb-2">
+                              <label for="customCss" class="form-label">Custom CSS:</label>
+                              <textarea id="customCss" class="form-control" rows="6" placeholder="/* Add your custom CSS here */"></textarea>
+                            </div>
                           </div>
                         </div>
+                        <button id="themeSaveButton" class="btn btn-success btn-sm mt-3">Save Theme</button>
+                        <button id="themeDeleteButton" class="btn btn-danger btn-sm mt-3 ms-2">Delete Theme</button>
+                        <div id="themeMessageDiv" class="mt-3 text-center"></div>
                       </div>
-                      <button id="themeSaveButton" class="btn btn-success btn-sm mt-3">Save Theme</button>
-                      <button id="themeDeleteButton" class="btn btn-danger btn-sm mt-3 ms-2">Delete Theme</button>
-                      <button id="themePreviewButton" class="btn btn-info btn-sm mt-3 ms-2">Preview Theme</button>
-                      <div id="themeMessageDiv" class="mt-3 text-center"></div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="tab-pane fade" id="cms-settings" role="tabpanel" aria-labelledby="cms-settings-tab">
-              <div class="row mt-4">
-                <div class="col-12">
-                  <h2>CMS Settings</h2>
-                  
-                  <!-- General Settings -->
-                  <div class="card mb-4">
-                    <div class="card-header">
-                      <h4 class="mb-0">General Settings</h4>
-                    </div>
-                    <div class="card-body">
-                      <div class="row">
-                        <div class="col-md-6">
+              <div class="tab-pane fade" id="cms-settings" role="tabpanel" aria-labelledby="cms-settings-tab">
+                <div class="row mt-4">
+                  <div class="col-md-8 mx-auto">
+                    <div class="card">
+                      <div class="card-body">
+                        <h2 class="card-title text-center">CMS Settings</h2>
+                        
+                        <!-- General Settings -->
+                        <div class="mb-4">
+                          <h4>General Settings</h4>
                           <div class="mb-3">
-                            <label for="siteName" class="form-label">Site Name</label>
-                            <input type="text" id="siteName" class="form-control" placeholder="Enter site name" maxlength="100">
-                            <div class="form-text">
-                              <span id="siteNameCounter">0</span>/100 characters
-                            </div>
+                            <label for="siteName" class="form-label">Site Name:</label>
+                            <input type="text" id="siteName" class="form-control" maxlength="100">
+                            <small class="text-muted">Current: <span id="siteNameCounter">0</span>/100</small>
                           </div>
                           <div class="mb-3">
-                            <label for="siteDescription" class="form-label">Site Description</label>
-                            <textarea id="siteDescription" class="form-control" rows="3" placeholder="Enter site description" maxlength="500"></textarea>
-                            <div class="form-text">
-                              <span id="siteDescriptionCounter">0</span>/500 characters
-                            </div>
+                            <label for="siteDescription" class="form-label">Site Description:</label>
+                            <textarea id="siteDescription" class="form-control" rows="3" maxlength="500"></textarea>
+                            <small class="text-muted">Current: <span id="siteDescCounter">0</span>/500</small>
                           </div>
+                          <button id="saveGeneralSettings" class="btn btn-primary btn-sm">Save General Settings</button>
                         </div>
 
-                      </div>
-                      <button id="saveGeneralSettings" class="btn btn-primary">Save General Settings</button>
-                    </div>
-                  </div>
-
-                  <!-- Website Theme Settings -->
-                  <div class="card mb-4">
-                    <div class="card-header">
-                      <h4 class="mb-0">Website Theme</h4>
-                    </div>
-                    <div class="card-body">
-                      <div class="row">
-                        <div class="col-md-8">
+                        <!-- Theme Management -->
+                        <div class="mb-4">
+                          <h4>Website Theme</h4>
+                          <div id="currentThemeInfo" class="mb-3 p-3 bg-light rounded d-none">
+                            <strong>Current Theme:</strong> <span id="currentThemeName"></span><br>
+                            <small class="text-muted"><span id="currentThemeDescription"></span></small>
+                          </div>
                           <div class="mb-3">
-                            <label for="activeThemeSelect" class="form-label">Active Website Theme</label>
-                            <select id="activeThemeSelect" class="form-select">
+                            <label for="activeThemeSelect" class="form-label">Select Active Theme:</label>
+                            <select id="activeThemeSelect" class="form-control">
                               <option value="">Loading themes...</option>
                             </select>
-                            <small class="form-text text-muted">This theme will be applied to all public pages of the website</small>
                           </div>
+                          <button id="applyWebsiteTheme" class="btn btn-success btn-sm" disabled>Apply Theme</button>
                         </div>
-                        <div class="col-md-4">
+
+                        <!-- Advanced Settings -->
+                        <div class="mb-4">
+                          <h4>Advanced Settings</h4>
                           <div class="mb-3">
-                            <label class="form-label">Theme Actions</label>
-                            <div class="d-grid gap-2">
-                              <button id="applyWebsiteTheme" class="btn btn-success btn-sm">Apply as Website Theme</button>
-                            </div>
+                            <label for="cmsSettingsTextarea" class="form-label">Raw CMS Settings (JSON):</label>
+                            <textarea id="cmsSettingsTextarea" class="form-control" rows="10" readonly></textarea>
+                            <small class="text-muted">Read-only view of all CMS settings</small>
                           </div>
                         </div>
-                      </div>
-                      <div id="currentThemeInfo" class="alert alert-info d-none">
-                        <strong>Current Website Theme:</strong> <span id="currentThemeName">None</span><br>
-                        <small id="currentThemeDescription">No description available</small>
+
+                        <div id="cmsSettingsMessageDiv" class="mt-3 text-center"></div>
                       </div>
                     </div>
                   </div>
-
-                  <!-- Messages -->
-                  <div id="cmsSettingsMessageDiv" class="mt-3"></div>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>
     </div>
-    </div>
-    
-    <!-- Footer placeholder -->
-    <footer class="footer mt-auto py-3" data-theme-footer="true">
-      <div class="container text-center">
-        <p class="mb-0">&copy; 2025 TypeScript CMS Admin Panel. All rights reserved.</p>
-        <div data-theme-footer-links class="mt-2"></div>
+
+    <!-- Response Log Terminal -->
+    <div id="responseLogWindow" class="position-fixed" style="display: none; bottom: 0; left: 0; right: 0; height: 40%; z-index: 1050; background: rgba(0,0,0,0.9); backdrop-filter: blur(2px); transform: translateY(100%);">
+      <div class="d-flex flex-column h-100">
+        <div class="d-flex justify-content-between align-items-center p-2 border-bottom border-secondary" style="background: rgba(0,0,0,0.8);">
+          <h6 class="mb-0 text-light">📟 Response Log Terminal</h6>
+          <div class="btn-group btn-group-sm" role="group">
+            <button id="clearLogButton" class="btn btn-outline-light btn-sm">Clear</button>
+            <button id="exportLogButton" class="btn btn-outline-light btn-sm">Export</button>
+            <button id="closeLogButton" class="btn btn-outline-danger btn-sm">×</button>
+          </div>
+        </div>
+        <div id="responseLogContainer" class="flex-grow-1 bg-dark text-light p-3" style="overflow-y: auto; font-family: 'Courier New', monospace;">
+          <div id="responseLogContent"></div>
+        </div>
       </div>
-    </footer>
-    
+    </div>
+
+    <!-- Response Log Floating Button -->
+    <button id="responseLogButton" class="btn btn-primary position-fixed" style="bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; z-index: 1000;" title="View Response Log">
+      📋
+    </button>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <script src="/js/theme-init.js" type="module"></script>
     <script src="/js/utils/cms-integration.js" type="module"></script>
     <script src="/include-nav.js" type="module"></script>
     <script src="/nav/script.js" type="module"></script>
     <script src="/admin/script.js" type="module"></script>
-    <script src="/js/auth-redirect.js" type="module"></script>
   </body>
 </html>
