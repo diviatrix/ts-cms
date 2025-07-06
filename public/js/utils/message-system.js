@@ -1,7 +1,17 @@
 /**
- * Unified Message System
- * Centralized, intelligent error and message handling for the frontend
+ * Unified Message System - Optimized Version
+ * Centralized, intelligent error and message handling with lazy loading
  */
+
+// Lazy load heavy dependencies
+let apiClient = null;
+
+const loadDependencies = async () => {
+    if (!apiClient) {
+        const module = await import('../api-client.js');
+        apiClient = module.apiClient;
+    }
+};
 
 /**
  * Message types and their configurations

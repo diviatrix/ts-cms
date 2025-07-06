@@ -1,7 +1,17 @@
 /**
- * Unified Theme System - Simplified Version
- * Lightweight theme management with essential functionality only
+ * Unified Theme System - Optimized Version
+ * Lightweight theme management with lazy loading and essential functionality
  */
+
+// Lazy load heavy dependencies
+let apiClient = null;
+
+const loadDependencies = async () => {
+    if (!apiClient) {
+        const module = await import('../api-client.js');
+        apiClient = module.apiClient;
+    }
+};
 
 const THEME_STATES = {
     LOADING: 'loading',
@@ -76,7 +86,7 @@ class UnifiedThemeSystem {
         
         try {
             console.log('[UnifiedTheme] Loading active theme...');
-            const { apiClient } = await import('../api-client.js');
+            await loadDependencies();
             const result = await apiClient.get('/cms/active-theme'); // Use CMS website theme, not themes.is_active
             
             if (result.success && result.data) {
@@ -452,7 +462,7 @@ class UnifiedThemeSystem {
         console.log(`[UnifiedTheme] Switching to theme: ${themeId}`);
         
         try {
-            const { apiClient } = await import('../api-client.js');
+            await loadDependencies();
             
             // Use the correct theme activation endpoint
             const result = await apiClient.post(`/themes/${themeId}/activate`);
@@ -491,7 +501,7 @@ class UnifiedThemeSystem {
         console.log(`[UnifiedTheme] Previewing theme: ${themeId}`);
         
         try {
-            const { apiClient } = await import('../api-client.js');
+            await loadDependencies();
             const result = await apiClient.get(`/themes/${themeId}`);
             
             if (result.success && result.data) {
