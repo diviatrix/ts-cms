@@ -59,17 +59,17 @@ const tabContentMap = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    const tabButtons = document.querySelectorAll('#adminTab .nav-link');
-    tabButtons.forEach(button => {
+        const tabButtons = document.querySelectorAll('#adminTab .nav-link');
+        tabButtons.forEach(button => {
         button.addEventListener('click', async (e) => {
-            e.preventDefault();
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.setAttribute('aria-selected', 'false');
-            });
-            button.classList.add('active');
-            button.setAttribute('aria-selected', 'true');
-
+                e.preventDefault();
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.setAttribute('aria-selected', 'false');
+                });
+                button.classList.add('active');
+                button.setAttribute('aria-selected', 'true');
+                
             // Hide all tab content containers
             Object.values(tabContentMap).forEach(tab => {
                 const container = document.getElementById(tab.containerId);

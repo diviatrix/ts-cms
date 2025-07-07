@@ -167,10 +167,14 @@ export class UserManagement extends BaseAdminController {
                 adminServerAnswerTextarea: 'json' // Special case for JSON display
             }
         });
-        
         // Handle JSON display
         this.elements.adminServerAnswerTextarea.value = JSON.stringify(user, null, 2);
         this.elements.adminProfileInfo.dataset.currentUserId = user.base?.id || user.id;
+        // Populate roles input from top-level roles
+        if (this.elements.adminRolesInput) {
+            const roles = user.roles || [];
+            this.elements.adminRolesInput.value = Array.isArray(roles) ? roles.join(', ') : '';
+        }
     }
 
     /**
@@ -186,10 +190,17 @@ export class UserManagement extends BaseAdminController {
         let updatedData;
         try {
             const parsedData = JSON.parse(this.elements.adminServerAnswerTextarea.value);
+            // Read roles from input and add as top-level property
+            let rolesArr = [];
+            if (this.elements.adminRolesInput) {
+                const rolesStr = this.elements.adminRolesInput.value.trim();
+                rolesArr = rolesStr ? rolesStr.split(',').map(r => r.trim()).filter(Boolean) : [];
+            }
             updatedData = {
                 user_id: userIdToUpdate,
                 base: parsedData.base,
-                profile: parsedData.profile
+                profile: parsedData.profile,
+                roles: rolesArr // <-- top-level property
             };
         } catch (e) {
             console.error('Invalid JSON format:', e);
