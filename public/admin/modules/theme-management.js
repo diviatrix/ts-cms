@@ -46,23 +46,22 @@ export class ThemeManagement extends BaseAdminController {
     }
 
     async loadThemes() {
-        const themeList = document.getElementById('themeList');
-        this.showContainerLoading(themeList, 'Loading themes...');
-        
-        const response = await this.safeApiCall(
-            () => this.apiClient.get('/themes'),
-            {
-                operationName: 'Load Themes',
-                successCallback: (data) => {
-                    console.log('[theme-management] /themes response:', data);
-                    this.themes = data;
-                    this.renderThemeList();
+        try {
+            const response = await this.safeApiCall(
+                () => this.apiClient.get('/themes'),
+                {
+                    operationName: 'Load Themes',
+                    successCallback: (data) => {
+                        this.themes = data || [];
+                        this.renderThemeList();
+                    }
                 }
+            );
+            if (!response.success) {
+                messages.showError('Failed to load themes: ' + response.message);
             }
-        );
-
-        if (!response.success) {
-            this.showContainerError(themeList, 'Failed to load themes: ' + response.message);
+        } catch (error) {
+            console.error('Error loading themes:', error);
         }
     }
 

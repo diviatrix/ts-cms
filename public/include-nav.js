@@ -5,20 +5,16 @@ UtilityAPI.getHtml('/nav/index.html')
   .then(response => {
     if (!response.success) {
       console.error('Navigation fetch failed:', response.message);
-      throw new Error(response.message);
+      return;
     }
-    
-    const html = response.data;
     
     const navPlaceholder = document.getElementById('navPlaceholder');
     if (navPlaceholder) {
-      navPlaceholder.innerHTML = html;
+      navPlaceholder.innerHTML = response.data;
 
-      // Dispatch a custom event after inserting the navigation
-      // The NavigationController will handle all visibility logic
+      // Dispatch navigation loaded event
       const event = new CustomEvent('navigationLoaded');
       document.dispatchEvent(event);
-      console.log('[Nav] navigationLoaded event dispatched');
 
       // Notify theme manager to re-apply styles to newly loaded navigation
       const themeEvent = new CustomEvent('dynamicContentLoaded', {

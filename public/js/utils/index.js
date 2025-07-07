@@ -5,7 +5,6 @@
 
 // Import all utilities
 import { LoadingManager, loadingManager } from './loading-manager.js';
-// import { FormValidator, REGEX_PATTERNS } from './form-validation.js'; // Removed: file deleted
 import { AutoLogoutManager, autoLogoutManager } from './auto-logout.js';
 import { ConfirmationDialog } from './dialogs.js';
 
@@ -23,7 +22,6 @@ import { cmsIntegration } from './cms-integration.js';
 export {
     // Legacy utilities (kept for backward compatibility)
     LoadingManager,
-    // import { FormValidator, REGEX_PATTERNS } from './form-validation.js'; // Removed: file deleted
     AutoLogoutManager,
     ConfirmationDialog,
     

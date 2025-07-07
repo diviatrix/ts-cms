@@ -13,205 +13,101 @@
 
 ---
 
-## Phase 1: Core Modularization & Utility Unification
+## Phase 1: Core Modularization & Utility Unification (**COMPLETE**)
 
-### Split api-client.js (**COMPLETE**)
-- Extract core API logic to `api-core.js` (**DONE**)
-- Move auth/token logic to `api-auth.js` (**DONE**)
-- Move error handling to `api-error.js` (**DONE**)
-- Update imports/usages in:
-  - public/admin/script.js
-  - public/admin/modules/user-management.js
-  - public/admin/modules/record-management.js
-  - public/admin/modules/theme-management.js
-  - public/admin/modules/cms-settings.js
-  - public/frontpage/script.js
-  - public/record/script.js
-  - public/profile/script.js
-  - public/login/script.js
-  - public/nav/script.js
-  - public/js/shared-components/auth-controller.js
-  - public/js/shared-components/base-controller.js
-  - public/js/shared-components/form-handler.js
-  - public/js/shared-components/data-table.js
-  - public/js/utils/message-system.js
-  - public/js/utils/theme-system.js
-  - public/js/utils/theme-api.js
-  - public/include-nav.js
+- **api-client.js split:**  
+  - Extracted core API logic to `api-core.js`, auth/token logic to `api-auth.js`, and error handling to `api-error.js`.  
+  - Updated imports/usages in all relevant files.  
+  - **Status:** ✅ Complete
 
-### Merge Validation Logic
-- Merge `form-handler.js` and `form-validation.js` into one utility:
-  - public/js/shared-components/form-handler.js
-  - public/js/utils/form-validation.js
-- Refactor forms in:
-  - login/index.html
-  - profile/index.html
-  - admin/index.html (users, records, themes, settings tabs)
-  - public/js/shared-components/form-handler.js
-  - public/js/shared-components/auth-controller.js
-- Remove old validation code from:
-  - public/js/shared-components/form-handler.js
-  - public/js/utils/form-validation.js
+- **Validation Logic Merge:**  
+  - `form-validation.js` is no longer used; validation logic unified in `form-handler.js`.  
+  - **Status:** ✅ Complete
 
-### Standardize Message & Error Display (**COMPLETE**)
-- Use only `message-system.js` for all messages/errors (**DONE**)
-- Remove all usage of `message-api.js` and `message-display.js` from:
-  - public/js/utils/message-api.js (**DELETED**)
-  - public/js/utils/message-display.js (**DELETED**)
-  - public/js/shared-components/auth-controller.js
-  - public/js/shared-components/form-handler.js
-  - public/js/shared-components/base-controller.js
-  - public/js/shared-components/data-table.js
-  - public/js/utils/error-handling.js
-  - public/admin/script.js
-  - public/frontpage/script.js
-  - public/record/script.js
-  - public/profile/script.js
-  - public/login/script.js
-- Update message/error calls in all files above (**DONE**)
-- Refactor all calls to messages.success, messages.error, messages.warning, and messages.info to use messages.showSuccess, messages.showError, messages.showWarning, and messages.showInfo everywhere in the codebase (**STEP 1D COMPLETE**)
+- **Standardize Message & Error Display:**  
+  - Legacy message files deleted, new message system in use.  
+  - **Status:** ✅ Complete
 
-### Remove Unused/Legacy Code (**COMPLETE**)
-- Delete unused API methods in:
-  - public/js/api-client.js (**DONE**)
-  - public/js/utils/message-api.js (**DELETED**)
-  - public/js/utils/message-display.js (**DELETED**)
-- Remove legacy message APIs in:
-  - public/js/utils/message-api.js (**DELETED**)
-  - public/js/utils/message-display.js (**DELETED**)
-- Remove deprecated exports in:
-  - public/js/shared-components.js
-  - public/js/ui-utils.js
+- **Remove Unused/Legacy Code:**  
+  - Legacy files deleted, deprecated imports commented out.  
+  - **Status:** ✅ Complete
 
-### Decouple Theme Logic
-- Separate theme API, cache, and CSS logic in:
-  - public/js/utils/theme-system.js
-  - public/js/utils/theme-api.js
-- Reduce coupling and clarify API boundaries
+- **Decouple Theme Logic:**  
+  - `theme-system.js` and `theme-api.js` are modular and expose a clean API.  
+  - **Status:** ✅ Complete
 
 ---
 
-## Phase 2: Admin & Shared UI Refactor
+## Phase 2: Admin & Shared UI Refactor (**MOSTLY COMPLETE**)
 
-### Refactor Admin Panel Scripts
-- Move each admin tab (users, records, themes, settings) to its own JS file:
-  - public/admin/modules/user-management.js
-  - public/admin/modules/record-management.js
-  - public/admin/modules/theme-management.js
-  - public/admin/modules/cms-settings.js
-- Extract event handlers per feature from:
-  - public/admin/script.js
-  - public/admin/modules/user-management.js
-  - public/admin/modules/record-management.js
-  - public/admin/modules/theme-management.js
-  - public/admin/modules/cms-settings.js
-- Extract data loading per feature from:
-  - public/admin/script.js
-  - public/admin/modules/user-management.js
-  - public/admin/modules/record-management.js
-  - public/admin/modules/theme-management.js
-  - public/admin/modules/cms-settings.js
-- Update admin/index.html to load scripts dynamically (per tab/feature)
+- **Refactor Admin Panel Scripts & Modularize Admin HTML:**  
+  - Admin tab scripts modularized in `modules/`.  
+  - Partials for each tab loaded dynamically in `admin/script.js`.  
+  - **Status:** ✅ Complete
 
-### Modularize Admin HTML
-- Move each admin tab's HTML to a separate partial/template:
-  - Users: admin/index.html (users tab)
-  - Records: admin/index.html (records tab)
-  - Themes: admin/index.html (themes tab)
-  - Settings: admin/index.html (cms-settings tab)
-- Load tab content dynamically in:
-  - public/admin/script.js
-  - admin/index.html
-- Test tab switching and lazy loading in:
-  - public/admin/script.js
-  - admin/index.html
+- **Unify & Simplify Navigation:**  
+  - Navigation handled by a dynamic controller, loaded via `include-nav.js`.  
+  - **Status:** ✅ Complete
 
-### Unify & Simplify Navigation
-- Use a single nav component everywhere in:
-  - nav/index.html
-  - public/include-nav.js
-  - public/nav/script.js
-  - index.html
-  - admin/index.html
-  - login/index.html
-  - profile/index.html
-  - record/index.html
-  - frontpage/index.html
-- Make nav links dynamic based on user role in:
-  - public/nav/script.js
-  - public/include-nav.js
-- Remove duplicate nav code in all files above
+- **Extract Shared UI Components:**  
+  - Shared form and image preview logic present in `form-handler.js` and `image-preview.js`.  
+  - **Status:** ⚠️ Mostly complete; audit HTML for full usage.
 
-### Extract Shared UI Components
-- Create shared form component for login, register, profile, admin in:
-  - login/index.html
-  - profile/index.html
-  - admin/index.html
-  - public/js/shared-components/form-handler.js
-- Create shared image preview component in:
-  - public/js/utils/image-preview.js
-  - profile/index.html
-  - record/index.html
-- Replace repeated markup in all files above
-
-### Standardize Loading & Error Containers
-- Add reserved loading area and error container to:
-  - index.html
-  - admin/index.html
-  - login/index.html
-  - profile/index.html
-  - record/index.html
-  - frontpage/index.html
-- Update JS to use these containers in:
-  - public/js/utils/loading-manager.js
-  - public/js/utils/error-handling.js
-  - public/js/shared-components/base-controller.js
+- **Standardize Loading & Error Containers:**  
+  - `loading-manager.js` exists, but reserved containers in all HTML files need confirmation.  
+  - **Status:** ⚠️ Partial; audit HTML for reserved containers.
 
 ---
 
-## Phase 3: Feature/UX Enhancements
+## Phase 3: Feature/UX Enhancements (**IN PROGRESS**)
 
-### Add Theme Switcher to User Pages
-- Add theme switcher UI to:
-  - index.html
-  - profile/index.html
-  - record/index.html
-- Connect to theme system in:
-  - public/js/utils/theme-system.js
-  - public/js/utils/theme-api.js
+- **Theme Switcher:**  
+  - Theme system present and initialized, but explicit theme switcher UI in all user-facing pages not confirmed.  
+  - **Status:** ⚠️ Partial; add/confirm on all pages.
 
-### Make Dialogs Accessible
-- Add ARIA roles and keyboard support to all JS-injected dialogs in:
-  - public/js/utils/dialogs.js
-  - admin/index.html
-  - profile/index.html
-  - record/index.html
-- Test accessibility with screen readers
+- **Dialogs Accessibility:**  
+  - ARIA attributes used in navigation, breadcrumbs, and some buttons.  
+  - Dialogs accessibility (ARIA roles, keyboard support) not fully confirmed in `dialogs.js`.  
+  - **Status:** ⚠️ Partial; audit/expand ARIA/keyboard support.
 
-### Add Download Fallback
-- Add `<a download>` fallback for record downloads in:
-  - record/index.html
-  - admin/index.html
-- Test download in non-JS environments
+- **Download Fallback:**  
+  - Download buttons present in relevant HTML files.  
+  - `<a download>` fallback not explicitly confirmed; may need to check JS.  
+  - **Status:** ⚠️ Partial; confirm `<a download>` fallback.
 
 ---
 
-## Summary: Real Benefits & Code Reduction Estimate
+## Status Table
 
-### Real Benefits
-- Code Reduction: Remove duplicated logic, legacy APIs, and repeated markup; merge utilities and modularize features.
-- Clarity: Each feature and utility is in its own file; navigation and UI are DRY and easy to follow.
-- Maintainability: Easier to update, debug, and extend; less risk of bugs from duplicated or legacy code.
-- Performance: Smaller JS bundles, less DOM bloat, and more efficient dynamic/lazy loading.
-- Scalability: Modular structure supports new features and team scaling.
-- UX/Accessibility: Consistent error/loading/message handling, accessible dialogs, and progressive enhancement (download fallback, theme switcher).
-
-### Approximate Code Reduction
-- JS/HTML lines reduced: 20–35% (based on audit, typical for this scale and duplication)
-  - Estimate: 1,500–2,500 lines removed or refactored across JS/HTML
-- Files affected: 30+ (all major entry points, shared components, and utilities)
-- Legacy/duplicate code removed: All legacy message APIs, validation, and repeated UI logic
+| Plan Item                                 | Status         | Notes/Audit Needed?                |
+|--------------------------------------------|---------------|------------------------------------|
+| Validation logic merge                     | ✅ Complete   |                                    |
+| Standardize message/error display          | ✅ Complete   |                                    |
+| Remove unused/legacy code                  | ✅ Complete   |                                    |
+| Decouple theme logic                       | ✅ Complete   |                                    |
+| Modularize admin scripts/HTML              | ✅ Complete   |                                    |
+| Unify/simplify navigation                  | ✅ Complete   |                                    |
+| Extract shared UI components               | ⚠️ Mostly    | Audit HTML for full usage          |
+| Standardize loading/error containers       | ⚠️ Partial   | Audit HTML for reserved containers |
+| Theme switcher UI                          | ⚠️ Partial   | Add/confirm on all pages           |
+| Dialogs accessibility                      | ⚠️ Partial   | Audit/expand ARIA/keyboard support |
+| Download fallback                          | ⚠️ Partial   | Confirm `<a download>` fallback    |
 
 ---
 
-_Tackle phases in order for maximum code reduction and logic simplification. Each phase unlocks the next._
+## Next Steps
+
+1. **Audit HTML files** for:
+   - Use of shared form/image preview components.
+   - Presence of reserved loading/error containers.
+
+2. **Add/confirm theme switcher UI** on all user-facing pages.
+
+3. **Expand dialogs accessibility**:
+   - Ensure all dialogs have ARIA roles and keyboard support.
+
+4. **Confirm/add `<a download>` fallback** for record downloads.
+
+---
+
+_Tackle these next steps to finalize the code reduction, clarity, and UX goals. Update this plan as each item is completed._

@@ -42,10 +42,12 @@
                         <input type="text" id="publicName" class="form-control">
                       </div>
                       <div class="mb-3">
-                        <label for="profilePictureUrl" class="form-label">Profile Picture URL:</label>
-                        <input type="url" id="profilePictureUrl" class="form-control">
-                        <div id="profilePicturePreviewWrapper" style="display: none;">
-                          <img id="profilePicturePreview" class="img-thumbnail mt-2" style="max-width: 180px;" alt="Profile picture preview" />
+                        <label for="profilePictureInput" class="form-label">Profile Picture</label>
+                        <input type="file" class="form-control" id="profilePictureInput" name="profilePicture" accept="image/*">
+                        
+                        <!-- Standardized image preview container -->
+                        <div id="imagePreviewContainer" class="text-center mt-2">
+                          <img id="profilePicturePreview" class="img-thumbnail" style="max-width: 180px;" alt="Profile picture preview" />
                         </div>
                       </div>
                       <div class="mb-3">

@@ -65,43 +65,22 @@ class ProtectedPageController extends BasePageController {
     /**
      * Handle authentication redirect logic
      */
-    handleAuthRedirect() {
-        console.log('ProtectedPageController: handleAuthRedirect called');
-        console.log('ProtectedPageController: authAPI exists:', !!this.authAPI);
-        console.log('ProtectedPageController: isAuthenticated:', this.authAPI?.isAuthenticated());
-        console.log('ProtectedPageController: requiredRole:', this.requiredRole);
-        console.log('ProtectedPageController: requiredRoles:', this.requiredRoles);
-        
-        if (!this.authAPI || !this.authAPI.isAuthenticated()) {
-            console.log('ProtectedPageController: User not authenticated, redirecting to frontpage');
-            window.location.href = '/';
-            return false;
+    async handleAuthRedirect() {
+        if (!this.authAPI?.isAuthenticated()) {
+            window.location.href = '/frontpage/';
+            return;
         }
 
-        // Check role requirements if specified
-        const rolesToCheck = this.requiredRoles || (this.requiredRole ? [this.requiredRole] : null);
-        
-        if (rolesToCheck) {
-            console.log('ProtectedPageController: Checking role requirements for:', rolesToCheck);
-            const userRoles = this.authAPI.getUserRole ? this.authAPI.getUserRole() : [];
-            console.log('ProtectedPageController: User roles:', userRoles);
-            
-            // Check if user has any of the required roles
+        if (this.requiredRole || this.requiredRoles) {
+            const rolesToCheck = this.requiredRoles || [this.requiredRole];
+            const userRoles = this.authAPI.getUserRoles();
             const hasRequiredRole = rolesToCheck.some(role => userRoles.includes(role));
-            console.log('ProtectedPageController: Has required role:', hasRequiredRole);
             
             if (!hasRequiredRole) {
-                console.log('ProtectedPageController: User does not have required role, redirecting');
-                messages.showError('You do not have permission to access this page.');
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 3000);
-                return false;
+                window.location.href = '/frontpage/';
+                return;
             }
         }
-
-        console.log('ProtectedPageController: Authentication check passed');
-        return true;
     }
 }
 

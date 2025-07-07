@@ -5,7 +5,7 @@
       <!-- Theme Management UI -->
       <div class="mb-3">
         <label for="activeThemeSelect" class="form-label">Website Theme:</label>
-        <select id="activeThemeSelect" class="form-select"></select>
+        <select id="activeThemeSelect" name="activeTheme" class="form-select"></select>
         <button id="applyWebsiteTheme" class="btn btn-primary mt-2" type="button" disabled>Apply Theme</button>
       </div>
       <div id="currentThemeInfo" class="mb-3 d-none">
@@ -16,27 +16,28 @@
       <!-- General Settings -->
       <div class="mb-3">
         <label for="siteName" class="form-label">Site Name:</label>
-        <input type="text" id="siteName" class="form-control">
+        <input type="text" id="siteName" name="siteName" class="form-control">
       </div>
       <div class="mb-3">
         <label for="siteDescription" class="form-label">Site Description:</label>
-        <textarea id="siteDescription" class="form-control" rows="3"></textarea>
+        <textarea id="siteDescription" name="siteDescription" class="form-control" rows="3"></textarea>
       </div>
       <div class="mb-3 form-check">
-        <input type="checkbox" class="form-check-input" id="maintenanceMode">
+        <input type="checkbox" class="form-check-input" id="maintenanceMode" name="maintenanceMode">
         <label class="form-check-label" for="maintenanceMode">Maintenance Mode</label>
       </div>
       <div class="mb-3 form-check">
-        <input type="checkbox" class="form-check-input" id="allowRegistration">
+        <input type="checkbox" class="form-check-input" id="allowRegistration" name="allowRegistration">
         <label class="form-check-label" for="allowRegistration">Allow Registration</label>
       </div>
       <div class="mb-3">
         <label for="defaultUserRole" class="form-label">Default User Role:</label>
-        <input type="text" id="defaultUserRole" class="form-control">
+        <input type="text" id="defaultUserRole" name="defaultUserRole" class="form-control">
       </div>
       <button id="saveGeneralSettings" class="btn btn-success mt-2" type="button">Save Settings</button>
       <button id="downloadSettingsJsonButton" class="btn btn-info mt-2 ms-2" type="button">Download settings as JSON</button>
-      <div id="cmsSettingsMessageDiv" class="mt-3 text-center"></div>
+      <!-- Standardized message container -->
+      <div id="messageContainer" class="mt-3"></div>
     </form>
   </div>
 </div> 

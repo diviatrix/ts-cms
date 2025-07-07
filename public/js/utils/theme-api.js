@@ -17,16 +17,12 @@ class SimpleThemeAPI {
      * Initialize theme system automatically when imported
      */
     static autoInit() {
-        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => {
-                    console.log('[theme-api] Auto-initializing theme system');
-                    new SimpleThemeAPI();
-                });
-            } else {
-                console.log('[theme-api] Auto-initializing theme system');
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
                 new SimpleThemeAPI();
-            }
+            });
+        } else {
+            new SimpleThemeAPI();
         }
     }
 

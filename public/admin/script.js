@@ -53,7 +53,7 @@ const tabContentMap = {
         partial: '/admin/partials/settings-tab.html',
         init: () => {
             const cmsSettings = new CMSSettings();
-            cmsSettings.loadSettings();
+            // The constructor already calls loadCMSSettings() which loads both settings and themes
         }
     }
 };

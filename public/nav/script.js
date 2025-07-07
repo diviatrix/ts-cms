@@ -42,14 +42,14 @@ class NavigationController extends BasePageController {
    * Initialize navigation
    */
   init() {
-    console.log('[Nav] NavigationController init called');
     // Get elements after navigation HTML is loaded
     this.elements = this.getNavigationElements();
     
     // Setup mobile navigation toggle using Bootstrap
     this.setupMobileToggle();
     
-    if (this.authAPI.isAuthenticated()) {
+    // Setup navigation based on authentication state
+    if (this.authAPI?.isAuthenticated()) {
       this.setupAuthenticatedNavigation();
     } else {
       this.setupUnauthenticatedNavigation();
