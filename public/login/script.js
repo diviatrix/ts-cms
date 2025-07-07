@@ -206,7 +206,16 @@ class LoginPageController extends AuthPageController {
         }
       );
       if (response.success) {
-        this.handleAuthSuccess();
+        // Auto-login after successful registration
+        const loginResponse = await AuthAPI.login(
+          this.registerLoginInput.value.trim(),
+          this.registerPasswordInput.value.trim()
+        );
+        if (loginResponse.success) {
+          this.handleAuthSuccess();
+        } else {
+          messages.showError('Registration succeeded, but auto-login failed. Please log in manually.');
+        }
       } else {
         this.handleAuthFailure(response);
       }
