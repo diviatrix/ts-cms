@@ -2,8 +2,8 @@
  * Theme Management Module for Admin Panel
  */
 
-import { apiClient } from '/js/api-client.js';
-import { messages } from '/js/ui-utils.js';
+import { apiClient } from '../../js/api-core.js';
+import { messages } from '../../js/ui-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
 import { ConfirmationDialog } from '../../js/utils/dialogs.js';
 
@@ -417,7 +417,7 @@ export class ThemeManagement extends BaseAdminController {
         // Preview favicon and logo
         this.previewFaviconAndLogo();
         
-        messages.info('Theme preview applied. Refresh page to revert.');
+        messages.showInfo('Theme preview applied. Refresh page to revert.');
     }
 
     generateThemeCSS() {

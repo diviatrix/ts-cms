@@ -1,4 +1,4 @@
-import { AuthAPI } from '../js/api-client.js';
+import { AuthAPI } from '../js/api-auth.js';
 import { DataTable } from '../js/shared-components.js';
 import { 
     MessageDisplay, 
@@ -247,7 +247,7 @@ class AdminController {
                 }
             } catch (error) {
                 console.error('Error loading record from URL:', error);
-                messages.error('Error loading the requested record.');
+                messages.showError('Error loading the requested record.');
             }
         }
     }

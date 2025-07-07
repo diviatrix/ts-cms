@@ -4,7 +4,6 @@
  */
 
 // Import all utilities
-import { MessageDisplay } from './message-display.js';
 import { LoadingManager, loadingManager } from './loading-manager.js';
 import { FormValidator, REGEX_PATTERNS } from './form-validation.js';
 import { ErrorHandler, errorHandler } from './error-handling.js';
@@ -13,7 +12,6 @@ import { ConfirmationDialog } from './dialogs.js';
 
 // Import new unified message system
 import { UnifiedMessageSystem, unifiedMessageSystem } from './message-system.js';
-import { SimpleMessageAPI, messages, handleFormResponse, withErrorHandling } from './message-api.js';
 
 // Import new unified theme system
 import { UnifiedThemeSystem, unifiedThemeSystem } from './theme-system.js';
@@ -25,7 +23,6 @@ import { cmsIntegration } from './cms-integration.js';
 // Re-export all utilities
 export {
     // Legacy utilities (kept for backward compatibility)
-    MessageDisplay,
     LoadingManager,
     FormValidator,
     ErrorHandler,
@@ -35,10 +32,6 @@ export {
     
     // New unified message system
     UnifiedMessageSystem,
-    SimpleMessageAPI,
-    messages,
-    handleFormResponse,
-    withErrorHandling,
     
     // New unified theme system
     UnifiedThemeSystem,
@@ -58,3 +51,27 @@ export {
     unifiedThemeSystem,
     cmsIntegration
 };
+export const messages = unifiedMessageSystem;
+
+// Minimal legacy compatibility for MessageDisplay
+export class MessageDisplay {
+    constructor(container) {
+        this.container = container;
+    }
+    showError(msg) {
+        if (this.container) {
+            this.container.innerHTML = `<div class='text-danger'>${msg}</div>`;
+        }
+    }
+    showApiResponse(response) {
+        if (this.container) {
+            const cls = response.success ? 'text-success' : 'text-danger';
+            this.container.innerHTML = `<div class='${cls}'>${response.message}</div>`;
+        }
+    }
+    hide() {
+        if (this.container) {
+            this.container.innerHTML = '';
+        }
+    }
+}

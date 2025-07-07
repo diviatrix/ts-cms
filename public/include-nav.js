@@ -1,4 +1,4 @@
-import { UtilityAPI } from './js/api-client.js';
+import { UtilityAPI } from './js/api-core.js';
 
 // Use the API client to fetch navigation HTML
 UtilityAPI.getHtml('/nav/index.html')

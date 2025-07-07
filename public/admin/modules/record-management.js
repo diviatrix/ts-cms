@@ -3,7 +3,8 @@
  * Handles record CRUD operations for the admin panel
  */
 
-import { RecordsAPI, AuthAPI } from '../../js/api-client.js';
+import { RecordsAPI } from '../../js/api-core.js';
+import { AuthAPI } from '../../js/api-auth.js';
 import { ConfirmationDialog, messages } from '../../js/ui-utils.js';
 import { DownloadUtils } from '../../js/utils/download-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
@@ -50,7 +51,7 @@ export class RecordManagement extends BaseAdminController {
                         this.displayRecordForEdit(recordData);
                     } catch (error) {
                         console.error('Error parsing record data:', error);
-                        messages.error('Error loading record data');
+                        messages.showError('Error loading record data');
                     }
                 }
             }
@@ -199,7 +200,7 @@ export class RecordManagement extends BaseAdminController {
     async handleRecordDelete(recordId) {
         const idToDelete = recordId || this.elements.recordEditInfo.dataset.currentRecordId;
         if (!idToDelete) {
-            messages.error('No record selected for deletion.');
+            messages.showError('No record selected for deletion.');
             return;
         }
         
@@ -264,10 +265,10 @@ export class RecordManagement extends BaseAdminController {
                     if (response.success) {
                         this.displayRecordForEdit(response.data);
                     } else {
-                        messages.error('Failed to load record for editing.');
+                        messages.showError('Failed to load record for editing.');
                     }
                 } catch (error) {
-                    messages.error('Error loading record for editing.');
+                    messages.showError('Error loading record for editing.');
                 }
             });
         });
@@ -295,7 +296,7 @@ export class RecordManagement extends BaseAdminController {
     handleRecordDownload() {
         const recordId = this.elements.recordEditInfo.dataset.currentRecordId;
         if (!recordId) {
-            messages.error('No record selected for download.');
+            messages.showError('No record selected for download.');
             return;
         }
 

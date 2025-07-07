@@ -2,9 +2,9 @@
  * CMS Settings Management Module for Admin Panel
  */
 
-import { apiClient } from '/js/api-client.js';
-import { messages } from '/js/ui-utils.js';
-import { cmsIntegration } from '/js/utils/cms-integration.js';
+import { apiClient } from '../../js/api-core.js';
+import { messages } from '../../js/ui-utils.js';
+import { cmsIntegration } from '../../js/utils/cms-integration.js';
 import { BaseAdminController } from './base-admin-controller.js';
 import { ConfirmationDialog } from '../../js/utils/dialogs.js';
 
@@ -90,7 +90,7 @@ export class CMSSettings extends BaseAdminController {
             await this.loadCurrentWebsiteTheme();
 
         } catch (error) {
-            messages.error('Error loading CMS settings: ' + error.message);
+            messages.showError('Error loading CMS settings: ' + error.message);
         }
     }
 
@@ -329,7 +329,7 @@ export class CMSSettings extends BaseAdminController {
         }
 
         if (allSuccessful) {
-            messages.success('General settings saved successfully');
+            messages.showSuccess('General settings saved successfully');
             // Reload settings to reflect changes
             await this.loadSettings();
             // Refresh CMS integration across all pages

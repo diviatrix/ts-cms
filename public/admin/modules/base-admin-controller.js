@@ -5,7 +5,7 @@
 
 import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, messages } from '../../js/ui-utils.js';
 import { getThemeColors } from '../../js/utils/theme-api.js';
-import { AuthAPI } from '../../js/api-client.js';
+import { AuthAPI } from '../../js/api-auth.js';
 
 /**
  * Base Admin Controller
@@ -43,7 +43,7 @@ export class BaseAdminController {
         this.handleAuthRedirect();
         window.addEventListener('unhandledrejection', e => {
             console.error('Unhandled promise rejection:', e.reason);
-            messages.error('An unexpected error occurred. Please refresh the page.');
+            messages.showError('An unexpected error occurred. Please refresh the page.');
         });
     }
 
@@ -63,7 +63,7 @@ export class BaseAdminController {
             try { await handler.call(this, event); }
             catch (error) {
                 console.error(`Error in event handler for ${eventType}:`, error);
-                messages.error('An error occurred while processing your request.');
+                messages.showError('An error occurred while processing your request.');
             }
         }, options);
     }
@@ -142,7 +142,7 @@ export class BaseAdminController {
      */
     checkAuthentication() {
         if (!AuthAPI.isAuthenticated()) {
-            messages.error('Not authenticated. Please log in.');
+            messages.showError('Not authenticated. Please log in.');
             window.location.href = '/login';
             return false;
         }
@@ -188,13 +188,13 @@ export class BaseAdminController {
                 successCallback?.(response.data);
                 return response;
             } else {
-                messages.error(response.errors?.join(', ') || response.message || 'Operation failed');
-                errorHandler.handleApiError(response, this.messageDisplay);
+                messages.showError(response.errors?.join(', ') || response.message || 'Operation failed');
+                ErrorHandler.handleApiError(response, this.messageDisplay);
                 errorCallback?.(response);
                 return response;
             }
         } catch (error) {
-            messages.error(error.message || 'Network error occurred. Please try again.');
+            messages.showError(error.message || 'Network error occurred. Please try again.');
             errorHandler.handleNetworkError(error, this.messageDisplay);
             return { success: false, message: error.message || 'Network error occurred', errors: [error.message || 'Network error occurred'] };
         } finally {

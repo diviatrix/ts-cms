@@ -1,4 +1,4 @@
-import { AuthAPI } from '../js/api-client.js';
+import { AuthAPI } from '../js/api-auth.js';
 import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 

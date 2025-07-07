@@ -1,4 +1,4 @@
-import { AuthAPI } from '../js/api-client.js';
+import { AuthAPI } from '../js/api-auth.js';
 import { AuthPageController, FormHandler } from '../js/shared-components.js';
 import { MessageDisplay, ErrorHandler } from '../js/ui-utils.js';
 
@@ -55,9 +55,7 @@ class LoginPageController extends AuthPageController {
 
   setupFormHandler() {
     // Use a single FormHandler, update rules dynamically
-    this.formHandler = new FormHandler(document.body, {
-      messageDisplay: this.message
-    });
+    this.formHandler = new FormHandler(document.body);
     // Login form submit
     this.loginForm.addEventListener('submit', (e) => {
       e.preventDefault();

@@ -1,5 +1,6 @@
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
-import { RecordsAPI, AuthAPI } from '../js/api-client.js';
+import { RecordsAPI } from '../js/api-core.js';
+import { AuthAPI } from '../js/api-auth.js';
 import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 import { messages } from '../js/ui-utils.js';
@@ -156,7 +157,7 @@ class RecordDisplayController extends BasePageController {
    * Setup download functionality for all authenticated users
    */
   setupDownloadFeature(record) {
-    if (!this.authAPI.isAuthenticated()) {
+    if (!this.authAPI.isAuthenticated(messages)) {
       return;
     }
 
@@ -179,7 +180,7 @@ class RecordDisplayController extends BasePageController {
    * Check if current user is admin
    */
   isUserAdmin() {
-    if (!this.authAPI.isAuthenticated()) {
+    if (!this.authAPI.isAuthenticated(messages)) {
       return false;
     }
 
@@ -210,7 +211,7 @@ class RecordDisplayController extends BasePageController {
     if (this.elements.description) {
       this.elements.description.textContent = description;
     }
-    messages.error('Record not found: ' + description);
+    messages.showError('Record not found: ' + description);
   }
 
   /**

@@ -3,7 +3,8 @@
  * Handles user CRUD operations for the admin panel
  */
 
-import { AdminAPI, AuthAPI, ProfileAPI } from '../../js/api-client.js';
+import { AdminAPI, ProfileAPI } from '../../js/api-core.js';
+import { AuthAPI } from '../../js/api-auth.js';
 import { loadingManager, messages } from '../../js/ui-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
 
@@ -80,7 +81,7 @@ export class UserManagement extends BaseAdminController {
                         this.displayUserProfile(userData);
                     } catch (error) {
                         console.error('Error parsing user data:', error);
-                        messages.error('Error loading user data');
+                        messages.showError('Error loading user data');
                     }
                 }
             }
@@ -178,7 +179,7 @@ export class UserManagement extends BaseAdminController {
     async handleUserSave() {
         const userIdToUpdate = this.elements.adminProfileInfo.dataset.currentUserId;
         if (!userIdToUpdate) {
-            messages.error('No user selected for saving.');
+            messages.showError('No user selected for saving.');
             return;
         }
 
@@ -192,7 +193,7 @@ export class UserManagement extends BaseAdminController {
             };
         } catch (e) {
             console.error('Invalid JSON format:', e);
-            messages.error('Invalid JSON format.');
+            messages.showError('Invalid JSON format.');
             return;
         }
 
@@ -267,7 +268,7 @@ export class UserManagement extends BaseAdminController {
 
     async handleUserToggle(userId, action) {
         if (!userId || !action) {
-            messages.error('Invalid user or action.');
+            messages.showError('Invalid user or action.');
             return;
         }
 

@@ -1,4 +1,5 @@
-import { RecordsAPI, AuthAPI } from '../js/api-client.js';
+import { RecordsAPI } from '../js/api-core.js';
+import { AuthAPI } from '../js/api-auth.js';
 import { messages } from '../js/ui-utils.js';
 import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
@@ -36,7 +37,7 @@ class FrontPageController extends BasePageController {
       if (!response.success) {
         console.error('Error fetching records:', response);
         this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
-        messages.error(response.message || 'Failed to load posts');
+        messages.showError(response.message || 'Failed to load posts');
         return;
       }
       
@@ -44,7 +45,7 @@ class FrontPageController extends BasePageController {
     } catch (error) {
       console.error('Error fetching records:', error);
       this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
-      messages.error('Network error occurred. Please try again.');
+      messages.showError('Network error occurred. Please try again.');
     }
   }
 
@@ -95,7 +96,7 @@ class FrontPageController extends BasePageController {
    * Check if current user has admin role
    */
   checkAdminRole() {
-    if (!this.authAPI.isAuthenticated()) {
+    if (!this.authAPI.isAuthenticated(messages)) {
       return false;
     }
 

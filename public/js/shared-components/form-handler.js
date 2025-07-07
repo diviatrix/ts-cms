@@ -76,7 +76,7 @@ class FormHandler {
         Object.keys(this.validationRules).forEach(fieldName => {
             if (!this.validateField(fieldName)) isValid = false;
         });
-        if (!isValid) messages.error('Please correct the errors below');
+        if (!isValid) messages.showError('Please correct the errors below');
         return isValid;
     }
 

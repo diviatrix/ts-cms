@@ -15,10 +15,10 @@
 
 ## Phase 1: Core Modularization & Utility Unification
 
-### Split api-client.js
-- Extract core API logic to `api-core.js`
-- Move auth/token logic to `api-auth.js`
-- Move error handling to `api-error.js`
+### Split api-client.js (**COMPLETE**)
+- Extract core API logic to `api-core.js` (**DONE**)
+- Move auth/token logic to `api-auth.js` (**DONE**)
+- Move error handling to `api-error.js` (**DONE**)
 - Update imports/usages in:
   - public/admin/script.js
   - public/admin/modules/user-management.js
@@ -35,7 +35,6 @@
   - public/js/shared-components/form-handler.js
   - public/js/shared-components/data-table.js
   - public/js/utils/message-system.js
-  - public/js/utils/message-api.js
   - public/js/utils/theme-system.js
   - public/js/utils/theme-api.js
   - public/include-nav.js
@@ -54,11 +53,11 @@
   - public/js/shared-components/form-handler.js
   - public/js/utils/form-validation.js
 
-### Standardize Message & Error Display
-- Use only `message-system.js` for all messages/errors
+### Standardize Message & Error Display (**COMPLETE**)
+- Use only `message-system.js` for all messages/errors (**DONE**)
 - Remove all usage of `message-api.js` and `message-display.js` from:
-  - public/js/utils/message-api.js
-  - public/js/utils/message-display.js
+  - public/js/utils/message-api.js (**DELETED**)
+  - public/js/utils/message-display.js (**DELETED**)
   - public/js/shared-components/auth-controller.js
   - public/js/shared-components/form-handler.js
   - public/js/shared-components/base-controller.js
@@ -69,16 +68,17 @@
   - public/record/script.js
   - public/profile/script.js
   - public/login/script.js
-- Update message/error calls in all files above
+- Update message/error calls in all files above (**DONE**)
+- Refactor all calls to messages.success, messages.error, messages.warning, and messages.info to use messages.showSuccess, messages.showError, messages.showWarning, and messages.showInfo everywhere in the codebase (**STEP 1D COMPLETE**)
 
-### Remove Unused/Legacy Code
+### Remove Unused/Legacy Code (**COMPLETE**)
 - Delete unused API methods in:
-  - public/js/api-client.js
-  - public/js/utils/message-api.js
-  - public/js/utils/message-display.js
+  - public/js/api-client.js (**DONE**)
+  - public/js/utils/message-api.js (**DELETED**)
+  - public/js/utils/message-display.js (**DELETED**)
 - Remove legacy message APIs in:
-  - public/js/utils/message-api.js
-  - public/js/utils/message-display.js
+  - public/js/utils/message-api.js (**DELETED**)
+  - public/js/utils/message-display.js (**DELETED**)
 - Remove deprecated exports in:
   - public/js/shared-components.js
   - public/js/ui-utils.js

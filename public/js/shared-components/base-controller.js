@@ -4,6 +4,7 @@
  */
 
 import { loadingManager, messages } from '../ui-utils.js';
+import { ErrorHandler } from '../../js/utils/error-handling.js';
 
 /**
  * Base Page Controller
@@ -28,7 +29,7 @@ class BasePageController {
         // Set up global error handler for unhandled promise rejections
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
-            messages.error('An unexpected error occurred. Please refresh the page.');
+            messages.showError('An unexpected error occurred. Please refresh the page.');
         });
     }
 
@@ -55,18 +56,18 @@ class BasePageController {
      */
     handleApiResponse(response, successCallback = null, errorCallback = null) {
         if (response.success) {
-            messages.success(response.message || 'Operation completed successfully');
+            messages.showSuccess(response.message || 'Operation completed successfully');
             if (successCallback) {
                 successCallback(response.data);
             }
         } else {
             // Handle different types of API errors
             if (response.status === 401) {
-                messages.error('Your session has expired. Please log in again.');
+                messages.showError('Your session has expired. Please log in again.');
             } else if (response.errors && response.errors.length > 0) {
-                messages.error(response.errors.join(', '));
+                messages.showError(response.errors.join(', '));
             } else {
-                messages.error(response.message || 'An unexpected error occurred. Please try again.');
+                messages.showError(response.message || 'An unexpected error occurred. Please try again.');
             }
             if (errorCallback) {
                 errorCallback(response);
@@ -104,9 +105,9 @@ class BasePageController {
             
             // Handle network errors with unified messages
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                messages.error('Unable to connect to the server. Please check your internet connection and try again.');
+                messages.showError('Unable to connect to the server. Please check your internet connection and try again.');
             } else {
-                messages.error(error.message || 'Network error occurred. Please try again.');
+                messages.showError(error.message || 'Network error occurred. Please try again.');
             }
 
             return {
@@ -119,6 +120,34 @@ class BasePageController {
             // Clear loading state
             this.setMultipleLoading(loadingElements, false);
         }
+    }
+
+    handleError(error) {
+        messages.showError('An unexpected error occurred. Please refresh the page.');
+    }
+
+    handleSuccess(response) {
+        messages.showSuccess(response.message || 'Operation completed successfully');
+    }
+
+    handleSessionExpired() {
+        messages.showError('Your session has expired. Please log in again.');
+    }
+
+    handleValidationErrors(response) {
+        messages.showError(response.errors.join(', '));
+    }
+
+    handleApiError(response) {
+        messages.showError(response.message || 'An unexpected error occurred. Please try again.');
+    }
+
+    handleNetworkError() {
+        messages.showError('Unable to connect to the server. Please check your internet connection and try again.');
+    }
+
+    handleNetworkErrorMessage(error) {
+        messages.showError(error.message || 'Network error occurred. Please try again.');
     }
 }
 

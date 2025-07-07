@@ -1,4 +1,5 @@
-import { ProfileAPI, AuthAPI } from '../js/api-client.js';
+import { ProfileAPI } from '../js/api-core.js';
+import { AuthAPI } from '../js/api-auth.js';
 import { loadingManager, messages } from '../js/ui-utils.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 import { setImagePreview } from '../js/utils/image-preview.js';
@@ -38,7 +39,7 @@ class ProfileController {
    */
   async init() {
     // Simple auth check - if not authenticated, redirect to frontpage
-    if (!this.authAPI.isAuthenticated()) {
+    if (!this.authAPI.isAuthenticated(messages)) {
       window.location.href = '/';
       return;
     }
@@ -115,7 +116,7 @@ class ProfileController {
       
       if (!response.success) {
         console.error('Error fetching profile:', response);
-        messages.error(response.message || 'Failed to load profile');
+        messages.showError(response.message || 'Failed to load profile');
         return;
       }
 
@@ -128,11 +129,11 @@ class ProfileController {
       this.elements.bio.value = profileData.bio || '';
       setImagePreview(this.elements.profilePicturePreview, this.elements.profilePictureUrl.value, 'Profile picture preview');
       
-      messages.success('Profile loaded successfully');
+      messages.showSuccess('Profile loaded successfully');
       
     } catch (error) {
       console.error('Error loading profile:', error);
-      messages.error('Network error occurred. Please try again.');
+      messages.showError('Network error occurred. Please try again.');
     }
   }
 
@@ -153,16 +154,16 @@ class ProfileController {
       const response = await this.profileAPI.update({ profile: profileData });
       
       if (response.success) {
-        messages.success('Profile saved successfully');
+        messages.showSuccess('Profile saved successfully');
         // Reload profile to show updated data
         await this.loadProfile();
       } else {
-        messages.error(response.message || 'Failed to save profile');
+        messages.showError(response.message || 'Failed to save profile');
       }
       
     } catch (error) {
       console.error('Error saving profile:', error);
-      messages.error('Network error occurred. Please try again.');
+      messages.showError('Network error occurred. Please try again.');
     } finally {
       loadingManager.setLoading(this.elements.saveButton, false);
     }
@@ -185,14 +186,14 @@ class ProfileController {
         newPassword: newPassword
       });
       if (response.success) {
-        messages.success('Password updated successfully');
+        messages.showSuccess('Password updated successfully');
         this.clearPasswordForm();
       } else {
-        messages.error(response.message || 'Failed to update password');
+        messages.showError(response.message || 'Failed to update password');
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      messages.error('Network error occurred. Please try again.');
+      messages.showError('Network error occurred. Please try again.');
     } finally {
       loadingManager.setLoading(this.elements.changePasswordButton, false);
     }
@@ -204,19 +205,19 @@ class ProfileController {
   validatePassword(newPassword, confirmPassword) {
     // Check if passwords match
     if (newPassword !== confirmPassword) {
-      messages.error('Passwords do not match.');
+      messages.showError('Passwords do not match.');
       return false;
     }
 
     // Check password length
     if (newPassword.length < 6) {
-      messages.error('Password must be at least 6 characters long.');
+      messages.showError('Password must be at least 6 characters long.');
       return false;
     }
 
     // Check if password is not empty
     if (!newPassword.trim()) {
-      messages.error('Password cannot be empty.');
+      messages.showError('Password cannot be empty.');
       return false;
     }
 
