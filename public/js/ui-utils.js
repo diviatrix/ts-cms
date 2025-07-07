@@ -8,7 +8,6 @@
 export {
     MessageDisplay,
     LoadingManager,
-    FormValidator,
     ErrorHandler,
     AutoLogoutManager,
     ConfirmationDialog,

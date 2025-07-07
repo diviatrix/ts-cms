@@ -180,7 +180,7 @@ class ApiClient {
     async post(url, data = {}, includeAuth = true) {
         return this.request(url, {
             method: 'POST',
-            body: JSON.stringify(data),
+            data,
             auth: includeAuth
         });
     }
@@ -194,7 +194,7 @@ class ApiClient {
     async put(url, data = {}) {
         return this.request(url, {
             method: 'PUT',
-            body: JSON.stringify(data)
+            data,
         });
     }
 

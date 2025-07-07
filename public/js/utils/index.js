@@ -5,7 +5,7 @@
 
 // Import all utilities
 import { LoadingManager, loadingManager } from './loading-manager.js';
-import { FormValidator, REGEX_PATTERNS } from './form-validation.js';
+// import { FormValidator, REGEX_PATTERNS } from './form-validation.js'; // Removed: file deleted
 import { ErrorHandler, errorHandler } from './error-handling.js';
 import { AutoLogoutManager, autoLogoutManager } from './auto-logout.js';
 import { ConfirmationDialog } from './dialogs.js';
@@ -24,11 +24,10 @@ import { cmsIntegration } from './cms-integration.js';
 export {
     // Legacy utilities (kept for backward compatibility)
     LoadingManager,
-    FormValidator,
+    // import { FormValidator, REGEX_PATTERNS } from './form-validation.js'; // Removed: file deleted
     ErrorHandler,
     AutoLogoutManager,
     ConfirmationDialog,
-    REGEX_PATTERNS,
     
     // New unified message system
     UnifiedMessageSystem,
