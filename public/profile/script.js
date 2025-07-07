@@ -3,6 +3,8 @@ import { AuthAPI } from '../js/api-auth.js';
 import { loadingManager, messages } from '../js/ui-utils.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 import { setImagePreview } from '../js/utils/image-preview.js';
+import { messageSystem } from '../js/utils/message-system.js';
+import { initMessageContainer } from '../js/shared-components/message-container.js';
 
 /**
  * Profile Page Controller
@@ -133,7 +135,7 @@ class ProfileController {
       
     } catch (error) {
       console.error('Error loading profile:', error);
-      messages.showError('Network error occurred. Please try again.');
+      messages.showError('Error: ' + (error?.message || error?.toString()));
     }
   }
 
@@ -163,7 +165,7 @@ class ProfileController {
       
     } catch (error) {
       console.error('Error saving profile:', error);
-      messages.showError('Network error occurred. Please try again.');
+      messages.showError('Error: ' + (error?.message || error?.toString()));
     } finally {
       loadingManager.setLoading(this.elements.saveButton, false);
     }
@@ -193,7 +195,7 @@ class ProfileController {
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      messages.showError('Network error occurred. Please try again.');
+      messages.showError('Error: ' + (error?.message || error?.toString()));
     } finally {
       loadingManager.setLoading(this.elements.changePasswordButton, false);
     }
@@ -233,7 +235,7 @@ class ProfileController {
   }
 }
 
-// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  new ProfileController();
+    initMessageContainer();
+    new ProfileController();
 });

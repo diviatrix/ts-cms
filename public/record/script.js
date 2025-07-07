@@ -6,6 +6,8 @@ import { jwtDecode } from '../js/jwt-decode.js';
 import { messages } from '../js/ui-utils.js';
 import { DownloadUtils } from '../js/utils/download-utils.js';
 import { setImagePreview } from '../js/utils/image-preview.js';
+import { messageSystem } from '../js/utils/message-system.js';
+import { initMessageContainer } from '../js/shared-components/message-container.js';
 
 /**
  * Record Display Controller
@@ -92,7 +94,7 @@ class RecordDisplayController extends BasePageController {
     } catch (error) {
       console.error('Error fetching record:', error);
       this.showNetworkError();
-      this.errorHandler.handleNetworkError(error, this.message);
+      messages.showError('Error: ' + (error?.message || error?.toString()));
     }
   }
 
@@ -239,7 +241,7 @@ class RecordDisplayController extends BasePageController {
   }
 }
 
-// Initialize the record display controller when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  new RecordDisplayController();
+    initMessageContainer();
+    new RecordDisplayController();
 });

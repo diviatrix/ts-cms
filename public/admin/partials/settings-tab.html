@@ -1,0 +1,42 @@
+<div class="row mt-4">
+  <div class="col-md-8 mx-auto">
+    <h2>CMS Settings</h2>
+    <form id="cmsSettingsForm">
+      <!-- Theme Management UI -->
+      <div class="mb-3">
+        <label for="activeThemeSelect" class="form-label">Website Theme:</label>
+        <select id="activeThemeSelect" class="form-select"></select>
+        <button id="applyWebsiteTheme" class="btn btn-primary mt-2" type="button" disabled>Apply Theme</button>
+      </div>
+      <div id="currentThemeInfo" class="mb-3 d-none">
+        <strong>Current Theme:</strong>
+        <span id="currentThemeName"></span>
+        <div id="currentThemeDescription" class="text-muted"></div>
+      </div>
+      <!-- General Settings -->
+      <div class="mb-3">
+        <label for="siteName" class="form-label">Site Name:</label>
+        <input type="text" id="siteName" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label for="siteDescription" class="form-label">Site Description:</label>
+        <textarea id="siteDescription" class="form-control" rows="3"></textarea>
+      </div>
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="maintenanceMode">
+        <label class="form-check-label" for="maintenanceMode">Maintenance Mode</label>
+      </div>
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="allowRegistration">
+        <label class="form-check-label" for="allowRegistration">Allow Registration</label>
+      </div>
+      <div class="mb-3">
+        <label for="defaultUserRole" class="form-label">Default User Role:</label>
+        <input type="text" id="defaultUserRole" class="form-control">
+      </div>
+      <button id="saveGeneralSettings" class="btn btn-success mt-2" type="button">Save Settings</button>
+      <button id="downloadSettingsJsonButton" class="btn btn-info mt-2 ms-2" type="button">Download settings as JSON</button>
+      <div id="cmsSettingsMessageDiv" class="mt-3 text-center"></div>
+    </form>
+  </div>
+</div> 

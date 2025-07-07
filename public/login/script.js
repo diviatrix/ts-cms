@@ -1,6 +1,7 @@
 import { AuthAPI } from '../js/api-auth.js';
 import { AuthPageController, FormHandler } from '../js/shared-components.js';
-import { MessageDisplay, ErrorHandler } from '../js/ui-utils.js';
+import { messageSystem } from '../js/utils/message-system.js';
+import { initMessageContainer } from '../js/shared-components/message-container.js';
 
 /**
  * Login Page Controller
@@ -212,6 +213,11 @@ class LoginPageController extends AuthPageController {
     }
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    initMessageContainer();
+    messageSystem.subscribe(renderMessages);
+});
 
 document.addEventListener('DOMContentLoaded', function() {
   new LoginPageController();

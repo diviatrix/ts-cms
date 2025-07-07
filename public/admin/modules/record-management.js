@@ -8,6 +8,8 @@ import { AuthAPI } from '../../js/api-auth.js';
 import { ConfirmationDialog, messages } from '../../js/ui-utils.js';
 import { DownloadUtils } from '../../js/utils/download-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
+import { renderCardTitle, renderMetaRow, renderEditButton, renderDeleteButton, renderEmptyState, renderErrorState } from '../../js/shared-components/ui-snippets.js';
+import { AdminUtils } from './admin-utils.js';
 
 export class RecordManagement extends BaseAdminController {
     constructor(elements, dataTable) {
@@ -51,7 +53,7 @@ export class RecordManagement extends BaseAdminController {
                         this.displayRecordForEdit(recordData);
                     } catch (error) {
                         console.error('Error parsing record data:', error);
-                        messages.showError('Error loading record data');
+                        messages.showError('Error loading record data: ' + (error?.message || error?.toString()));
                     }
                 }
             }
@@ -66,7 +68,7 @@ export class RecordManagement extends BaseAdminController {
             return;
         }
 
-        this.messageDisplay.hide();
+        messages.clearAll();
         this.showContainerLoading(this.elements.recordListContainer, 'Loading records...');
         
         const response = await this.safeApiCall(
@@ -81,7 +83,7 @@ export class RecordManagement extends BaseAdminController {
                         this.elements.recordListContainer.innerHTML = records.map(record => `
                             <div class="record-card themed" style="${this.getThemedCardStyles()}">
                                 <div class="record-title-row" style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em; cursor: pointer;">
-                                    ${record.title || 'Untitled'}
+                                    ${renderCardTitle(record.title || 'Untitled')}
                                 </div>
                                 <div class="record-meta-row" style="display: flex; align-items: center; gap: 1em;">
                                     <span class="record-date" style="${this.getThemedSecondaryStyles()}">${new Date(record.created_at).toLocaleDateString()}</span>
@@ -107,6 +109,8 @@ export class RecordManagement extends BaseAdminController {
      * Display record for editing
      */
     displayRecordForEdit(record) {
+        // Always refresh elements after the form is rendered
+        this.elements = AdminUtils.getDOMElements();
         this.displayItemForEdit(record, {
             editTabSelector: '#recordEditTab',
             formFields: {
@@ -119,9 +123,8 @@ export class RecordManagement extends BaseAdminController {
                 recordIsPublished: 'is_published'
             }
         });
-        
         // Handle special field types
-        this.elements.recordEditInfo.dataset.currentRecordId = record.id || '';
+        this.elements.recordInfo.dataset.currentRecordId = record.id || '';
         this.elements.recordTags.value = (record.tags && record.tags.join(', ')) || '';
         this.elements.recordCategories.value = (record.categories && record.categories.join(', ')) || '';
     }
@@ -130,6 +133,8 @@ export class RecordManagement extends BaseAdminController {
      * Handle new record creation
      */
     handleNewRecord() {
+        // Always refresh elements after the form is rendered
+        this.elements = AdminUtils.getDOMElements();
         this.handleNewItem({
             editTabSelector: '#recordEditTab',
             formFields: {
@@ -142,9 +147,8 @@ export class RecordManagement extends BaseAdminController {
                 recordIsPublished: 'is_published'
             }
         });
-        
         // Handle special field types
-        this.elements.recordEditInfo.dataset.currentRecordId = '';
+        this.elements.recordInfo.dataset.currentRecordId = '';
         this.elements.recordTags.value = '';
         this.elements.recordCategories.value = '';
     }
@@ -153,12 +157,10 @@ export class RecordManagement extends BaseAdminController {
      * Handle record save (create or update)
      */
     async handleRecordSave() {
-        const recordId = this.elements.recordEditInfo.dataset.currentRecordId;
-        
+        const recordId = this.elements.recordInfo.dataset.currentRecordId;
         if (!this.checkAuthentication()) {
             return;
         }
-
         const recordData = {
             title: this.elements.recordTitle.value,
             description: this.elements.recordDescription.value,
@@ -168,12 +170,10 @@ export class RecordManagement extends BaseAdminController {
             categories: this.elements.recordCategories.value.split(',').map(cat => cat.trim()).filter(cat => cat.length > 0),
             is_published: this.elements.recordIsPublished.checked,
         };
-
         const operation = recordId ? 'Update Record' : 'Create Record';
         const apiCall = recordId ? 
             () => RecordsAPI.update(recordId, recordData) : 
             () => RecordsAPI.create(recordData);
-
         const response = await this.safeApiCall(
             apiCall,
             {
@@ -182,15 +182,13 @@ export class RecordManagement extends BaseAdminController {
                 operationName: operation,
                 requestData: recordData,
                 successCallback: () => {
-                    this.refreshData(() => this.loadRecords());
+                    this.loadRecords();
                 }
             }
         );
-
-        this.messageDisplay.showApiResponse(response);
-        
+        this.handleApiResponse(response);
         if (response.success && !recordId && response.data?.id) {
-            this.elements.recordEditInfo.dataset.currentRecordId = response.data.id;
+            this.elements.recordInfo.dataset.currentRecordId = response.data.id;
         }
     }
 
@@ -198,16 +196,14 @@ export class RecordManagement extends BaseAdminController {
      * Handle record deletion
      */
     async handleRecordDelete(recordId) {
-        const idToDelete = recordId || this.elements.recordEditInfo.dataset.currentRecordId;
+        const idToDelete = recordId || this.elements.recordInfo.dataset.currentRecordId;
         if (!idToDelete) {
             messages.showError('No record selected for deletion.');
             return;
         }
-        
         if (!this.checkAuthentication()) {
             return;
         }
-
         const response = await this.safeApiCall(
             () => RecordsAPI.delete(idToDelete),
             {
@@ -217,12 +213,11 @@ export class RecordManagement extends BaseAdminController {
                 requestData: { recordId: idToDelete },
                 successCallback: () => {
                     this.elements.recordEditTab.classList.add('d-none');
-                    this.refreshData(() => this.loadRecords());
+                    this.loadRecords();
                 }
             }
         );
-
-        this.messageDisplay.showApiResponse(response);
+        this.handleApiResponse(response);
     }
 
     /**
@@ -243,13 +238,13 @@ export class RecordManagement extends BaseAdminController {
                 try {
                     const response = await RecordsAPI.getById(editRecordId);
                     if (!response.success) {
-                        ErrorHandler.handleApiError(response, this.recordMessage);
+                        messages.showError('Failed to load record for edit');
                         return;
                     }
                     this.displayRecordForEdit(response.data);
                 } catch (error) {
                     console.error('Error fetching record for edit:', error);
-                    errorHandler.handleNetworkError(error, this.recordMessage);
+                    messages.showError('Error loading record for edit');
                 }
             }, { once: true });
         }
@@ -294,7 +289,7 @@ export class RecordManagement extends BaseAdminController {
      * Handle record download as markdown
      */
     handleRecordDownload() {
-        const recordId = this.elements.recordEditInfo.dataset.currentRecordId;
+        const recordId = this.elements.recordInfo.dataset.currentRecordId;
         if (!recordId) {
             messages.showError('No record selected for download.');
             return;

@@ -4,6 +4,8 @@ import { messages } from '../js/ui-utils.js';
 import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
+import { messageSystem } from '../js/utils/message-system.js';
+import { initMessageContainer } from '../js/shared-components/message-container.js';
 
 /**
  * Front Page Controller
@@ -45,7 +47,7 @@ class FrontPageController extends BasePageController {
     } catch (error) {
       console.error('Error fetching records:', error);
       this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
-      messages.showError('Network error occurred. Please try again.');
+      messages.showError('Error: ' + (error?.message || error?.toString()));
     }
   }
 
@@ -176,7 +178,7 @@ class FrontPageController extends BasePageController {
   }
 }
 
-// Initialize the front page controller when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  new FrontPageController();
+    initMessageContainer();
+    new FrontPageController();
 });

@@ -6,12 +6,11 @@
 // Import all utilities
 import { LoadingManager, loadingManager } from './loading-manager.js';
 // import { FormValidator, REGEX_PATTERNS } from './form-validation.js'; // Removed: file deleted
-import { ErrorHandler, errorHandler } from './error-handling.js';
 import { AutoLogoutManager, autoLogoutManager } from './auto-logout.js';
 import { ConfirmationDialog } from './dialogs.js';
 
 // Import new unified message system
-import { UnifiedMessageSystem, unifiedMessageSystem } from './message-system.js';
+import { messageSystem } from './message-system.js';
 
 // Import new unified theme system
 import { UnifiedThemeSystem, unifiedThemeSystem } from './theme-system.js';
@@ -25,12 +24,11 @@ export {
     // Legacy utilities (kept for backward compatibility)
     LoadingManager,
     // import { FormValidator, REGEX_PATTERNS } from './form-validation.js'; // Removed: file deleted
-    ErrorHandler,
     AutoLogoutManager,
     ConfirmationDialog,
     
     // New unified message system
-    UnifiedMessageSystem,
+    messageSystem,
     
     // New unified theme system
     UnifiedThemeSystem,
@@ -44,33 +42,10 @@ export {
     
     // Global instances
     loadingManager,
-    errorHandler,
     autoLogoutManager,
-    unifiedMessageSystem,
     unifiedThemeSystem,
     cmsIntegration
 };
-export const messages = unifiedMessageSystem;
+export const messages = messageSystem;
 
-// Minimal legacy compatibility for MessageDisplay
-export class MessageDisplay {
-    constructor(container) {
-        this.container = container;
-    }
-    showError(msg) {
-        if (this.container) {
-            this.container.innerHTML = `<div class='text-danger'>${msg}</div>`;
-        }
-    }
-    showApiResponse(response) {
-        if (this.container) {
-            const cls = response.success ? 'text-success' : 'text-danger';
-            this.container.innerHTML = `<div class='${cls}'>${response.message}</div>`;
-        }
-    }
-    hide() {
-        if (this.container) {
-            this.container.innerHTML = '';
-        }
-    }
-}
+// Remove all legacy compatibility and references to deleted modules

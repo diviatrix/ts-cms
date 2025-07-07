@@ -18,6 +18,7 @@ UtilityAPI.getHtml('/nav/index.html')
       // The NavigationController will handle all visibility logic
       const event = new CustomEvent('navigationLoaded');
       document.dispatchEvent(event);
+      console.log('[Nav] navigationLoaded event dispatched');
 
       // Notify theme manager to re-apply styles to newly loaded navigation
       const themeEvent = new CustomEvent('dynamicContentLoaded', {

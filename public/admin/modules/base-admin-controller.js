@@ -3,9 +3,10 @@
  * Common functionality for all admin panel modules
  */
 
-import { MessageDisplay, loadingManager, ErrorHandler, errorHandler, messages } from '../../js/ui-utils.js';
+import { loadingManager, messages } from '../../js/ui-utils.js';
 import { getThemeColors } from '../../js/utils/theme-api.js';
 import { AuthAPI } from '../../js/api-auth.js';
+import { renderEmptyState, renderErrorState } from '../../js/shared-components/ui-snippets.js';
 
 /**
  * Base Admin Controller
@@ -14,7 +15,6 @@ import { AuthAPI } from '../../js/api-auth.js';
 export class BaseAdminController {
     constructor({ elements = {}, messageDiv, apiClient } = {}) {
         this.elements = elements;
-        this.messageDisplay = new MessageDisplay(messageDiv);
         this.apiClient = apiClient;
         this.currentItem = null;
         this.items = [];
@@ -163,7 +163,7 @@ export class BaseAdminController {
      */
     showContainerEmpty(container, message = 'No items found') {
         if (container) {
-            container.innerHTML = `<div class="themed" style="padding:1em;">${message}</div>`;
+            renderEmptyState(container, message);
         }
     }
 
@@ -172,8 +172,14 @@ export class BaseAdminController {
      */
     showContainerError(container, message = 'Failed to load data') {
         if (container) {
-            container.innerHTML = `<div class="text-danger themed" style="padding:1em;">${message}</div>`;
+            renderErrorState(container, message);
         }
+    }
+
+    showContainerState(container, message, type = 'info') {
+        if (!container) return;
+        const color = type === 'error' ? 'text-danger' : 'themed';
+        container.innerHTML = `<div class="${color}" style="padding:1em;">${message}</div>`;
     }
 
     /**
@@ -189,13 +195,11 @@ export class BaseAdminController {
                 return response;
             } else {
                 messages.showError(response.errors?.join(', ') || response.message || 'Operation failed');
-                ErrorHandler.handleApiError(response, this.messageDisplay);
                 errorCallback?.(response);
                 return response;
             }
         } catch (error) {
-            messages.showError(error.message || 'Network error occurred. Please try again.');
-            errorHandler.handleNetworkError(error, this.messageDisplay);
+            messages.showError('An unexpected error occurred: ' + (error?.message || error?.toString()));
             return { success: false, message: error.message || 'Network error occurred', errors: [error.message || 'Network error occurred'] };
         } finally {
             loadingElements.forEach(el => loadingManager.setLoading(el, false));
@@ -219,7 +223,7 @@ export class BaseAdminController {
             }
         });
         this.currentItem = item;
-        if (hideMessage) this.messageDisplay.hide();
+        if (hideMessage) messages.clearAll();
     }
 
     /**
@@ -238,7 +242,7 @@ export class BaseAdminController {
             }
         });
         this.currentItem = null;
-        if (hideMessage) this.messageDisplay.hide();
+        if (hideMessage) messages.clearAll();
     }
 
     /**
@@ -287,15 +291,21 @@ export class BaseAdminController {
     }
 
     /**
-     * Refresh data after successful operation
+     * DRY API response handler for admin modules
      */
-    refreshData(callback, delay = 1000) {
-        setTimeout(() => { if (callback) callback(); }, delay);
-    }
-
-    showContainerState(container, message, type = 'info') {
-        if (!container) return;
-        const color = type === 'error' ? 'text-danger' : 'themed';
-        container.innerHTML = `<div class="${color}" style="padding:1em;">${message}</div>`;
+    handleApiResponse(response, successCallback = null, errorCallback = null) {
+        if (response && response.success) {
+            messages.showSuccess(response.message || 'Operation completed successfully');
+            if (successCallback) successCallback(response.data);
+        } else {
+            if (response && response.status === 401) {
+                messages.showError('Your session has expired. Please log in again.');
+            } else if (response && response.errors && response.errors.length > 0) {
+                messages.showError(response.errors.join(', '));
+            } else {
+                messages.showError((response && response.message) || 'An unexpected error occurred. Please try again.');
+            }
+            if (errorCallback) errorCallback(response);
+        }
     }
 } 

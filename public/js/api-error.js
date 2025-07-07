@@ -94,22 +94,16 @@ function handleAuthError(response, messages) {
  * @param {object} [messageDisplay] - Optional message system for notifications.
  * @param {function} [retryCallback]
  * @param {object} [apiClient] - Optional apiClient instance to use.
- * @param {object} [errorHandler] - Optional error handler for retry logic.
  * @returns {Promise<object>}
  */
-async function makeRequestWithErrorHandling(url, options = {}, messageDisplay = null, retryCallback = null, apiClient = null, errorHandler = null) {
+async function makeRequestWithErrorHandling(url, options = {}, messageDisplay = null, retryCallback = null, apiClient = null) {
     const operationKey = `${options.method || 'GET'}_${url}`;
     try {
         if (!apiClient) throw new Error('apiClient is required');
         const response = await apiClient.request(url, options);
-        if (errorHandler) {
-            errorHandler.clearRetries(operationKey);
-        }
         return response;
     } catch (error) {
-        if (errorHandler && messageDisplay) {
-            errorHandler.handleNetworkError(error, messageDisplay, retryCallback, operationKey);
-        } else if (messageDisplay) {
+        if (messageDisplay) {
             messageDisplay.showError('Network error occurred. Please try again.');
         }
         return {

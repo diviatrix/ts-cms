@@ -4,7 +4,6 @@
  */
 
 import { loadingManager, messages } from '../ui-utils.js';
-import { ErrorHandler } from '../../js/utils/error-handling.js';
 
 /**
  * Base Page Controller

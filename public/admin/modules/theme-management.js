@@ -6,6 +6,7 @@ import { apiClient } from '../../js/api-core.js';
 import { messages } from '../../js/ui-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
 import { ConfirmationDialog } from '../../js/utils/dialogs.js';
+import { renderCardTitle, renderMetaRow, renderEditButton, renderDeleteButton, renderEmptyState, renderErrorState } from '../../js/shared-components/ui-snippets.js';
 
 export class ThemeManagement extends BaseAdminController {
     constructor() {
@@ -135,8 +136,8 @@ export class ThemeManagement extends BaseAdminController {
 
     editTheme(theme) {
         this.currentTheme = theme;
-        this.populateThemeForm(theme);
         this.showThemeForm();
+        this.populateThemeForm(theme);
     }
 
     showThemeForm() {
@@ -193,51 +194,34 @@ export class ThemeManagement extends BaseAdminController {
             console.error('Cannot populate theme form: invalid theme object', theme);
             return;
         }
-        
         document.getElementById('themeName').value = theme.name;
         document.getElementById('themeDescription').value = theme.description || '';
         document.getElementById('themeIsActive').checked = theme.is_active;
-
-        // Check if this theme is the current website theme and gray out checkbox if so
-        try {
-            const currentThemeResult = await this.apiClient.get('/cms/active-theme');
-            const isCurrentWebsiteTheme = currentThemeResult.success && currentThemeResult.data && currentThemeResult.data.id === theme.id;
-            
-            const activeCheckbox = document.getElementById('themeIsActive');
-            if (isCurrentWebsiteTheme) {
-                activeCheckbox.disabled = true;
-                activeCheckbox.title = 'Cannot modify: This theme is currently the active website theme';
-            } else {
-                activeCheckbox.disabled = false;
-                activeCheckbox.title = 'Set as Active Theme';
-            }
-        } catch (error) {
-            // If we can't get the current theme, just enable the checkbox
-            document.getElementById('themeIsActive').disabled = false;
-        }
-
         // Load theme settings
         try {
             const settings = await this.apiClient.get(`/themes/${theme.id}/settings`);
             if (settings.success) {
                 const settingsData = settings.data;
-                
-                // Populate color fields with dark theme defaults
-                document.getElementById('primaryColor').value = settingsData.primary_color || '#00FF00';
-                document.getElementById('secondaryColor').value = settingsData.secondary_color || '#FFD700';
-                document.getElementById('backgroundColor').value = settingsData.background_color || '#222222';
-                document.getElementById('surfaceColor').value = settingsData.surface_color || '#444444';
-                document.getElementById('textColor').value = settingsData.text_color || '#E0E0E0';
-                document.getElementById('textSecondary').value = settingsData.text_secondary || '#C0C0C0';
-                document.getElementById('textMuted').value = settingsData.text_muted || '#A0A0A0';
-                document.getElementById('borderColor').value = settingsData.border_color || '#00FF00';
-                document.getElementById('fontFamily').value = settingsData.font_family || "'Share Tech Mono', monospace";
-                document.getElementById('faviconUrl').value = settingsData.favicon_url || '';
-                document.getElementById('logoUrl').value = settingsData.logo_url || '';
-                document.getElementById('footerText').value = settingsData.footer_text || '';
-                document.getElementById('footerLinks').value = settingsData.footer_links || '';
-                document.getElementById('menuLinks').value = settingsData.menu_links || '';
-                document.getElementById('customCss').value = settingsData.custom_css || '';
+                const setValue = (id, value) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = value;
+                    else console.warn(`[ThemeManagement] Element #${id} not found when populating theme form.`);
+                };
+                setValue('primaryColor', settingsData.primary_color || '#00FF00');
+                setValue('secondaryColor', settingsData.secondary_color || '#FFD700');
+                setValue('backgroundColor', settingsData.background_color || '#222222');
+                setValue('surfaceColor', settingsData.surface_color || '#444444');
+                setValue('textColor', settingsData.text_color || '#E0E0E0');
+                setValue('textSecondary', settingsData.text_secondary || '#C0C0C0');
+                setValue('textMuted', settingsData.text_muted || '#A0A0A0');
+                setValue('borderColor', settingsData.border_color || '#00FF00');
+                setValue('fontFamily', settingsData.font_family || "'Share Tech Mono', monospace");
+                setValue('faviconUrl', settingsData.favicon_url || '');
+                setValue('logoUrl', settingsData.logo_url || '');
+                setValue('footerText', settingsData.footer_text || '');
+                setValue('footerLinks', settingsData.footer_links || '');
+                setValue('menuLinks', settingsData.menu_links || '');
+                setValue('customCss', settingsData.custom_css || '');
             }
         } catch (error) {
             console.error('Error loading theme settings:', error);
@@ -261,25 +245,30 @@ export class ThemeManagement extends BaseAdminController {
             is_active: isActive
         };
 
-        const apiCall = this.currentTheme 
+        const isUpdate = Boolean(this.currentTheme);
+        const apiCall = isUpdate
             ? () => this.apiClient.put(`/themes/${this.currentTheme.id}`, themeData)
             : () => this.apiClient.post('/themes', themeData);
 
         const response = await this.safeApiCall(
             apiCall,
             {
-                operationName: this.currentTheme ? 'Update Theme' : 'Create Theme',
+                operationName: isUpdate ? 'Update Theme' : 'Create Theme',
                 loadingElement: saveBtn,
                 loadingText: 'Saving...',
                 successCallback: async (data) => {
                     // Save theme settings
-                    const themeId = this.currentTheme ? this.currentTheme.id : data.id;
+                    const themeId = isUpdate ? this.currentTheme.id : data.id;
                     await this.saveThemeSettings(themeId);
-                    
-                    this.loadThemes();
-                    this.hideThemeForm();
-                    
-                    // Dispatch theme change event if this theme was set as active
+                    // If creating, refresh theme list but keep form open for further edits
+                    if (!isUpdate) {
+                        await this.loadThemes();
+                        // Set currentTheme to the newly created theme for further edits
+                        this.currentTheme = { ...themeData, id: data.id };
+                        // Optionally, re-populate the form with the new theme data
+                        this.populateThemeForm(this.currentTheme);
+                    }
+                    // Only dispatch themeChanged if set as active
                     if (isActive) {
                         document.dispatchEvent(new CustomEvent('themeChanged', { 
                             detail: { themeId: themeId } 
@@ -289,9 +278,7 @@ export class ThemeManagement extends BaseAdminController {
             }
         );
 
-        if (!response.success) {
-            this.showError('Failed to save theme: ' + response.message);
-        }
+        this.handleApiResponse(response);
     }
 
     async saveThemeSettings(themeId) {
@@ -364,9 +351,7 @@ export class ThemeManagement extends BaseAdminController {
             }
         );
 
-        if (!response.success) {
-            this.showError('Failed to delete theme: ' + response.message);
-        }
+        this.handleApiResponse(response);
     }
 
     async setThemeAsActive(themeId) {
@@ -383,9 +368,7 @@ export class ThemeManagement extends BaseAdminController {
             }
         );
 
-        if (!response.success) {
-            this.showError('Failed to set theme as active: ' + response.message);
-        }
+        this.handleApiResponse(response);
     }
 
     async setThemeAsInactive(themeId) {
@@ -399,10 +382,9 @@ export class ThemeManagement extends BaseAdminController {
             }
         );
 
-        if (!response.success) {
-            this.showError('Failed to set theme as inactive: ' + response.message);
+        this.handleApiResponse(response, null, () => {
             document.getElementById('themeIsActive').checked = true;
-        }
+        });
     }
 
     previewTheme() {

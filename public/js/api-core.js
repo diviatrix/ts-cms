@@ -83,16 +83,13 @@ class ApiClient {
             }
             return response;
         } catch (error) {
+            messages.showError('Error: ' + (error?.message || error?.toString()));
             if (error.name === 'AbortError') {
                 const timeoutError = {
                     success: false,
                     message: 'Request timeout',
                     errors: ['The request took too long to complete']
                 };
-                if (attempt < this.retryAttempts) {
-                    await this.delay(this.retryDelay * attempt);
-                    return this.request(url, { method, data, auth, ...opts }, attempt + 1);
-                }
                 return timeoutError;
             }
             const networkError = {
@@ -100,10 +97,6 @@ class ApiClient {
                 message: 'Network error occurred',
                 errors: [error.message || 'Failed to connect to server']
             };
-            if (attempt < this.retryAttempts) {
-                await this.delay(this.retryDelay * attempt);
-                return this.request(url, { method, data, auth, ...opts }, attempt + 1);
-            }
             return networkError;
         }
     }
@@ -155,6 +148,7 @@ class ApiClient {
             }
             return response;
         } catch (error) {
+            messages.showError('Error: ' + (error?.message || error?.toString()));
             if (error.name === 'AbortError') {
                 return {
                     success: false,

@@ -44,7 +44,7 @@ function isAuthenticated(messages) {
     } catch (error) {
         setAuthToken(null);
         if (messages) {
-            messages.showWarning('Invalid session detected.');
+            messages.showError('Error: ' + (error?.message || error?.toString()));
         }
         return false;
     }

@@ -62,6 +62,16 @@ _Next: Continue with decoupling theme logic and further refactoring as described
 
 ---
 
+## Progress Update: Phase 2A Complete
+- Admin panel scripts are now fully modularized.
+- All feature logic for users, records, and settings is encapsulated in their respective modules.
+- `admin/script.js` now only handles initialization, tab switching, and module wiring.
+- No obsolete or duplicate code remains in admin modules or script.js.
+
+_Next: Continue with modularizing admin HTML, dynamic script loading, and navigation unification as described in the plan._
+
+---
+
 ## Step 1: Progressive Split Plan
 
 ### File List (after split)

@@ -7,6 +7,7 @@ import { AdminAPI, ProfileAPI } from '../../js/api-core.js';
 import { AuthAPI } from '../../js/api-auth.js';
 import { loadingManager, messages } from '../../js/ui-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
+import { renderCardTitle, renderMetaRow, renderEditButton, renderDeleteButton, renderActivateButton, renderDeactivateButton, renderEmptyState, renderErrorState } from '../../js/shared-components/ui-snippets.js';
 
 export class UserManagement extends BaseAdminController {
     constructor(elements, dataTable) {
@@ -33,7 +34,7 @@ export class UserManagement extends BaseAdminController {
 
     renderUsers(users) {
         if (users.length === 0) {
-            this.elements.userListContainer.innerHTML = '<div class="themed" style="padding:1em;">No users found</div>';
+            this.elements.userListContainer.innerHTML = renderEmptyState('No users found');
         } else {
             this.elements.userListContainer.innerHTML = users.map(user => {
                 const isActive = user.base?.is_active || user.is_active;
@@ -44,13 +45,13 @@ export class UserManagement extends BaseAdminController {
                 return `
                     <div class="admin-card themed" style="${this.getThemedCardStyles()}">
                         <div class="admin-card-title" style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em; cursor: pointer;">
-                            ${user.base?.login || user.login || 'Unknown'}
-                            <span style="${this.getThemedSecondaryStyles()} margin-left: 0.5em;">${user.base?.email || user.email || ''}</span>
+                            ${renderCardTitle(user.base?.login || user.login || 'Unknown')}
+                            <span style="${this.getThemedSecondaryStyles()} margin-left: 0.5em;">${renderMetaRow(user.base?.email || user.email || '')}</span>
                         </div>
                         <div class="admin-card-meta" style="display: flex; align-items: center; gap: 1em;">
                             <span class="badge ${isActive ? 'bg-success' : 'bg-secondary'}">${isActive ? 'Active' : 'Inactive'}</span>
                             <span style="flex: 1"></span>
-                            <button class="icon-btn edit-user-btn btn btn-sm btn-primary" data-user='${JSON.stringify(user)}' title="Edit">✏️</button>
+                            ${renderEditButton(`data-user='${JSON.stringify(user)}'`)}
                             ${actionButton}
                         </div>
                     </div>
@@ -80,8 +81,7 @@ export class UserManagement extends BaseAdminController {
                         const userData = JSON.parse(target.dataset.user);
                         this.displayUserProfile(userData);
                     } catch (error) {
-                        console.error('Error parsing user data:', error);
-                        messages.showError('Error loading user data');
+                        messages.showError('Error loading user data: ' + (error?.message || error?.toString()));
                     }
                 }
             }
@@ -124,7 +124,7 @@ export class UserManagement extends BaseAdminController {
             return;
         }
 
-        this.messageDisplay.hide();
+        messages.clearAll();
         this.showContainerLoading(this.elements.userListContainer, 'Loading users...');
         
         const response = await this.safeApiCall(
@@ -205,24 +205,27 @@ export class UserManagement extends BaseAdminController {
                 operationName: 'Update User Profile',
                 requestData: updatedData,
                 successCallback: () => {
-                    this.refreshData(() => this.loadUsers());
+                    this.loadUsers();
                 }
             }
         );
 
-        // Show user-friendly message
-        this.messageDisplay.showApiResponse(response);
+        this.handleApiResponse(response);
     }
 
-
-
     setupUserActions() {
-        // Edit user buttons
-        document.querySelectorAll('.edit-user-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const userData = JSON.parse(btn.getAttribute('data-user'));
-                this.displayUserProfile(userData);
-            });
+        // Edit user buttons - use event delegation for robustness
+        this.elements.userListContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.edit-user-btn');
+            if (btn) {
+                try {
+                    const userData = JSON.parse(btn.getAttribute('data-user'));
+                    this.displayUserProfile(userData);
+                } catch (err) {
+                    console.error('[UserManagement] Failed to parse user data:', err, btn.getAttribute('data-user'));
+                    messages.showError('Failed to parse user data for editing.');
+                }
+            }
         });
 
         // Toggle user status buttons
@@ -231,7 +234,6 @@ export class UserManagement extends BaseAdminController {
             btn.dataset.confirming = 'false';
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                
                 // Reset other buttons
                 document.querySelectorAll('.toggle-user-btn').forEach(otherBtn => {
                     if (otherBtn !== btn) {
@@ -240,7 +242,6 @@ export class UserManagement extends BaseAdminController {
                         otherBtn.classList.add(otherBtn.dataset.action === 'activate' ? 'btn-success' : 'btn-warning');
                     }
                 });
-
                 if (btn.dataset.confirming === 'true') {
                     btn.dataset.confirming = 'false';
                     const userId = btn.getAttribute('data-user-id');
@@ -297,12 +298,11 @@ export class UserManagement extends BaseAdminController {
                     if (this.elements.adminProfileInfo.dataset.currentUserId === userId) {
                         this.elements.profileEditTab.classList.add('d-none');
                     }
-                    this.refreshData(() => this.loadUsers());
+                    this.loadUsers();
                 }
             }
         );
 
-        // Show user-friendly message
-        this.messageDisplay.showApiResponse(response);
+        this.handleApiResponse(response);
     }
 }

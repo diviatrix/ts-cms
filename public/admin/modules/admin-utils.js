@@ -76,7 +76,7 @@ export class AdminUtils {
     static getDOMElements() {
         return {
             // User management elements
-            userListContainer: document.getElementById('userList'),
+            userListContainer: document.getElementById('userListContainer'),
             profileEditTab: document.getElementById('profileEditTab'),
             adminProfileInfo: document.getElementById('adminProfileInfo'),
             adminMessageDiv: document.getElementById('adminMessageDiv'),
@@ -84,11 +84,12 @@ export class AdminUtils {
             adminSaveButton: document.getElementById('adminSaveButton'),
 
             // Record management elements
-            recordListContainer: document.getElementById('recordList'),
+            recordListContainer: document.getElementById('recordListContainer'),
             recordEditTab: document.getElementById('recordEditTab'),
             recordInfo: document.getElementById('recordInfo'),
             recordTitle: document.getElementById('recordTitle'),
             recordDescription: document.getElementById('recordDescription'),
+            recordImageUrl: document.getElementById('recordImageUrl'),
             recordContent: document.getElementById('recordContent'),
             recordTags: document.getElementById('recordTags'),
             recordCategories: document.getElementById('recordCategories'),
@@ -97,6 +98,7 @@ export class AdminUtils {
             newRecordButton: document.getElementById('newRecordButton'),
             recordSaveButton: document.getElementById('recordSaveButton'),
             recordDeleteButton: document.getElementById('recordDeleteButton'),
+            recordDownloadButton: document.getElementById('recordDownloadButton'),
 
             // Tab elements
             usersTabBtn: document.getElementById('users-tab'),

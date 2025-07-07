@@ -8,12 +8,14 @@ import { cmsIntegration } from '../../js/utils/cms-integration.js';
 import { BaseAdminController } from './base-admin-controller.js';
 import { ConfirmationDialog } from '../../js/utils/dialogs.js';
 
+console.log('[CMSSettings] Module loaded');
+
 export class CMSSettings extends BaseAdminController {
     constructor() {
         super({
             apiClient
         });
-        
+        console.log('[CMSSettings] Constructor called');
         this.currentSettings = {};
         this.availableThemes = [];
         this.currentWebsiteTheme = null;
@@ -23,9 +25,9 @@ export class CMSSettings extends BaseAdminController {
 
     init() {
         this.setupEventHandlers();
-        this.setupCharacterCounters();
         this.setupDownloadSettingsButton();
-        // Don't load settings immediately - wait for tab activation
+        this.setupMessageRenderer();
+        this.loadCMSSettings(); // Always load settings/themes on init
     }
 
     setupEventHandlers() {
@@ -38,7 +40,10 @@ export class CMSSettings extends BaseAdminController {
                 click: () => this.applyWebsiteTheme()
             },
             '#cms-settings-tab': {
-                'shown.bs.tab': () => this.loadCMSSettings()
+                'shown.bs.tab': () => {
+                    console.log('[CMSSettings] shown.bs.tab event fired');
+                    this.loadCMSSettings();
+                }
             },
             '#activeThemeSelect': {
                 change: (e) => this.onThemeSelectionChange(e.target.value)
@@ -51,6 +56,19 @@ export class CMSSettings extends BaseAdminController {
         if (btn) {
             btn.addEventListener('click', () => this.downloadSettingsJson());
         }
+    }
+
+    setupMessageRenderer() {
+        const div = document.getElementById('cmsSettingsMessageDiv');
+        if (!div) return;
+        messages.subscribe(msgs => {
+            if (!msgs.length) {
+                div.innerHTML = '';
+                return;
+            }
+            const msg = msgs[msgs.length - 1];
+            div.innerHTML = `<div class="alert alert-${msg.type}">${msg.text}</div>`;
+        });
     }
 
     downloadSettingsJson() {
@@ -101,19 +119,35 @@ export class CMSSettings extends BaseAdminController {
                 operationName: 'Load CMS Settings',
                 successCallback: (data) => {
                     this.currentSettings = {};
-                    
+
+                    // Robustly check if data is an array
+                    if (!Array.isArray(data)) {
+                        console.warn('Expected array from /cms/settings, got:', data);
+                        messages.showWarning('Unexpected response from server. Please contact support.');
+                        return;
+                    }
+
                     // Convert array to object for easier access
                     data.forEach(setting => {
-                        this.currentSettings[setting.setting_key] = setting;
+                        if (setting && setting.setting_key !== undefined) {
+                            this.currentSettings[setting.setting_key] = setting;
+                        }
                     });
 
                     this.populateSettingsForm();
+
+                    // Show feedback to user
+                    if (Object.keys(this.currentSettings).length > 0) {
+                        messages.showSuccess('CMS settings loaded successfully.');
+                    } else {
+                        messages.showWarning('No CMS settings found.');
+                    }
                 }
             }
         );
 
         if (!response.success) {
-            this.showError('Failed to load settings: ' + response.message);
+            messages.showError('Failed to load settings: ' + response.message);
         }
     }
 
@@ -128,64 +162,53 @@ export class CMSSettings extends BaseAdminController {
         if (siteDescElement && this.currentSettings.site_description) {
             siteDescElement.value = this.currentSettings.site_description.setting_value;
         }
-
-        // Populate raw JSON view
-        const cmsSettingsTextarea = document.getElementById('cmsSettingsTextarea');
-        if (cmsSettingsTextarea) {
-            cmsSettingsTextarea.value = JSON.stringify(this.currentSettings, null, 2);
-        }
     }
 
     async loadAvailableThemes() {
+        console.log('[CMSSettings] loadAvailableThemes called');
         const response = await this.safeApiCall(
             () => this.apiClient.get('/themes'),
             {
                 operationName: 'Load Available Themes',
                 successCallback: (data) => {
-                    this.availableThemes = data;
+                    console.log('[CMSSettings] /themes response:', data);
+                    this.availableThemes = Array.isArray(data) ? data : [];
                     this.populateThemeSelector();
                 }
             }
         );
-
         if (!response.success) {
-            this.showError('Failed to load themes: ' + response.message);
+            this.availableThemes = [];
+            this.populateThemeSelector();
+            messages.showError('Failed to load themes: ' + response.message);
         }
     }
 
     populateThemeSelector() {
         const themeSelect = document.getElementById('activeThemeSelect');
-        if (!themeSelect) return;
-
-        themeSelect.innerHTML = '<option value="">Select a theme...</option>';
-
-        // Filter themes: show only active themes, or default theme if none are active
-        const activeThemes = this.availableThemes.filter(theme => theme.is_active);
-        const defaultTheme = this.availableThemes.find(theme => theme.is_default);
-        
-        let themesToShow = activeThemes;
-        
-        // If no active themes, include the default theme regardless of its active status
-        if (activeThemes.length === 0 && defaultTheme) {
-            themesToShow = [defaultTheme];
+        if (!themeSelect) {
+            console.log('[CMSSettings] themeSelect not found');
+            return;
         }
-
-        themesToShow.forEach(theme => {
+        console.log('[CMSSettings] Populating theme selector with:', this.availableThemes);
+        themeSelect.innerHTML = '';
+        if (!this.availableThemes.length) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No themes available (failed to load or none exist)';
+            themeSelect.appendChild(opt);
+            messages.showWarning('No website themes found or failed to load themes. Raw: ' + JSON.stringify(this.availableThemes));
+            return;
+        }
+        this.availableThemes.forEach(theme => {
             const option = document.createElement('option');
             option.value = theme.id;
             let label = theme.name;
-            
-            // Add status indicators
-            if (theme.is_active) {
-                label += ' (Active)';
-            } else if (theme.is_default) {
-                label += ' (Default)';
-            }
-            
+            if (theme.is_active) label += ' (Active)';
+            if (theme.is_default) label += ' (Default)';
             option.textContent = label;
             themeSelect.appendChild(option);
         });
-
         // Set current website theme as selected if it's in the available options
         if (this.currentWebsiteTheme) {
             const currentThemeOption = Array.from(themeSelect.options).find(option => option.value === this.currentWebsiteTheme.id);
@@ -193,6 +216,7 @@ export class CMSSettings extends BaseAdminController {
                 themeSelect.value = this.currentWebsiteTheme.id;
             }
         }
+        console.log('[CMSSettings] Dropdown options:', Array.from(themeSelect.options).map(o => o.textContent));
     }
 
     async loadCurrentWebsiteTheme() {
@@ -277,71 +301,55 @@ export class CMSSettings extends BaseAdminController {
     async saveGeneralSettings() {
         const saveButton = document.getElementById('saveGeneralSettings');
         const applyButton = document.getElementById('applyWebsiteTheme');
-        
         const siteName = document.getElementById('siteName').value.trim();
         const siteDescription = document.getElementById('siteDescription').value.trim();
-
-        // Validation
+        const maintenanceMode = document.getElementById('maintenanceMode').checked ? 'true' : 'false';
+        const allowRegistration = document.getElementById('allowRegistration').checked ? 'true' : 'false';
+        const defaultUserRole = document.getElementById('defaultUserRole').value.trim();
         const errors = [];
-        if (!siteName) {
-            errors.push('Site name is required');
-        } else if (siteName.length > 100) {
-            errors.push('Site name must be 100 characters or less');
+        if (!siteName) errors.push('Site name is required');
+        if (siteName.length > 100) errors.push('Site name must be 100 characters or less');
+        if (siteDescription.length > 500) errors.push('Site description must be 500 characters or less');
+        if (defaultUserRole && !/^\w+$/.test(defaultUserRole)) {
+            messages.showWarning('Default user role should be a single word (no spaces or special characters).');
         }
-        
-        if (siteDescription.length > 500) {
-            errors.push('Site description must be 500 characters or less');
+        if (!defaultUserRole) {
+            messages.showWarning('Default user role is empty. This may affect new user registration.');
         }
-
-        if (errors.length > 0) {
-            this.showError('Validation errors: ' + errors.join(', '));
-            return;
-        }
-
-        const settings = {
-            site_name: siteName,
-            site_description: siteDescription
-        };
-
-        // Disable apply button during save
-        if (applyButton) {
-            applyButton.disabled = true;
-        }
-
+        if (errors.length > 0) { messages.showError('Validation errors: ' + errors.join(', ')); return; }
+        const settings = [
+            { key: 'site_name', value: siteName, type: 'string' },
+            { key: 'site_description', value: siteDescription, type: 'string' },
+            { key: 'maintenance_mode', value: maintenanceMode, type: 'boolean' },
+            { key: 'allow_registration', value: allowRegistration, type: 'boolean' },
+            { key: 'default_user_role', value: defaultUserRole, type: 'string' }
+        ];
+        if (applyButton) applyButton.disabled = true;
         let allSuccessful = true;
         const saveErrors = [];
-
-        // Save each setting individually
-        for (const [key, value] of Object.entries(settings)) {
+        for (const { key, value, type } of settings) {
+            console.debug(`[CMSSettings] Saving ${key}:`, value, type);
             const response = await this.safeApiCall(
-                () => this.apiClient.put(`/cms/settings/${key}`, { value, type: 'string' }),
+                () => this.apiClient.put(`/cms/settings/${key}`, { value, type }),
                 {
                     operationName: `Save CMS Setting: ${key}`,
                     loadingElement: saveButton,
                     loadingText: 'Saving...'
                 }
             );
-
             if (!response.success) {
                 allSuccessful = false;
                 saveErrors.push(`Failed to save ${key}: ${response.message}`);
             }
         }
-
         if (allSuccessful) {
-            messages.showSuccess('General settings saved successfully');
-            // Reload settings to reflect changes
+            this.handleApiResponse(response);
             await this.loadSettings();
-            // Refresh CMS integration across all pages
             await cmsIntegration.refresh();
         } else {
-            this.showError('Some settings failed to save: ' + saveErrors.join(', '));
+            messages.showError('Some settings failed to save: ' + saveErrors.join(', '));
         }
-
-        // Re-enable apply button
-        if (applyButton) {
-            applyButton.disabled = false;
-        }
+        if (applyButton) applyButton.disabled = false;
     }
 
     async applyWebsiteTheme() {
@@ -350,18 +358,18 @@ export class CMSSettings extends BaseAdminController {
         const saveButton = document.getElementById('saveGeneralSettings');
         
         if (!themeSelect || !themeSelect.value) {
-            this.showWarning('Please select a theme to apply');
+            messages.showWarning('Please select a theme to apply');
             return;
         }
 
         const selectedTheme = this.availableThemes.find(theme => theme.id === themeSelect.value);
         if (!selectedTheme) {
-            this.showError('Selected theme not found');
+            messages.showError('Selected theme not found');
             return;
         }
 
         if (this.currentWebsiteTheme && this.currentWebsiteTheme.id === selectedTheme.id) {
-            this.showInfo('This theme is already the active website theme');
+            messages.showInfo('This theme is already the active website theme');
             return;
         }
 
@@ -399,35 +407,12 @@ export class CMSSettings extends BaseAdminController {
         );
 
         if (!response.success) {
-            this.showError('Failed to set website theme: ' + response.message);
+            messages.showError('Failed to set website theme: ' + response.message);
         }
 
         // Re-enable save button
         if (saveButton) {
             saveButton.disabled = false;
-        }
-    }
-
-    setupCharacterCounters() {
-        const siteNameInput = document.getElementById('siteName');
-        const siteNameCounter = document.getElementById('siteNameCounter');
-        const siteDescInput = document.getElementById('siteDescription');
-        const siteDescCounter = document.getElementById('siteDescriptionCounter');
-
-        if (siteNameInput && siteNameCounter) {
-            const updateSiteNameCounter = () => {
-                siteNameCounter.textContent = siteNameInput.value.length;
-            };
-            siteNameInput.addEventListener('input', updateSiteNameCounter);
-            updateSiteNameCounter(); // Initial count
-        }
-
-        if (siteDescInput && siteDescCounter) {
-            const updateSiteDescCounter = () => {
-                siteDescCounter.textContent = siteDescInput.value.length;
-            };
-            siteDescInput.addEventListener('input', updateSiteDescCounter);
-            updateSiteDescCounter(); // Initial count
         }
     }
 }

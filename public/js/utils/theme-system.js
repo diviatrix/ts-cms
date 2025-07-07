@@ -3,6 +3,8 @@
  * Lightweight, maintainable theme management with all current features
  */
 
+import { messageSystem } from './message-system.js';
+
 let apiClient = null;
 const loadDependencies = async () => {
     if (!apiClient) {
@@ -108,6 +110,7 @@ class UnifiedThemeSystem {
                 this.forceRefresh();
             }
             this.themeState = THEME_STATES.LOADED;
+            document.dispatchEvent(new CustomEvent('themeReady'));
             return;
         }
         try {
@@ -124,19 +127,16 @@ class UnifiedThemeSystem {
                     await this.applyThemeSettings(settings);
                     cache.setLastApplied(settings);
                     this.forceRefresh();
+                    document.dispatchEvent(new CustomEvent('themeReady'));
                 } else {
                     throw new Error('Failed to load theme details');
                 }
             } else {
                 throw new Error(result.message || 'Failed to load website theme');
             }
-        } catch {
-            this.retryAttempts++;
-            if (this.retryAttempts < 3) {
-                setTimeout(() => { this.loadPromise = null; this.loadTheme(); }, 1000 * this.retryAttempts);
-            } else {
-                this.applyFallback();
-            }
+        } catch (error) {
+            messageSystem.showError('Error: ' + (error?.message || error?.toString()));
+            this.applyFallback();
         } finally {
             this.loadPromise = null;
         }
@@ -151,6 +151,7 @@ class UnifiedThemeSystem {
         this.currentTheme = DEFAULT_THEME;
         this.themeState = THEME_STATES.FALLBACK;
         this.injectCSS(DEFAULT_THEME.settings);
+        document.dispatchEvent(new CustomEvent('themeReady'));
     }
 
     async injectCSS(settings) {
@@ -283,6 +284,7 @@ class UnifiedThemeSystem {
             }
             throw new Error(result.message || 'Failed to switch theme');
         } catch (error) {
+            messageSystem.showError('Error: ' + (error?.message || error?.toString()));
             let errorMessage = 'Failed to switch theme';
             if (error.message) {
                 if (error.message.includes('Cannot POST')) errorMessage = 'API endpoint not found - please check server configuration';
@@ -309,6 +311,7 @@ class UnifiedThemeSystem {
             }
             throw new Error(result.message || 'Failed to fetch theme');
         } catch (error) {
+            messageSystem.showError('Error: ' + (error?.message || error?.toString()));
             return { success: false, message: error.message };
         }
     }

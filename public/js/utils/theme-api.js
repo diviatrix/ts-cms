@@ -48,16 +48,13 @@ class SimpleThemeAPI {
      * Wait for theme to be loaded and applied
      */
     async waitForTheme() {
-        // Simple polling since we don't have waitForReady in simplified system
-        return new Promise((resolve) => {
-            const check = () => {
-                if (this.isReady()) {
-                    resolve();
-                } else {
-                    setTimeout(check, 100);
-                }
+        if (this.isReady()) return;
+        return new Promise(resolve => {
+            const onReady = () => {
+                document.removeEventListener('themeReady', onReady);
+                resolve();
             };
-            check();
+            document.addEventListener('themeReady', onReady);
         });
     }
 

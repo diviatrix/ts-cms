@@ -23,6 +23,7 @@ class CMSIntegration {
             this.isInitialized = true;
         } catch (error) {
             console.warn('Failed to load CMS settings:', error);
+            messages.showError('Error: ' + (error?.message || error?.toString()));
         }
     }
 
@@ -37,6 +38,7 @@ class CMSIntegration {
         } catch (error) {
             this.settings = {};
             console.warn('Error loading CMS settings from JSON:', error);
+            messages.showError('Error: ' + (error?.message || error?.toString()));
         }
     }
 

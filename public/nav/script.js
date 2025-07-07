@@ -16,10 +16,12 @@ class NavigationController extends BasePageController {
     // Listen for navigation loaded event
     document.addEventListener('navigationLoaded', () => this.init());
     
-    // Also try to initialize immediately if navigation is already loaded
-    if (document.getElementById('navPlaceholder') && document.getElementById('navPlaceholder').innerHTML.trim() !== '') {
-      setTimeout(() => this.init(), 0);
+    // Fallback: If nav is already present, call init() on DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', () => {
+      if (document.getElementById('navPlaceholder')?.querySelector('nav')) {
+        this.init();
     }
+    });
   }
 
   /**
@@ -40,6 +42,7 @@ class NavigationController extends BasePageController {
    * Initialize navigation
    */
   init() {
+    console.log('[Nav] NavigationController init called');
     // Get elements after navigation HTML is loaded
     this.elements = this.getNavigationElements();
     

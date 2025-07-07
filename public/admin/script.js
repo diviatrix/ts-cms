@@ -1,285 +1,94 @@
-import { AuthAPI } from '../js/api-auth.js';
 import { DataTable } from '../js/shared-components.js';
-import { 
-    MessageDisplay, 
-    loadingManager, 
-    errorHandler 
-} from '../js/ui-utils.js';
-import { jwtDecode } from '../js/jwt-decode.js';
-import { UserManagement, RecordManagement, AdminUtils } from './modules/index.js';
+import { UserManagement, RecordManagement } from './modules/index.js';
 import { ThemeManagement } from './modules/theme-management.js';
 import { CMSSettings } from './modules/cms-settings.js';
-import { messages } from '../js/ui-utils.js';
+import { AdminUtils } from './modules/admin-utils.js';
 
-/**
- * Admin Panel Controller (Refactored)
- * Coordinates modular admin components for users and records administration
- */
-class AdminController {
-    constructor() {
-        this.initializeElements();
-        this.initializeDataTables();
-        this.initializeModules();
-        this.initializeEventHandlers();
-        this.loadInitialData();
-    }
+// Remove AdminController and all global controller code
+// Only keep per-tab initialization logic as implemented
 
-    /**
-     * Initialize DOM elements
-     */
-    initializeElements() {
-        // Collect all DOM elements in a central object for easy passing to modules
-        this.elements = {
-            // User management elements
-            userListContainer: document.getElementById('userList'),
-            profileEditTab: document.getElementById('profileEditTab'),
-            adminProfileInfo: document.getElementById('adminProfileInfo'),
-            adminMessageDiv: document.getElementById('adminMessageDiv'),
-            adminServerAnswerTextarea: document.getElementById('adminServerAnswerTextarea'),
-            adminSaveButton: document.getElementById('adminSaveButton'),
-
-            // Record management elements
-            recordListContainer: document.getElementById('recordList'),
-            recordEditTab: document.getElementById('recordEditTab'),
-            recordEditInfo: document.getElementById('recordInfo'),
-            recordTitle: document.getElementById('recordTitle'),
-            recordDescription: document.getElementById('recordDescription'),
-            recordImageUrl: document.getElementById('recordImageUrl'),
-            recordContent: document.getElementById('recordContent'),
-            recordTags: document.getElementById('recordTags'),
-            recordCategories: document.getElementById('recordCategories'),
-            recordIsPublished: document.getElementById('recordIsPublished'),
-            recordMessageDiv: document.getElementById('recordMessageDiv'),
-            recordServerAnswerTextarea: document.getElementById('recordServerAnswerTextarea'),
-            recordSaveButton: document.getElementById('recordSaveButton'),
-            recordDeleteButton: document.getElementById('recordDeleteButton'),
-            recordDownloadButton: document.getElementById('recordDownloadButton'),
-            newRecordButton: document.getElementById('newRecordButton'),
-
-            // Tab elements
-            usersTab: document.getElementById('users-tab'),
-            recordsTab: document.getElementById('records-tab')
-        };
-
-        // Initialize main message display
-        this.mainMessage = new MessageDisplay(document.getElementById('mainMessageDiv'));
-    }
-
-    /**
-     * Initialize data tables
-     */
-    initializeDataTables() {
-        // Initialize users table
-        this.usersTable = new DataTable(this.elements.userListContainer, {
-            columns: [
-                {
-                    key: 'base.login',
-                    title: 'Username',
-                    render: (value, row) => `
-                        <a href="#" class="text-decoration-none user-link" data-user='${JSON.stringify(row)}'>
-                            ${value || row.base?.login || 'N/A'}
-                        </a>
-                    `
-                },
-                {
-                    key: 'base.id',
-                    title: 'ID',
-                    render: (value, row) => value || row.base?.id || 'N/A'
-                }
-            ],
-            filterable: true,
-            sortable: true,
-            pagination: { enabled: true, pageSize: 10 }
+function loadTab(tabId, partial, initModule) {
+    const container = document.getElementById(tabId);
+    fetch(partial)
+        .then(response => response.text())
+        .then(html => {
+            container.innerHTML = html;
+            container.style.display = 'block';
+            // Get fresh DOM elements after partial is loaded
+            const elements = AdminUtils.getDOMElements();
+            initModule(elements);
         });
-
-        // Initialize records table
-        this.recordsTable = new DataTable(this.elements.recordListContainer, {
-            columns: [
-                {
-                    key: 'title',
-                    title: 'Title',
-                    render: (value, row) => `
-                        <span title="ID: ${row.id}" class="record-title-tooltip" style="cursor:pointer;">
-                            ${value || 'Untitled'}
-                        </span>
-                    `
-                },
-                {
-                    key: 'created_at',
-                    title: 'Created',
-                    render: (value) => value ? new Date(value).toLocaleDateString() : 'Unknown'
-                },
-                {
-                    key: 'is_published',
-                    title: 'Status',
-                    render: (value) => value ? 
-                        '<span class="badge bg-success">Published</span>' : 
-                        '<span class="badge bg-secondary">Draft</span>'
-                },
-                {
-                    key: 'actions',
-                    title: 'Actions',
-                    render: (value, row) => `
-                        <button class="btn btn-sm btn-primary edit-record-btn" data-record-id="${row.id}" title="Edit">✏️</button>
-                        <button class="btn btn-sm btn-danger delete-record-btn" data-record-id="${row.id}" title="Delete">🗑️</button>
-                    `
-                }
-            ],
-            filterable: true,
-            sortable: true,
-            pagination: { enabled: true, pageSize: 10 }
-        });
-    }
-
-    /**
-     * Initialize modules
-     */
-    initializeModules() {
-        // Initialize user management module
-        this.userManagement = new UserManagement(this.elements, this.usersTable);
-
-        // Initialize record management module  
-        this.recordManagement = new RecordManagement(this.elements, this.recordsTable);
-
-        // Initialize CMS settings module
-        this.cmsSettings = new CMSSettings();
-    }
-
-    /**
-     * Initialize event handlers
-     */
-    initializeEventHandlers() {
-        // Setup tab functionality
-        this.setupTabs();
-        
-        // Check URL for direct record access on page load
-        this.checkUrlForRecordId();
-    }
-
-    /**
-     * Setup tab functionality without Bootstrap
-     */
-    setupTabs() {
-        const tabButtons = document.querySelectorAll('#adminTab .nav-link');
-        const tabPanes = document.querySelectorAll('.tab-pane');
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                
-                // Remove active class from all buttons and panes
-                tabButtons.forEach(btn => {
-                    btn.classList.remove('active');
-                    btn.setAttribute('aria-selected', 'false');
-                });
-                tabPanes.forEach(pane => {
-                    pane.classList.remove('show', 'active');
-                });
-                
-                // Add active class to clicked button
-                button.classList.add('active');
-                button.setAttribute('aria-selected', 'true');
-                
-                // Show corresponding pane
-                const targetId = button.getAttribute('data-bs-target') || button.getAttribute('href');
-                const targetPane = document.querySelector(targetId);
-                if (targetPane) {
-                    targetPane.classList.add('show', 'active');
-                }
-
-                // Load data for the activated tab
-                this.loadTabData(button.id);
-            });
-        });
-    }
-
-    /**
-     * Load data for the specified tab
-     */
-    loadTabData(tabId) {
-        switch (tabId) {
-            case 'users-tab':
-                this.userManagement.loadUsers();
-                break;
-            case 'records-tab':
-                this.recordManagement.loadRecords();
-                break;
-            case 'cms-settings-tab':
-                this.cmsSettings.loadSettings();
-                break;
-        }
-    }
-
-    /**
-     * Load initial data based on active tab
-     */
-    loadInitialData() {
-        // Determine which tab is active and load appropriate data
-        const activeTab = document.querySelector('.nav-link.active');
-        if (activeTab && activeTab.id === 'users-tab') {
-            this.userManagement.loadUsers();
-        } else if (activeTab && activeTab.id === 'records-tab') {
-            this.recordManagement.loadRecords();
-        } else {
-            // Default to loading users if no specific tab is active
-            this.userManagement.loadUsers();
-        }
-    }
-
-    /**
-     * Check URL for record ID parameter and load record if present
-     */
-    async checkUrlForRecordId() {
-        // Check for editRecordId in hash fragment (used by edit buttons)
-        const hash = window.location.hash;
-        const params = new URLSearchParams(hash.substring(hash.indexOf('?') + 1));
-        const editRecordId = params.get('editRecordId');
-        
-        if (editRecordId) {
-            try {
-                // Switch to records tab
-                const recordsTab = document.getElementById('records-tab');
-                if (recordsTab) {
-                    recordsTab.click();
-                    
-                    // Call the record management module's method to handle the editRecordId
-                    await this.recordManagement.checkUrlForRecordId(recordsTab);
-                }
-            } catch (error) {
-                console.error('Error loading record from URL:', error);
-                messages.showError('Error loading the requested record.');
-            }
-        }
-    }
 }
 
-// Shared utility for lazy-loading admin modules on tab activation
-function lazyLoadModule(tabSelector, moduleInitFn) {
-    let initialized = false;
-    const tabBtn = document.querySelector(tabSelector);
-    if (!tabBtn) return;
-    tabBtn.addEventListener('shown.bs.tab', () => {
-        if (!initialized) {
-            moduleInitFn();
-            initialized = true;
+const tabContentMap = {
+    'users-tab': {
+        containerId: 'users-tab-content',
+        partial: '/admin/partials/users-tab.html',
+        init: (elements) => {
+            const tableConfigs = AdminUtils.getDataTableConfigs();
+            const usersTable = new DataTable(elements.userListContainer, tableConfigs.users);
+            const userModule = new UserManagement(elements, usersTable);
+            userModule.loadUsers();
         }
-    });
-}
+    },
+    'records-tab': {
+        containerId: 'records-tab-content',
+        partial: '/admin/partials/records-tab.html',
+        init: (elements) => {
+            const tableConfigs = AdminUtils.getDataTableConfigs();
+            const recordsTable = new DataTable(elements.recordListContainer, tableConfigs.records);
+            const recordModule = new RecordManagement(elements, recordsTable);
+            recordModule.loadRecords();
+        }
+    },
+    'themes-tab': {
+        containerId: 'themes-tab-content',
+        partial: '/admin/partials/themes-tab.html',
+        init: () => {
+            new ThemeManagement();
+        }
+    },
+    'cms-settings-tab': {
+        containerId: 'settings-tab-content',
+        partial: '/admin/partials/settings-tab.html',
+        init: () => {
+            const cmsSettings = new CMSSettings();
+            cmsSettings.loadSettings();
+        }
+    }
+};
 
-// Wait for DOM to be ready, then initialize
 document.addEventListener('DOMContentLoaded', () => {
-    new AdminController();
-    const adminTab = document.getElementById('adminTab');
-    const adminWelcome = document.getElementById('adminWelcome');
-    if (adminTab && adminWelcome) {
-        adminTab.addEventListener('shown.bs.tab', () => {
-            adminWelcome.style.display = 'none';
-        });
-    }
+    const tabButtons = document.querySelectorAll('#adminTab .nav-link');
+    tabButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            e.preventDefault();
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
+            });
+            button.classList.add('active');
+            button.setAttribute('aria-selected', 'true');
 
-    // Lazy-load ThemeManagement only when Themes tab is shown
-    lazyLoadModule('#themes-tab', () => {
-        // You can extend this pattern for other modules as needed
-        new ThemeManagement();
+            // Hide all tab content containers
+            Object.values(tabContentMap).forEach(tab => {
+                const container = document.getElementById(tab.containerId);
+                if (container) container.innerHTML = '';
+                if (container) container.style.display = 'none';
+            });
+
+            // Hide welcome message
+            const adminWelcome = document.getElementById('adminWelcome');
+            if (adminWelcome) adminWelcome.style.display = 'none';
+
+            // Load and show the selected tab's partial and initialize module
+            const tab = tabContentMap[button.id];
+            if (tab) {
+                loadTab(tab.containerId, tab.partial, tab.init);
+            }
+        });
     });
+    // Optionally, auto-load the first tab
+    const firstTab = document.querySelector('#adminTab .nav-link');
+    if (firstTab) firstTab.click();
 });
