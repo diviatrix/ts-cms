@@ -102,6 +102,12 @@ class RecordDisplayController extends BasePageController {
    * Handle record load error
    */
   handleRecordLoadError(response) {
+    // Hide loading container
+    const loadingContainer = document.getElementById('loadingContainer');
+    if (loadingContainer) {
+      loadingContainer.style.display = 'none';
+    }
+
     if (response.errors?.some(err => err.includes('not found'))) {
       this.showRecordNotFound('The requested record does not exist.');
     } else {
@@ -114,6 +120,17 @@ class RecordDisplayController extends BasePageController {
    * Display the record content
    */
   displayRecord(record) {
+    // Hide loading container and show content container
+    const loadingContainer = document.getElementById('loadingContainer');
+    const contentContainer = document.getElementById('contentContainer');
+    
+    if (loadingContainer) {
+      loadingContainer.style.display = 'none';
+    }
+    if (contentContainer) {
+      contentContainer.classList.remove('d-none');
+    }
+
     if (this.elements.title) {
       this.elements.title.textContent = record.title;
     }
@@ -207,24 +224,33 @@ class RecordDisplayController extends BasePageController {
    * Show record not found message
    */
   showRecordNotFound(description) {
-    if (this.elements.title) {
-      this.elements.title.textContent = 'Record Not Found';
+    const contentContainer = document.getElementById('contentContainer');
+    if (contentContainer) {
+      contentContainer.classList.remove('d-none');
+      contentContainer.innerHTML = `
+        <div class="alert alert-warning">
+          <h4>Record Not Found</h4>
+          <p>${description}</p>
+          <a href="/frontpage/" class="btn btn-primary">Go to Homepage</a>
+        </div>
+      `;
     }
-    if (this.elements.description) {
-      this.elements.description.textContent = description;
-    }
-    messages.showError('Record not found: ' + description);
   }
 
   /**
    * Show record error message
    */
   showRecordError(description) {
-    if (this.elements.title) {
-      this.elements.title.textContent = 'Error Loading Record';
-    }
-    if (this.elements.description) {
-      this.elements.description.textContent = description;
+    const contentContainer = document.getElementById('contentContainer');
+    if (contentContainer) {
+      contentContainer.classList.remove('d-none');
+      contentContainer.innerHTML = `
+        <div class="alert alert-danger">
+          <h4>Error Loading Record</h4>
+          <p>${description}</p>
+          <a href="/frontpage/" class="btn btn-primary">Go to Homepage</a>
+        </div>
+      `;
     }
   }
 
@@ -232,11 +258,16 @@ class RecordDisplayController extends BasePageController {
    * Show network error message
    */
   showNetworkError() {
-    if (this.elements.title) {
-      this.elements.title.textContent = 'Network Error';
-    }
-    if (this.elements.description) {
-      this.elements.description.textContent = 'Unable to load the record. Please check your connection and try again.';
+    const contentContainer = document.getElementById('contentContainer');
+    if (contentContainer) {
+      contentContainer.classList.remove('d-none');
+      contentContainer.innerHTML = `
+        <div class="alert alert-danger">
+          <h4>Network Error</h4>
+          <p>Unable to connect to the server. Please check your internet connection and try again.</p>
+          <a href="/frontpage/" class="btn btn-primary">Go to Homepage</a>
+        </div>
+      `;
     }
   }
 }
