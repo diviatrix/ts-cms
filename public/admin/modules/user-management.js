@@ -43,13 +43,13 @@ export class UserManagement extends BaseAdminController {
                     `<button class="btn toggle-user-btn" data-user-id="${user.base?.id || user.id}" data-action="activate" title="Activate">✅</button>`;
                 
                 return `
-                    <div class="card themed">
+                    <div class="card">
                         <div class="admin-card-title">
                             ${renderCardTitle(user.base?.login || user.login || 'Unknown')}
                             <span>${renderMetaRow(user.base?.email || user.email || '')}</span>
                         </div>
                         <div class="admin-card-meta">
-                            <span class="themed">${isActive ? 'Active' : 'Inactive'}</span>
+                            <span>${isActive ? 'Active' : 'Inactive'}</span>
                             <span style="flex: 1"></span>
                             ${renderEditButton(`data-user='${JSON.stringify(user)}'`)}
                             ${actionButton}
@@ -114,6 +114,48 @@ export class UserManagement extends BaseAdminController {
                 }
             }
         });
+
+        // User action event delegation
+        this.elements.userListContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-target');
+            if (!btn) return;
+            e.preventDefault();
+            const action = btn.dataset.action;
+            switch (action) {
+                case 'edit-user':
+                    try {
+                        const userData = JSON.parse(btn.getAttribute('data-user'));
+                        this.displayUserProfile(userData);
+                    } catch (err) {
+                        console.error('[UserManagement] Failed to parse user data:', err, btn.getAttribute('data-user'));
+                        messages.showError('Failed to parse user data for editing.');
+                    }
+                    break;
+                case 'delete-user':
+                    // TODO: implement delete logic
+                    break;
+                case 'activate-user':
+                case 'deactivate-user':
+                    const userId = btn.getAttribute('data-user-id');
+                    const actionType = action === 'activate-user' ? 'activate' : 'deactivate';
+                    this.handleUserToggle(userId, actionType);
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        // Add Cancel button handler
+        const cancelBtn = document.getElementById('adminCancelButton');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const editSection = document.getElementById('userEditSection');
+                const listSection = document.getElementById('userListSection');
+                if (editSection) editSection.classList.add('hidden');
+                if (listSection) listSection.classList.remove('hidden');
+            });
+        }
     }
 
     /**
@@ -161,6 +203,10 @@ export class UserManagement extends BaseAdminController {
      * Display user profile for editing
      */
     displayUserProfile(user) {
+        const editSection = document.getElementById('userEditSection');
+        const listSection = document.getElementById('userListSection');
+        if (editSection) editSection.classList.remove('hidden');
+        if (listSection) listSection.classList.add('hidden');
         this.displayItemForEdit(user, {
             editTabSelector: '#profileEditTab',
             formFields: {
@@ -175,6 +221,8 @@ export class UserManagement extends BaseAdminController {
             const roles = user.roles || [];
             this.elements.adminRolesInput.value = Array.isArray(roles) ? roles.join(', ') : '';
         }
+        // Scroll into view for better UX
+        editSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     /**
@@ -217,6 +265,11 @@ export class UserManagement extends BaseAdminController {
                 requestData: updatedData,
                 successCallback: () => {
                     this.loadUsers();
+                    // After save, hide the edit section and show the list
+                    const editSection = document.getElementById('userEditSection');
+                    const listSection = document.getElementById('userListSection');
+                    if (editSection) editSection.classList.add('hidden');
+                    if (listSection) listSection.classList.remove('hidden');
                 }
             }
         );
@@ -225,20 +278,6 @@ export class UserManagement extends BaseAdminController {
     }
 
     setupUserActions() {
-        // Edit user buttons - use event delegation for robustness
-        this.elements.userListContainer.addEventListener('click', (e) => {
-            const btn = e.target.closest('.edit-user-btn');
-            if (btn) {
-                try {
-                    const userData = JSON.parse(btn.getAttribute('data-user'));
-                    this.displayUserProfile(userData);
-                } catch (err) {
-                    console.error('[UserManagement] Failed to parse user data:', err, btn.getAttribute('data-user'));
-                    messages.showError('Failed to parse user data for editing.');
-                }
-            }
-        });
-
         // Toggle user status buttons
         let confirmingBtn = null;
         document.querySelectorAll('.toggle-user-btn').forEach(btn => {

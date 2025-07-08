@@ -9,17 +9,11 @@
       <div class="record-wrapper">
         <div id="navPlaceholder"></div>
         <div class="card">
-          <div class="card-body">
-            <div class="card-header-row">
-              <div>
-                <h1 id="recordTitle" class="card-title">Loading...</h1>
-                <h6 id="recordDescription" class="card-subtitle">Loading...</h6>
-              </div>
-              <div>
-                <a id="downloadRecordButton" class="btn d-none" href="#" title="Download as Markdown">📥 Download</a>
-                <a id="editRecordButton" class="btn d-none" href="#" title="Edit Record">✏️ Edit</a>
-              </div>
-            </div>
+          <h1 id="recordTitle" class="card-title">Loading...</h1>
+          <h6 id="recordDescription" class="card-subtitle">Loading...</h6>
+          <div style="display: flex; gap: 1rem;">
+            <a id="downloadRecordButton" class="btn hidden" href="#" title="Download as Markdown">📥 Download</a>
+            <a id="editRecordButton" class="btn hidden" href="#" title="Edit Record">✏️ Edit</a>
           </div>
         </div>
         <div id="loadingContainer" class="empty-state">
@@ -32,9 +26,7 @@
           </div>
         </div>
         <div class="card">
-          <div class="card-body">
-            <span>By <span id="recordAuthor">Loading...</span> on <span id="recordDate">Loading...</span></span>
-          </div>
+          <span>By <span id="recordAuthor">Loading...</span> on <span id="recordDate">Loading...</span></span>
         </div>
       </div>
     </div>

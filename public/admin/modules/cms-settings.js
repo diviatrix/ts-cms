@@ -33,6 +33,44 @@ export class CMSSettings extends BaseAdminController {
                 this.loadAvailableThemes();
             }
         });
+        // Add event listener for Apply Theme button
+        const applyBtn = document.getElementById('applyWebsiteTheme');
+        const themeSelect = document.getElementById('activeThemeSelect');
+        if (applyBtn && themeSelect) {
+            applyBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const selectedThemeId = themeSelect.value;
+                if (!selectedThemeId) return;
+                applyBtn.setAttribute('aria-disabled', 'true');
+                applyBtn.classList.add('disabled');
+                try {
+                    const response = await this.apiClient.put('/cms/active-theme', { theme_id: selectedThemeId });
+                    if (response.success) {
+                        messages.showSuccess('Theme applied successfully!');
+                        // Optionally reload the theme system
+                        if (window.unifiedThemeSystem) await window.unifiedThemeSystem.reloadTheme();
+                        this.loadCurrentWebsiteTheme();
+                    } else {
+                        messages.showError('Failed to apply theme: ' + response.message);
+                    }
+                } catch (error) {
+                    messages.showError('Error applying theme: ' + (error?.message || error));
+                } finally {
+                    applyBtn.removeAttribute('aria-disabled');
+                    applyBtn.classList.remove('disabled');
+                }
+            });
+            // Enable/disable button on theme selection
+            themeSelect.addEventListener('change', () => {
+                if (themeSelect.value) {
+                    applyBtn.removeAttribute('aria-disabled');
+                    applyBtn.classList.remove('disabled');
+                } else {
+                    applyBtn.setAttribute('aria-disabled', 'true');
+                    applyBtn.classList.add('disabled');
+                }
+            });
+        }
     }
 
     setupDownloadSettingsButton() {
@@ -73,19 +111,19 @@ export class CMSSettings extends BaseAdminController {
 
     async loadSettings() {
         try {
-            const response = await this.safeApiCall(
-                () => this.apiClient.get('/cms/settings'),
-                {
-                    operationName: 'Load CMS Settings',
-                    successCallback: (data) => {
+        const response = await this.safeApiCall(
+            () => this.apiClient.get('/cms/settings'),
+            {
+                operationName: 'Load CMS Settings',
+                successCallback: (data) => {
                         this.populateSettingsForm(data);
-                    }
                 }
-            );
-
-            if (!response.success) {
-                messages.showError('Failed to load settings: ' + response.message);
             }
+        );
+
+        if (!response.success) {
+            messages.showError('Failed to load settings: ' + response.message);
+        }
         } catch (error) {
             console.error('Error loading settings:', error);
         }
@@ -97,7 +135,7 @@ export class CMSSettings extends BaseAdminController {
             const element = document.getElementById(field);
             if (element && settings[field] !== undefined) {
                 element.value = settings[field];
-            }
+        }
         });
 
         // Handle checkboxes
@@ -106,25 +144,25 @@ export class CMSSettings extends BaseAdminController {
             const element = document.getElementById(field);
             if (element && settings[field] !== undefined) {
                 element.checked = settings[field];
-            }
+        }
         });
     }
 
     async loadAvailableThemes() {
         try {
-            const response = await this.safeApiCall(
-                () => this.apiClient.get('/themes'),
-                {
+        const response = await this.safeApiCall(
+            () => this.apiClient.get('/themes'),
+            {
                     operationName: 'Load Themes',
-                    successCallback: (data) => {
+                successCallback: (data) => {
                         this.availableThemes = data || [];
-                        this.populateThemeSelector();
-                    }
+                    this.populateThemeSelector();
                 }
-            );
+            }
+        );
 
-            if (!response.success) {
-                messages.showError('Failed to load themes: ' + response.message);
+        if (!response.success) {
+            messages.showError('Failed to load themes: ' + response.message);
             }
         } catch (error) {
             console.error('Error loading themes:', error);
@@ -239,13 +277,13 @@ export class CMSSettings extends BaseAdminController {
             );
             if (response.success) {
                 messages.showSuccess('Settings saved successfully');
-                await this.loadSettings();
-                await cmsIntegration.refresh();
+            await this.loadSettings();
+            await cmsIntegration.refresh();
             }
         } catch (error) {
             console.error('Error saving settings:', error);
             messages.showError('Failed to save settings');
-        }
+    }
     }
 
     getFormData() {
@@ -255,7 +293,7 @@ export class CMSSettings extends BaseAdminController {
             const element = document.getElementById(field);
             if (element) {
                 data[field] = element.value;
-            }
+        }
         });
 
         const checkboxes = ['maintenanceMode', 'allowRegistration'];
@@ -267,7 +305,7 @@ export class CMSSettings extends BaseAdminController {
         });
 
         return data;
-    }
+        }
 
     downloadSettings() {
         try {

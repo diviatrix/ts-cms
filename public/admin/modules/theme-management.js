@@ -71,23 +71,23 @@ export class ThemeManagement extends BaseAdminController {
         themeList.innerHTML = '';
         
         if (this.themes.length === 0) {
-            themeList.innerHTML = '<div class="themed empty-state">No themes found. Create your first theme!</div>';
+            themeList.innerHTML = '<div class="empty-state">No themes found. Create your first theme!</div>';
             return;
         }
         
         this.themes.forEach(theme => {
             const card = document.createElement('div');
-            card.className = 'card themed';
+            card.className = 'card';
             card.innerHTML = `
                 <div class="card-body">
                     <div>
                         <div>
                             <h5 class="card-title">${theme.name}</h5>
                             <p class="card-text">${theme.description || 'No description'}</p>
-                            <small class="themed">ID: ${theme.id}</small>
+                            <small>ID: ${theme.id}</small>
                         </div>
                         <div>
-                            <span class="themed">${theme.is_active ? 'Active' : 'Inactive'}</span>
+                            <span>${theme.is_active ? 'Active' : 'Inactive'}</span>
                             <div>
                                 <button class="btn edit-theme-btn" data-theme-id="${theme.id}" title="Edit">✏️</button>
                                 <button class="btn delete-theme-btn" data-theme-id="${theme.id}" title="Delete">🗑️</button>
@@ -404,35 +404,27 @@ export class ThemeManagement extends BaseAdminController {
         const primaryColor = document.getElementById('primaryColor').value;
         const secondaryColor = document.getElementById('secondaryColor').value;
         const backgroundColor = document.getElementById('backgroundColor').value;
+        const surfaceColor = document.getElementById('surfaceColor').value;
         const textColor = document.getElementById('textColor').value;
+        const borderColor = document.getElementById('borderColor').value;
         const fontFamily = document.getElementById('fontFamily').value;
         const customCss = document.getElementById('customCss').value;
 
         return `
             :root {
-                --bs-primary: ${primaryColor};
-                --bs-secondary: ${secondaryColor};
-                --bs-body-bg: ${backgroundColor};
-                --bs-body-color: ${textColor};
-                --bs-font-sans-serif: ${fontFamily};
+                --theme-primary-color: ${primaryColor};
+                --theme-secondary-color: ${secondaryColor};
+                --theme-background-color: ${backgroundColor};
+                --theme-surface-color: ${surfaceColor};
+                --theme-text-color: ${textColor};
+                --theme-border-color: ${borderColor};
+                --theme-font-family: ${fontFamily};
             }
-            
             body {
                 background-color: ${backgroundColor} !important;
                 color: ${textColor} !important;
                 font-family: ${fontFamily} !important;
             }
-            
-            .btn-primary {
-                background-color: ${primaryColor} !important;
-                border-color: ${primaryColor} !important;
-            }
-            
-            .btn-secondary {
-                background-color: ${secondaryColor} !important;
-                border-color: ${secondaryColor} !important;
-            }
-            
             ${customCss}
         `;
     }

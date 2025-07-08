@@ -1,7 +1,7 @@
 // Minimal shared UI snippets for admin/user/record modules
 
 export function renderCardTitle(title) {
-  return `<div class="themed card-title">${title}</div>`;
+  return `<div class="card-title">${title}</div>`;
 }
 
 export function renderMetaRow(metaHtml) {
@@ -9,27 +9,27 @@ export function renderMetaRow(metaHtml) {
 }
 
 export function renderEditButton(attrs = '') {
-  return `<button class="edit-user-btn btn" ${attrs} title="Edit">✏️</button>`;
+  return `<a class="btn btn-target" data-action="edit-user" ${attrs} href="#" title="Edit">✏️</a>`;
 }
 
 export function renderDeleteButton(attrs = '') {
-  return `<button class="btn" ${attrs} title="Delete">🗑️</button>`;
+  return `<a class="btn btn-target" data-action="delete-user" ${attrs} href="#" title="Delete">🗑️</a>`;
 }
 
 export function renderActivateButton(attrs = '') {
-  return `<button class="btn" ${attrs} title="Activate">✅</button>`;
+  return `<a class="btn btn-target" data-action="activate-user" ${attrs} href="#" title="Activate">✅</a>`;
 }
 
 export function renderDeactivateButton(attrs = '') {
-  return `<button class="btn" ${attrs} title="Deactivate">🚫</button>`;
+  return `<a class="btn btn-target" data-action="deactivate-user" ${attrs} href="#" title="Deactivate">🚫</a>`;
 }
 
 export function renderEmptyState(message = 'No items found') {
-  return `<div class="themed empty-state">${message}</div>`;
+  return `<div class="empty-state">${message}</div>`;
 }
 
 export function renderErrorState(message = 'Failed to load data') {
-  return `<div class="themed error-state">${message}</div>`;
+  return `<div class="error-state">${message}</div>`;
 }
 
 export function renderFrontpageCard(record, isAdmin) {
@@ -38,7 +38,7 @@ export function renderFrontpageCard(record, isAdmin) {
   const editButtonClass = isAdmin ? '' : 'd-none';
   const hasImage = !!record.image_url;
   const imageHtml = hasImage ? `<div class="card-image-container"><img src="${escapeHtml(record.image_url)}" class="card-image" alt="${escapeHtml(record.title)}"></div>` : '';
-  return `<div class="card-grid-item"><div class="card themed">${imageHtml}<div class="card-body">
+  return `<div class="card-grid-item"><div class="card">${imageHtml}<div class="card-body">
     <h5 class="card-title">${escapeHtml(record.title)}</h5>
     <h6 class="card-subtitle">${escapeHtml(record.description)}</h6>
     <div class="card-text">${truncatedContent}...</div>

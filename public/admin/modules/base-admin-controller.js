@@ -21,24 +21,15 @@ export class BaseAdminController {
         this.setupCommonHandlers();
     }
 
-    /**
-     * Get themed card styles using theme API
-     */
     getThemedCardStyles() {
-        const c = getThemeColors();
-        return `border-radius:10px;margin-bottom:1em;padding:1em;background:${c.surfaceColor};color:${c.textColor};border:1px solid ${c.borderColor};min-height:3.5em;`;
+        // Use only design system classes, not inline styles
+        return '';
     }
 
-    /**
-     * Get themed secondary text styles using theme API
-     */
     getThemedSecondaryStyles() {
         return `color:${getThemeColors().secondaryColor};font-size:0.9em;`;
     }
 
-    /**
-     * Setup common event handlers
-     */
     setupCommonHandlers() {
         this.handleAuthRedirect();
         window.addEventListener('unhandledrejection', e => {
@@ -47,16 +38,10 @@ export class BaseAdminController {
         });
     }
 
-    /**
-     * Standardized event binding system
-     */
     setupEventHandlers() {
         // Override in subclasses
     }
 
-    /**
-     * Bind a single event handler with error handling
-     */
     bindEvent(element, eventType, handler, options = {}) {
         if (!element) return;
         element.addEventListener(eventType, async event => {
@@ -68,9 +53,6 @@ export class BaseAdminController {
         }, options);
     }
 
-    /**
-     * Bind multiple events from a configuration object
-     */
     bindEvents(config) {
         Object.entries(config).forEach(([selector, events]) => {
             const element = this.elements[selector] || document.querySelector(selector);
@@ -80,9 +62,6 @@ export class BaseAdminController {
         });
     }
 
-    /**
-     * Bind events to elements by data attributes
-     */
     bindDataEvents(container, eventMap) {
         if (!container) return;
 
@@ -96,9 +75,6 @@ export class BaseAdminController {
         });
     }
 
-    /**
-     * Bind events to elements by selector
-     */
     bindEventsBySelector(selector, eventType, handler) {
         const elements = document.querySelectorAll(selector);
         elements.forEach(element => {
@@ -106,9 +82,6 @@ export class BaseAdminController {
         });
     }
 
-    /**
-     * Setup delegated event handling for dynamic content
-     */
     setupDelegatedEvents(container, eventConfig) {
         if (!container) return;
         Object.entries(eventConfig).forEach(([selector, events]) => {
@@ -121,25 +94,16 @@ export class BaseAdminController {
         });
     }
 
-    /**
-     * Remove event listeners (for cleanup)
-     */
     removeEventListeners(element, eventType, handler) {
         if (element && handler) {
             element.removeEventListener(eventType, handler);
         }
     }
 
-    /**
-     * Handle authentication redirect logic
-     */
     handleAuthRedirect() {
         // Override in subclasses if needed
     }
 
-    /**
-     * Check authentication and redirect if needed
-     */
     checkAuthentication() {
         if (!AuthAPI.isAuthenticated()) {
             messages.showError('Not authenticated. Please log in.');
@@ -149,27 +113,18 @@ export class BaseAdminController {
         return true;
     }
 
-    /**
-     * Show loading state for container
-     */
     showContainerLoading(container, message = 'Loading...') {
         if (container) {
-            container.innerHTML = `<div class="themed" style="padding:1em;">${message}</div>`;
+            container.innerHTML = `<div>${message}</div>`;
         }
     }
 
-    /**
-     * Show empty state for container
-     */
     showContainerEmpty(container, message = 'No items found') {
         if (container) {
             renderEmptyState(container, message);
         }
     }
 
-    /**
-     * Show error state for container
-     */
     showContainerError(container, message = 'Failed to load data') {
         if (container) {
             renderErrorState(container, message);
@@ -178,13 +133,9 @@ export class BaseAdminController {
 
     showContainerState(container, message, type = 'info') {
         if (!container) return;
-        const color = type === 'error' ? 'text-danger' : 'themed';
-        container.innerHTML = `<div class="${color}" style="padding:1em;">${message}</div>`;
+        container.innerHTML = `<div>${message}</div>`;
     }
 
-    /**
-     * Safe API call with error handling and response logging
-     */
     async safeApiCall(apiCall, { loadingElements = [], loadingText = 'Loading...', successCallback, errorCallback, operationName = 'API Operation', requestData = null } = {}) {
         try {
             loadingElements.forEach(el => loadingManager.setLoading(el, true, loadingText));
@@ -206,9 +157,6 @@ export class BaseAdminController {
         }
     }
 
-    /**
-     * Handle item display for editing
-     */
     displayItemForEdit(item, { editTabSelector, formFields = {}, hideMessage = true } = {}) {
         if (editTabSelector) {
             const editTab = document.querySelector(editTabSelector);
@@ -226,9 +174,6 @@ export class BaseAdminController {
         if (hideMessage) messages.clearAll();
     }
 
-    /**
-     * Handle new item creation
-     */
     handleNewItem({ editTabSelector, formFields = {}, hideMessage = true } = {}) {
         if (editTabSelector) {
             const editTab = document.querySelector(editTabSelector);
@@ -245,9 +190,6 @@ export class BaseAdminController {
         if (hideMessage) messages.clearAll();
     }
 
-    /**
-     * Setup confirmation buttons with double-click logic
-     */
     setupConfirmationButtons(buttonSelector, { confirmClass = 'btn-danger', defaultClass = 'btn-secondary', confirmTitle = 'Click again to confirm', defaultTitle = 'Click again to confirm deletion', onConfirm = null } = {}) {
         document.querySelectorAll(buttonSelector).forEach(btn => {
             btn.classList.remove(confirmClass);
@@ -290,9 +232,6 @@ export class BaseAdminController {
         });
     }
 
-    /**
-     * DRY API response handler for admin modules
-     */
     handleApiResponse(response, successCallback = null, errorCallback = null) {
         if (response && response.success) {
             messages.showSuccess(response.message || 'Operation completed successfully');

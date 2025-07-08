@@ -81,12 +81,12 @@ export class RecordManagement extends BaseAdminController {
                         this.showContainerEmpty(this.elements.recordListContainer, 'No records found');
                     } else {
                         this.elements.recordListContainer.innerHTML = records.map(record => `
-                            <div class="card themed">
+                            <div class="card">
                                 <div class="record-title-row">
                                     ${renderCardTitle(record.title || 'Untitled')}
                                 </div>
                                 <div class="record-meta-row">
-                                    <span class="themed">${record.is_published ? 'Published' : 'Draft'}</span>
+                                    <span>${record.is_published ? 'Published' : 'Draft'}</span>
                                     <span style="flex: 1"></span>
                                     <button class="btn edit-record-btn" data-record-id="${record.id}" title="Edit">✏️</button>
                                     <button class="btn delete-record-btn" data-record-id="${record.id}" title="Delete">🗑️</button>

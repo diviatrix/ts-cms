@@ -1,48 +1,28 @@
-/**
- * Simple Theme API - Simplified Version
- * Easy-to-use wrapper for the unified theme system
- */
-
 import { unifiedThemeSystem } from './theme-system.js';
 
-/**
- * Simple theme API that provides a clean interface for common theme operations
- */
 class SimpleThemeAPI {
     constructor() {
         this.themeSystem = unifiedThemeSystem;
     }
 
-    /**
-     * Initialize theme system automatically when imported
-     */
     static autoInit() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    new SimpleThemeAPI();
+                });
+            } else {
                 new SimpleThemeAPI();
-            });
-        } else {
-            new SimpleThemeAPI();
         }
     }
 
-    /**
-     * Get current theme information
-     */
     getCurrentTheme() {
         return this.themeSystem.getCurrentTheme();
     }
 
-    /**
-     * Check if theme system is ready
-     */
     isReady() {
         return this.themeSystem.isReady();
     }
 
-    /**
-     * Wait for theme to be loaded and applied
-     */
     async waitForTheme() {
         if (this.isReady()) return;
         return new Promise(resolve => {
@@ -54,55 +34,39 @@ class SimpleThemeAPI {
         });
     }
 
-    /**
-     * Reload the current theme
-     */
     async reloadTheme() {
         return this.themeSystem.reloadTheme();
     }
 
-    /**
-     * Apply theme to a specific element (simplified)
-     */
     applyToElement(element) {
         // Force refresh since simplified system doesn't have per-element application
-        this.themeSystem.forceRefresh();
+        this.refreshTheme();
     }
 
-    /**
-     * Listen for theme changes (simplified)
-     */
     onThemeChange(callback) {
         document.addEventListener('themeChanged', callback);
     }
 
-    /**
-     * Remove theme change listener (simplified)
-     */
     offThemeChange(callback) {
         document.removeEventListener('themeChanged', callback);
     }
 
-    /**
-     * Manually trigger theme refresh
-     */
     refreshTheme() {
         this.themeSystem.forceRefresh();
     }
 
-    /**
-     * Get theme CSS variables for use in JavaScript
-     */
     getThemeVariables() {
         const style = getComputedStyle(document.documentElement);
         return {
-            primaryColor: style.getPropertyValue('--theme-primary').trim(),
-            secondaryColor: style.getPropertyValue('--theme-secondary').trim(),
-            backgroundColor: style.getPropertyValue('--theme-background').trim(),
-            surfaceColor: style.getPropertyValue('--theme-surface').trim(),
-            textColor: style.getPropertyValue('--theme-text').trim(),
-            borderColor: style.getPropertyValue('--theme-border').trim(),
-            fontFamily: style.getPropertyValue('--theme-font').trim()
+            primaryColor: style.getPropertyValue('--theme-primary-color').trim(),
+            secondaryColor: style.getPropertyValue('--theme-secondary-color').trim(),
+            backgroundColor: style.getPropertyValue('--theme-background-color').trim(),
+            surfaceColor: style.getPropertyValue('--theme-surface-color').trim(),
+            textColor: style.getPropertyValue('--theme-text-color').trim(),
+            borderColor: style.getPropertyValue('--theme-border-color').trim(),
+            fontFamily: style.getPropertyValue('--theme-font-family').trim(),
+            textSecondary: style.getPropertyValue('--theme-text-secondary')?.trim() || undefined,
+            textMuted: style.getPropertyValue('--theme-text-muted')?.trim() || undefined
         };
     }
 }
