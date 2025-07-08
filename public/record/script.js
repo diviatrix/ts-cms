@@ -18,16 +18,14 @@ class RecordDisplayController extends BasePageController {
     // Create message display for user feedback
     const messageDiv = document.createElement('div');
     messageDiv.className = 'mt-3';
-    const container = document.querySelector('.container');
+    const container = document.querySelector('.record-wrapper');
     
-    // Find the row that contains the card
-    const row = container.querySelector('.row');
-    if (row) {
-      // Insert message div at the beginning of the row
-      row.insertBefore(messageDiv, row.firstChild);
+    if (container) {
+      // Insert message div at the top of the record-wrapper
+      container.insertBefore(messageDiv, container.firstChild);
     } else {
-      // Fallback: append to container
-      container.appendChild(messageDiv);
+      // Fallback: append to body
+      document.body.appendChild(messageDiv);
     }
     
     super({ messageDiv });
@@ -128,7 +126,7 @@ class RecordDisplayController extends BasePageController {
       loadingContainer.style.display = 'none';
     }
     if (contentContainer) {
-      contentContainer.classList.remove('d-none');
+      contentContainer.classList.remove('hidden');
     }
 
     if (this.elements.title) {
@@ -226,7 +224,7 @@ class RecordDisplayController extends BasePageController {
   showRecordNotFound(description) {
     const contentContainer = document.getElementById('contentContainer');
     if (contentContainer) {
-      contentContainer.classList.remove('d-none');
+      contentContainer.classList.remove('hidden');
       contentContainer.innerHTML = `
         <div class="alert alert-warning">
           <h4>Record Not Found</h4>
@@ -243,7 +241,7 @@ class RecordDisplayController extends BasePageController {
   showRecordError(description) {
     const contentContainer = document.getElementById('contentContainer');
     if (contentContainer) {
-      contentContainer.classList.remove('d-none');
+      contentContainer.classList.remove('hidden');
       contentContainer.innerHTML = `
         <div class="alert alert-danger">
           <h4>Error Loading Record</h4>
@@ -260,7 +258,7 @@ class RecordDisplayController extends BasePageController {
   showNetworkError() {
     const contentContainer = document.getElementById('contentContainer');
     if (contentContainer) {
-      contentContainer.classList.remove('d-none');
+      contentContainer.classList.remove('hidden');
       contentContainer.innerHTML = `
         <div class="alert alert-danger">
           <h4>Network Error</h4>

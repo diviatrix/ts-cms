@@ -1,69 +1,67 @@
-<div class="row mt-4">
-  <div class="col-md-4">
+<div class="themes-panel">
+  <div class="themes-list-section">
     <h2>Themes</h2>
-    <button id="newThemeButton" class="btn btn-primary mb-3">Create New Theme</button>
+    <div class="card-footer">
+      <a id="newThemeButton" class="btn" href="#">Create New Theme</a>
+    </div>
     <div id="themeList">
       <!-- Theme list will be populated by JavaScript -->
     </div>
   </div>
-  <div class="col-md-8">
-    <div id="themeEditTab" class="card d-none">
+  <div class="themes-edit-section">
+    <div id="themeEditTab" class="card themed">
       <div class="card-body">
-        <h2 class="card-title text-center">Edit Theme</h2>
+        <h2 class="card-title">Edit Theme</h2>
         <div id="themeInfo" data-current-theme-id="">
-          <label for="themeName" class="form-label">Theme Name:</label>
-          <input type="text" id="themeName" class="form-control mb-2">
-          <label for="themeDescription" class="form-label">Description:</label>
-          <textarea id="themeDescription" class="form-control mb-2" rows="3"></textarea>
-          <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" id="themeIsActive">
-            <label class="form-check-label" for="themeIsActive">
-              Set as Active Theme
-            </label>
+          <div class="field">
+            <label for="themeName">Theme Name:</label>
+            <input type="text" id="themeName">
+          </div>
+          <div class="field">
+            <label for="themeDescription">Description:</label>
+            <textarea id="themeDescription" rows="3"></textarea>
+          </div>
+          <div class="field">
+            <input type="checkbox" id="themeIsActive">
+            <label for="themeIsActive">Set as Active Theme</label>
           </div>
           <h4>Theme Settings</h4>
           <div id="themeSettings">
-            <div class="row mb-2">
-              <div class="col-md-4">
-                <label for="primaryColor" class="form-label">Primary:</label>
-                <input type="color" id="primaryColor" class="form-control" value="#00FF00">
-              </div>
-              <div class="col-md-4">
-                <label for="secondaryColor" class="form-label">Secondary:</label>
-                <input type="color" id="secondaryColor" class="form-control" value="#FFD700">
-              </div>
-              <div class="col-md-4">
-                <label for="backgroundColor" class="form-label">Background:</label>
-                <input type="color" id="backgroundColor" class="form-control" value="#222222">
-              </div>
+            <div class="field">
+              <label for="primaryColor">Primary:</label>
+              <input type="color" id="primaryColor" value="#00FF00">
             </div>
-            <div class="row mb-2">
-              <div class="col-md-4">
-                <label for="surfaceColor" class="form-label">Surface:</label>
-                <input type="color" id="surfaceColor" class="form-control" value="#444444">
-              </div>
-              <div class="col-md-4">
-                <label for="textColor" class="form-label">Text:</label>
-                <input type="color" id="textColor" class="form-control" value="#E0E0E0">
-              </div>
-              <div class="col-md-4">
-                <label for="borderColor" class="form-label">Border:</label>
-                <input type="color" id="borderColor" class="form-control" value="#00FF00">
-              </div>
+            <div class="field">
+              <label for="secondaryColor">Secondary:</label>
+              <input type="color" id="secondaryColor" value="#FFD700">
             </div>
-            <div class="row mb-2">
-              <div class="col-md-6">
-                <label for="textSecondary" class="form-label">Secondary Text:</label>
-                <input type="color" id="textSecondary" class="form-control" value="#C0C0C0">
-              </div>
-              <div class="col-md-6">
-                <label for="textMuted" class="form-label">Muted Text:</label>
-                <input type="color" id="textMuted" class="form-control" value="#A0A0A0">
-              </div>
+            <div class="field">
+              <label for="backgroundColor">Background:</label>
+              <input type="color" id="backgroundColor" value="#222222">
             </div>
-            <div class="mb-2">
-              <label for="fontFamily" class="form-label">Font Family:</label>
-              <select id="fontFamily" class="form-control">
+            <div class="field">
+              <label for="surfaceColor">Surface:</label>
+              <input type="color" id="surfaceColor" value="#444444">
+            </div>
+            <div class="field">
+              <label for="textColor">Text:</label>
+              <input type="color" id="textColor" value="#E0E0E0">
+            </div>
+            <div class="field">
+              <label for="borderColor">Border:</label>
+              <input type="color" id="borderColor" value="#00FF00">
+            </div>
+            <div class="field">
+              <label for="textSecondary">Secondary Text:</label>
+              <input type="color" id="textSecondary" value="#C0C0C0">
+            </div>
+            <div class="field">
+              <label for="textMuted">Muted Text:</label>
+              <input type="color" id="textMuted" value="#A0A0A0">
+            </div>
+            <div class="field">
+              <label for="fontFamily">Font Family:</label>
+              <select id="fontFamily">
                 <option value="'Share Tech Mono', monospace">Share Tech Mono (Default)</option>
                 <option value="Arial, sans-serif">Arial</option>
                 <option value="'Times New Roman', serif">Times New Roman</option>
@@ -75,39 +73,39 @@
                 <option value="'JetBrains Mono', monospace">JetBrains Mono (Google Font)</option>
               </select>
             </div>
-            <div class="row mb-2">
-              <div class="col-md-6">
-                <label for="faviconUrl" class="form-label">Favicon URL:</label>
-                <input type="url" id="faviconUrl" class="form-control" placeholder="https://example.com/favicon.ico">
-              </div>
-              <div class="col-md-6">
-                <label for="logoUrl" class="form-label">Logo URL:</label>
-                <input type="url" id="logoUrl" class="form-control" placeholder="https://example.com/logo.png">
-              </div>
+            <div class="field">
+              <label for="faviconUrl">Favicon URL:</label>
+              <input type="url" id="faviconUrl" placeholder="https://example.com/favicon.ico">
             </div>
-            <div class="mb-2">
-              <label for="customCss" class="form-label">Custom CSS:</label>
-              <textarea id="customCss" class="form-control" rows="3"></textarea>
+            <div class="field">
+              <label for="logoUrl">Logo URL:</label>
+              <input type="url" id="logoUrl" placeholder="https://example.com/logo.png">
             </div>
-            <div class="mb-2">
-              <label for="footerText" class="form-label">Footer Text:</label>
-              <input type="text" id="footerText" class="form-control" placeholder="Footer text">
+            <div class="field">
+              <label for="customCss">Custom CSS:</label>
+              <textarea id="customCss" rows="3"></textarea>
             </div>
-            <div class="mb-2">
-              <label for="footerLinks" class="form-label">Footer Links (comma-separated):</label>
-              <input type="text" id="footerLinks" class="form-control" placeholder="Link1, Link2, ...">
+            <div class="field">
+              <label for="footerText">Footer Text:</label>
+              <input type="text" id="footerText" placeholder="Footer text">
             </div>
-            <div class="mb-2">
-              <label for="menuLinks" class="form-label">Menu Links (comma-separated):</label>
-              <input type="text" id="menuLinks" class="form-control" placeholder="Menu1, Menu2, ...">
+            <div class="field">
+              <label for="footerLinks">Footer Links (comma-separated):</label>
+              <input type="text" id="footerLinks" placeholder="Link1, Link2, ...">
+            </div>
+            <div class="field">
+              <label for="menuLinks">Menu Links (comma-separated):</label>
+              <input type="text" id="menuLinks" placeholder="Menu1, Menu2, ...">
             </div>
           </div>
         </div>
-        <button id="themeSaveButton" class="btn btn-success btn-sm mt-3">Save Theme</button>
-        <button id="themeDeleteButton" class="btn btn-danger btn-sm mt-3 ms-2">Delete Theme</button>
-        <button id="themePreviewButton" class="btn btn-info btn-sm mt-3 ms-2" title="Preview Theme">👁️</button>
-        <div id="themeMessageDiv" class="mt-3 text-center"></div>
+        <div class="card-footer">
+          <a id="themeSaveButton" class="btn" href="#">Save Theme</a>
+          <a id="themeDeleteButton" class="btn" href="#">Delete Theme</a>
+          <a id="themePreviewButton" class="btn" href="#" title="Preview Theme">👁️</a>
+        </div>
+        <div id="themeMessageDiv"></div>
       </div>
     </div>
   </div>
-</div> 
+</div>

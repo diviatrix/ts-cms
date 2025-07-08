@@ -1,40 +1,54 @@
-<div class="row mt-4">
-  <div class="col-md-4">
+<div class="records-panel">
+  <div class="records-list-section">
     <h2>Records</h2>
-    <button id="newRecordButton" class="btn btn-primary mb-3">Create New Record</button>
-    <div id="recordListContainer" class="list-group">
+    <div class="card-footer">
+      <a id="newRecordButton" class="btn" href="#">Create New Record</a>
+    </div>
+    <div id="recordListContainer">
       <!-- Record list will be populated by JavaScript -->
     </div>
   </div>
-  <div class="col-md-8">
-    <div id="recordEditTab" class="card d-none">
+  <div class="records-edit-section">
+    <div id="recordEditTab" class="card themed">
       <div class="card-body">
-        <h2 class="card-title text-center">Edit Record</h2>
+        <h2 class="card-title">Edit Record</h2>
         <div id="recordInfo" data-current-record-id="">
-          <label for="recordTitle" class="form-label">Title:</label>
-          <input type="text" id="recordTitle" class="form-control mb-2">
-          <label for="recordDescription" class="form-label">Description:</label>
-          <input type="text" id="recordDescription" class="form-control mb-2">
-          <label for="recordImageUrl" class="form-label">Image URL (optional):</label>
-          <input type="url" id="recordImageUrl" class="form-control mb-2" placeholder="https://example.com/image.jpg">
-          <label for="recordContent" class="form-label">Content (Markdown):</label>
-          <textarea id="recordContent" class="form-control mb-2" rows="10"></textarea>
-          <label for="recordTags" class="form-label">Tags (comma-separated):</label>
-          <input type="text" id="recordTags" class="form-control mb-2">
-          <label for="recordCategories" class="form-label">Categories (comma-separated):</label>
-          <input type="text" id="recordCategories" class="form-control mb-2">
-          <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" id="recordIsPublished">
-            <label class="form-check-label" for="recordIsPublished">
-              Published
-            </label>
+          <div class="field">
+            <label for="recordTitle">Title:</label>
+            <input type="text" id="recordTitle">
+          </div>
+          <div class="field">
+            <label for="recordDescription">Description:</label>
+            <input type="text" id="recordDescription">
+          </div>
+          <div class="field">
+            <label for="recordImageUrl">Image URL (optional):</label>
+            <input type="url" id="recordImageUrl" placeholder="/img/placeholder-square.png">
+          </div>
+          <div class="field">
+            <label for="recordContent">Content (Markdown):</label>
+            <textarea id="recordContent" rows="10"></textarea>
+          </div>
+          <div class="field">
+            <label for="recordTags">Tags (comma-separated):</label>
+            <input type="text" id="recordTags">
+          </div>
+          <div class="field">
+            <label for="recordCategories">Categories (comma-separated):</label>
+            <input type="text" id="recordCategories">
+          </div>
+          <div class="field">
+            <input type="checkbox" id="recordIsPublished">
+            <label for="recordIsPublished">Published</label>
           </div>
         </div>
-        <button id="recordSaveButton" class="btn btn-success btn-sm mt-3">Save Record</button>
-        <button id="recordDeleteButton" class="btn btn-danger btn-sm mt-3 ms-2">Delete Record</button>
-        <button id="recordDownloadButton" class="btn btn-info btn-sm mt-3 ms-2" title="Download as Markdown">📥</button>
-        <div id="recordMessageDiv" class="mt-3 text-center"></div>
+        <div class="card-footer">
+          <a id="recordSaveButton" class="btn" href="#">Save Record</a>
+          <a id="recordDeleteButton" class="btn" href="#">Delete Record</a>
+          <a id="recordDownloadButton" class="btn" href="#" title="Download as Markdown">📥</a>
+        </div>
+        <div id="recordMessageDiv"></div>
       </div>
     </div>
   </div>
-</div> 
+</div>

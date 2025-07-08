@@ -79,32 +79,18 @@ class ProfileController {
    * Setup tab functionality without Bootstrap
    */
   setupTabs() {
-    const tabButtons = document.querySelectorAll('#profileTab .nav-link');
+    const tabLinks = document.querySelectorAll('.tab-header .btn');
     const tabPanes = document.querySelectorAll('.tab-pane');
 
-    tabButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
+    tabLinks.forEach((link, idx) => {
+      link.addEventListener('click', (e) => {
         e.preventDefault();
-        
-        // Remove active class from all buttons and panes
-        tabButtons.forEach(btn => {
-          btn.classList.remove('active');
-          btn.setAttribute('aria-selected', 'false');
-        });
-        tabPanes.forEach(pane => {
-          pane.classList.remove('show', 'active');
-        });
-        
-        // Add active class to clicked button
-        button.classList.add('active');
-        button.setAttribute('aria-selected', 'true');
-        
-        // Show corresponding pane
-        const targetId = button.getAttribute('data-bs-target') || button.getAttribute('href');
-        const targetPane = document.querySelector(targetId);
-        if (targetPane) {
-          targetPane.classList.add('show', 'active');
-        }
+        // Remove active from all
+        tabLinks.forEach(l => l.classList.remove('active'));
+        tabPanes.forEach(pane => pane.classList.remove('active'));
+        // Add active to clicked
+        link.classList.add('active');
+        tabPanes[idx].classList.add('active');
       });
     });
   }

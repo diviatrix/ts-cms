@@ -81,16 +81,15 @@ export class RecordManagement extends BaseAdminController {
                         this.showContainerEmpty(this.elements.recordListContainer, 'No records found');
                     } else {
                         this.elements.recordListContainer.innerHTML = records.map(record => `
-                            <div class="record-card themed" style="${this.getThemedCardStyles()}">
-                                <div class="record-title-row" style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em; cursor: pointer;">
+                            <div class="card themed">
+                                <div class="record-title-row">
                                     ${renderCardTitle(record.title || 'Untitled')}
                                 </div>
-                                <div class="record-meta-row" style="display: flex; align-items: center; gap: 1em;">
-                                    <span class="record-date" style="${this.getThemedSecondaryStyles()}">${new Date(record.created_at).toLocaleDateString()}</span>
-                                    <span class="badge ${record.is_published ? 'bg-success' : 'bg-secondary'}">${record.is_published ? 'Published' : 'Draft'}</span>
+                                <div class="record-meta-row">
+                                    <span class="themed">${record.is_published ? 'Published' : 'Draft'}</span>
                                     <span style="flex: 1"></span>
-                                    <button class="icon-btn edit-record-btn btn btn-sm btn-primary" data-record-id="${record.id}" title="Edit">✏️</button>
-                                    <button class="icon-btn delete-record-btn btn btn-sm btn-secondary" data-record-id="${record.id}" title="Delete">🗑️</button>
+                                    <button class="btn edit-record-btn" data-record-id="${record.id}" title="Edit">✏️</button>
+                                    <button class="btn delete-record-btn" data-record-id="${record.id}" title="Delete">🗑️</button>
                                 </div>
                             </div>
                         `).join('');

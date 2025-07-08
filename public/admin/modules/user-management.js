@@ -39,17 +39,17 @@ export class UserManagement extends BaseAdminController {
             this.elements.userListContainer.innerHTML = users.map(user => {
                 const isActive = user.base?.is_active || user.is_active;
                 const actionButton = isActive ? 
-                    `<button class="icon-btn toggle-user-btn btn btn-sm btn-warning" data-user-id="${user.base?.id || user.id}" data-action="deactivate" title="Deactivate">🚫</button>` :
-                    `<button class="icon-btn toggle-user-btn btn btn-sm btn-success" data-user-id="${user.base?.id || user.id}" data-action="activate" title="Activate">✅</button>`;
+                    `<button class="btn toggle-user-btn" data-user-id="${user.base?.id || user.id}" data-action="deactivate" title="Deactivate">🚫</button>` :
+                    `<button class="btn toggle-user-btn" data-user-id="${user.base?.id || user.id}" data-action="activate" title="Activate">✅</button>`;
                 
                 return `
-                    <div class="admin-card themed" style="${this.getThemedCardStyles()}">
-                        <div class="admin-card-title" style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.5em; cursor: pointer;">
+                    <div class="card themed">
+                        <div class="admin-card-title">
                             ${renderCardTitle(user.base?.login || user.login || 'Unknown')}
-                            <span style="${this.getThemedSecondaryStyles()} margin-left: 0.5em;">${renderMetaRow(user.base?.email || user.email || '')}</span>
+                            <span>${renderMetaRow(user.base?.email || user.email || '')}</span>
                         </div>
-                        <div class="admin-card-meta" style="display: flex; align-items: center; gap: 1em;">
-                            <span class="badge ${isActive ? 'bg-success' : 'bg-secondary'}">${isActive ? 'Active' : 'Inactive'}</span>
+                        <div class="admin-card-meta">
+                            <span class="themed">${isActive ? 'Active' : 'Inactive'}</span>
                             <span style="flex: 1"></span>
                             ${renderEditButton(`data-user='${JSON.stringify(user)}'`)}
                             ${actionButton}

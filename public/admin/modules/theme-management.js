@@ -71,27 +71,26 @@ export class ThemeManagement extends BaseAdminController {
         themeList.innerHTML = '';
         
         if (this.themes.length === 0) {
-            themeList.innerHTML = '<div class="text-muted p-3">No themes found. Create your first theme!</div>';
+            themeList.innerHTML = '<div class="themed empty-state">No themes found. Create your first theme!</div>';
             return;
         }
         
         this.themes.forEach(theme => {
             const card = document.createElement('div');
-            card.className = 'card mb-3';
-            card.style = this.getThemedCardStyles();
+            card.className = 'card themed';
             card.innerHTML = `
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <h5 class="card-title mb-1">${theme.name}</h5>
-                            <p class="card-text text-muted mb-2">${theme.description || 'No description'}</p>
-                            <small class="text-muted">ID: ${theme.id}</small>
+                    <div>
+                        <div>
+                            <h5 class="card-title">${theme.name}</h5>
+                            <p class="card-text">${theme.description || 'No description'}</p>
+                            <small class="themed">ID: ${theme.id}</small>
                         </div>
-                        <div class="d-flex flex-column align-items-end gap-2">
-                            <span class="badge ${theme.is_active ? 'bg-success' : 'bg-secondary'}">${theme.is_active ? 'Active' : 'Inactive'}</span>
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-primary edit-theme-btn" data-theme-id="${theme.id}" title="Edit">✏️</button>
-                                <button class="btn btn-secondary delete-theme-btn" data-theme-id="${theme.id}" title="Delete">🗑️</button>
+                        <div>
+                            <span class="themed">${theme.is_active ? 'Active' : 'Inactive'}</span>
+                            <div>
+                                <button class="btn edit-theme-btn" data-theme-id="${theme.id}" title="Edit">✏️</button>
+                                <button class="btn delete-theme-btn" data-theme-id="${theme.id}" title="Delete">🗑️</button>
                             </div>
                         </div>
                     </div>

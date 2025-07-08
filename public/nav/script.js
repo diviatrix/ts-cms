@@ -15,12 +15,9 @@ class NavigationController extends BasePageController {
     
     // Listen for navigation loaded event
     document.addEventListener('navigationLoaded', () => this.init());
-    
-    // Fallback: If nav is already present, call init() on DOMContentLoaded
+    // Always initialize on DOMContentLoaded, regardless of navPlaceholder
     document.addEventListener('DOMContentLoaded', () => {
-      if (document.getElementById('navPlaceholder')?.querySelector('nav')) {
-        this.init();
-    }
+      this.init();
     });
   }
 
@@ -45,7 +42,7 @@ class NavigationController extends BasePageController {
     // Get elements after navigation HTML is loaded
     this.elements = this.getNavigationElements();
     
-    // Setup mobile navigation toggle using Bootstrap
+    // Setup mobile navigation toggle
     this.setupMobileToggle();
     
     // Setup navigation based on authentication state
@@ -57,23 +54,16 @@ class NavigationController extends BasePageController {
   }
 
   /**
-   * Setup mobile navigation toggle functionality using Bootstrap
+   * Setup mobile navigation toggle
    */
   setupMobileToggle() {
     if (!this.elements.navbarToggle || !this.elements.navbarNav) {
       return;
     }
-
-    // Bootstrap will handle the mobile toggle automatically
-    // We just need to ensure the data attributes are set correctly
-    this.elements.navbarToggle.setAttribute('data-bs-toggle', 'collapse');
-    this.elements.navbarToggle.setAttribute('data-bs-target', '#navbarNav');
-    this.elements.navbarToggle.setAttribute('aria-controls', 'navbarNav');
-    this.elements.navbarToggle.setAttribute('aria-expanded', 'false');
-    this.elements.navbarToggle.setAttribute('aria-label', 'Toggle navigation');
-    
-    // Ensure navbar nav has the correct classes
-    this.elements.navbarNav.classList.add('collapse', 'navbar-collapse');
+    // Simple toggle for mobile nav
+    this.elements.navbarToggle.addEventListener('click', () => {
+      this.elements.navbarNav.classList.toggle('navmenu-visible');
+    });
   }
 
   /**
@@ -141,7 +131,8 @@ class NavigationController extends BasePageController {
     
     // Add click event listener (check if already has listener to avoid duplicates)
     if (!this.elements.signOutButton.hasAttribute('data-listener-added')) {
-      this.elements.signOutButton.addEventListener('click', () => {
+      this.elements.signOutButton.addEventListener('click', (e) => {
+        e.preventDefault();
         this.handleSignOut();
       });
       this.elements.signOutButton.setAttribute('data-listener-added', 'true');
@@ -163,22 +154,22 @@ class NavigationController extends BasePageController {
   }
 
   /**
-   * Show element by removing d-none class
+   * Show element by removing hidden class
    */
   showElement(element) {
     if (element) {
-      element.classList.remove('d-none');
+      element.classList.remove('hidden');
     } else {
       console.warn('Attempted to show null element');
     }
   }
 
   /**
-   * Hide element by adding d-none class
+   * Hide element by adding hidden class
    */
   hideElement(element) {
     if (element) {
-      element.classList.add('d-none');
+      element.classList.add('hidden');
     } else {
       console.warn('Attempted to hide null element');
     }

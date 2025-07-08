@@ -41,15 +41,31 @@ class LoginPageController extends AuthPageController {
 
   setupTabHandlers() {
     if (this.loginTab && this.registerTab) {
-      [this.loginTab, this.registerTab].forEach(tab => {
-        tab.addEventListener('click', () => {
-          this.messageDiv.innerHTML = '';
-          this.loginForm.reset();
-          this.registerForm.reset();
-          this.loginButton.disabled = true;
-          this.registerButton.disabled = true;
-          if (this.passwordStrengthDiv) this.passwordStrengthDiv.innerHTML = '';
-        });
+      this.loginTab.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.loginTab.classList.add('active');
+        this.registerTab.classList.remove('active');
+        document.getElementById('loginTabPane').classList.add('active');
+        document.getElementById('registerTabPane').classList.remove('active');
+        this.messageDiv.innerHTML = '';
+        this.loginForm.reset();
+        this.registerForm.reset();
+        this.loginButton.disabled = true;
+        this.registerButton.disabled = true;
+        if (this.passwordStrengthDiv) this.passwordStrengthDiv.innerHTML = '';
+      });
+      this.registerTab.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.registerTab.classList.add('active');
+        this.loginTab.classList.remove('active');
+        document.getElementById('registerTabPane').classList.add('active');
+        document.getElementById('loginTabPane').classList.remove('active');
+        this.messageDiv.innerHTML = '';
+        this.loginForm.reset();
+        this.registerForm.reset();
+        this.loginButton.disabled = true;
+        this.registerButton.disabled = true;
+        if (this.passwordStrengthDiv) this.passwordStrengthDiv.innerHTML = '';
       });
     }
   }
@@ -57,13 +73,21 @@ class LoginPageController extends AuthPageController {
   setupFormHandler() {
     // Use a single FormHandler, update rules dynamically
     this.formHandler = new FormHandler(document.body);
-    // Login form submit
+    // Login form submit (disable default submit)
     this.loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+    });
+    // Register form submit (disable default submit)
+    this.registerForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+    });
+    // Login button click (now <a>)
+    this.loginButton.addEventListener('click', (e) => {
       e.preventDefault();
       this.handleSubmit('login');
     });
-    // Register form submit
-    this.registerForm.addEventListener('submit', (e) => {
+    // Register button click (now <a>)
+    this.registerButton.addEventListener('click', (e) => {
       e.preventDefault();
       this.handleSubmit('register');
     });
@@ -128,93 +152,48 @@ class LoginPageController extends AuthPageController {
       strengthDiv.innerHTML = '';
       return;
     }
-    const colors = { weak: 'danger', medium: 'warning', strong: 'success' };
+    const colors = { weak: '#ff3c3c', medium: '#ffc107', strong: '#3cff7a' };
     const messages = { weak: 'Weak password', medium: 'Medium strength', strong: 'Strong password' };
     const progressWidth = (strength.score / 5) * 100;
     strengthDiv.innerHTML = `
-      <div class="small mb-1">Password strength: <span class="text-${colors[strength.level]}">${messages[strength.level]}</span></div>
-      <div class="progress mb-2" style="height: 4px;">
-        <div class="progress-bar bg-${colors[strength.level]}" style="width: ${progressWidth}%"></div>
+      <div style="font-size:0.95em; margin-bottom:0.5em;">Password strength: <span style="color:${colors[strength.level]}">${messages[strength.level]}</span></div>
+      <div style="background:#222; border-radius:2px; height:4px; margin-bottom:0.5em; width:100%;">
+        <div style="background:${colors[strength.level]}; height:4px; border-radius:2px; width:${progressWidth}%"></div>
       </div>
-      <div class="small text-muted">
-        ${strength.checks.length ? '✓' : '✗'} At least 8 characters<br>
-        ${strength.checks.lowercase ? '✓' : '✗'} Lowercase letter<br>
-        ${strength.checks.uppercase ? '✓' : '✗'} Uppercase letter<br>
-        ${strength.checks.numbers ? '✓' : '✗'} Number<br>
-        ${strength.checks.special ? '✓' : '✗'} Special character
+      <div style="font-size:0.95em; color:#aaa;">
+        ${(strength.checks.length ? '✓' : '✗')} At least 8 characters<br>
+        ${(strength.checks.lowercase ? '✓' : '✗')} Lowercase letter<br>
+        ${(strength.checks.uppercase ? '✓' : '✗')} Uppercase letter<br>
+        ${(strength.checks.numbers ? '✓' : '✗')} Number<br>
+        ${(strength.checks.special ? '✓' : '✗')} Special character
       </div>
     `;
   }
 
   async handleSubmit(type) {
-    // Set validation rules dynamically
     if (type === 'login') {
-      this.formHandler.validationRules = {
-        loginInput: [
-          { type: 'required', message: 'Login is required' },
-          { type: 'noSpaces', message: 'Login cannot contain spaces' }
-        ],
-        passwordInput: [{ type: 'required', message: 'Password is required' }]
-      };
-      const isValid = this.formHandler.validateForm();
-      if (!isValid) return;
-      const attemptLogin = async () => {
-        const response = await AuthAPI.login(
-          this.loginInput.value.trim(),
-          this.passwordInput.value.trim()
-        );
-        if (response.success) {
-          this.handleAuthSuccess();
-        } else {
-          this.handleAuthFailure(response);
-        }
-      };
-      return this.safeApiCall(attemptLogin, {
-        loadingElements: [this.loginButton],
-        retryCallback: attemptLogin,
-        operationKey: 'login_attempt'
-      });
+      const login = this.loginInput.value.trim();
+      const password = this.passwordInput.value.trim();
+      if (!login || !password) return;
+      const response = await AuthAPI.login(login, password);
+      if (response.success) {
+        this.handleAuthSuccess();
+      } else {
+        this.handleAuthFailure(response);
+      }
     } else if (type === 'register') {
-      this.formHandler.validationRules = {
-        registerLoginInput: [
-          { type: 'required', message: 'Login is required' },
-          { type: 'minLength', value: 4, message: 'Login must be at least 4 characters long' },
-          { type: 'maxLength', value: 50, message: 'Login must be no more than 50 characters long' },
-          { type: 'username', message: 'Login can only contain letters, numbers, underscores, and hyphens' },
-          { type: 'noSpaces', message: 'Login cannot contain spaces' }
-        ],
-        registerPasswordInput: [
-          { type: 'required', message: 'Password is required' },
-          { type: 'minLength', value: 6, message: 'Password must be at least 6 characters long' },
-          { type: 'maxLength', value: 100, message: 'Password must be no more than 100 characters long' }
-        ],
-        registerEmailInput: [
-          { type: 'required', message: 'Email is required' },
-          { type: 'email', message: 'Please enter a valid email address' }
-        ]
-      };
-      const isValid = this.formHandler.validateForm();
-      if (!isValid) return;
-      const response = await this.safeApiCall(
-        () => AuthAPI.register(
-          this.registerLoginInput.value.trim(),
-          this.registerEmailInput.value.trim(),
-          this.registerPasswordInput.value.trim()
-        ),
-        {
-          loadingElements: [this.registerButton],
-        }
-      );
+      const login = this.registerLoginInput.value.trim();
+      const email = this.registerEmailInput.value.trim();
+      const password = this.registerPasswordInput.value.trim();
+      if (!login || !email || !password) return;
+      const response = await AuthAPI.register(login, email, password);
       if (response.success) {
         // Auto-login after successful registration
-        const loginResponse = await AuthAPI.login(
-          this.registerLoginInput.value.trim(),
-          this.registerPasswordInput.value.trim()
-        );
+        const loginResponse = await AuthAPI.login(login, password);
         if (loginResponse.success) {
           this.handleAuthSuccess();
         } else {
-          messages.showError('Registration succeeded, but auto-login failed. Please log in manually.');
+          this.handleAuthFailure(loginResponse);
         }
       } else {
         this.handleAuthFailure(response);
@@ -224,10 +203,5 @@ class LoginPageController extends AuthPageController {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initMessageContainer();
-    messageSystem.subscribe(renderMessages);
-});
-
-document.addEventListener('DOMContentLoaded', function() {
   new LoginPageController();
 });
