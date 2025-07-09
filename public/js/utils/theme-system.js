@@ -34,10 +34,6 @@ const DEFAULT_THEME = {
     }
 };
 
-const THEME_CACHE_KEY = 'unifiedThemeSettingsCache';
-const THEME_CACHE_TTL = 24 * 60 * 60 * 1000;
-const THEME_LAST_APPLIED_KEY = 'unifiedThemeLastApplied';
-
 function normalizeSettings(settings) {
     if (Array.isArray(settings)) {
         const obj = {};
@@ -46,34 +42,6 @@ function normalizeSettings(settings) {
     }
     return settings || {};
 }
-
-// Streamlined cache logic
-const cache = {
-    get() {
-        const raw = localStorage.getItem(THEME_CACHE_KEY);
-        if (!raw) return null;
-        const cache = JSON.parse(raw);
-        if (Date.now() - cache.timestamp > THEME_CACHE_TTL) {
-            this.invalidate();
-            return null;
-        }
-        return cache.settings;
-    },
-    set(settings) {
-        localStorage.setItem(THEME_CACHE_KEY, JSON.stringify({ settings, timestamp: Date.now() }));
-    },
-    getLastApplied() {
-        const raw = localStorage.getItem(THEME_LAST_APPLIED_KEY);
-        return raw ? JSON.parse(raw) : null;
-    },
-    setLastApplied(settings) {
-        localStorage.setItem(THEME_LAST_APPLIED_KEY, JSON.stringify(settings));
-    },
-    invalidate() {
-        localStorage.removeItem(THEME_CACHE_KEY);
-        localStorage.removeItem(THEME_LAST_APPLIED_KEY);
-    }
-};
 
 class UnifiedThemeSystem {
     constructor() {
@@ -87,7 +55,6 @@ class UnifiedThemeSystem {
 
     init() {
         document.addEventListener('themeChanged', () => {
-            cache.invalidate();
             this.loadPromise = null;
             this.loadTheme();
         });
@@ -105,18 +72,6 @@ class UnifiedThemeSystem {
 
     async _loadTheme() {
         this.themeState = THEME_STATES.LOADING;
-        const cachedSettings = cache.get();
-        const lastApplied = cache.getLastApplied();
-        if (cachedSettings) {
-            await this.applyTheme(cachedSettings);
-            if (!lastApplied || JSON.stringify(cachedSettings) !== JSON.stringify(lastApplied)) {
-                cache.setLastApplied(cachedSettings);
-                this.forceRefresh();
-            }
-            this.themeState = THEME_STATES.LOADED;
-            document.dispatchEvent(new CustomEvent('themeReady'));
-            return;
-        }
         try {
             await loadDependencies();
             const result = await apiClient.get('/cms/active-theme');
@@ -125,12 +80,8 @@ class UnifiedThemeSystem {
                 if (themeResult.success && themeResult.data) {
                     this.currentTheme = themeResult.data;
                     this.themeState = THEME_STATES.LOADED;
-                    this.retryAttempts = 0;
                     let settings = normalizeSettings(themeResult.data.settings);
-                    cache.set(settings);
                     await this.applyTheme(settings);
-                    cache.setLastApplied(settings);
-                    this.forceRefresh();
                     document.dispatchEvent(new CustomEvent('themeReady'));
                 } else {
                     throw new Error('Failed to load theme details');
