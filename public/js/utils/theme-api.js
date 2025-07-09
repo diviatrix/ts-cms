@@ -1,28 +1,13 @@
 import { unifiedThemeSystem } from './theme-system.js';
 
+// Minimal, stable theme API wrapper
 class SimpleThemeAPI {
-    constructor() {
-        this.themeSystem = unifiedThemeSystem;
-    }
-
-    static autoInit() {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => {
-                    new SimpleThemeAPI();
-                });
-            } else {
-                new SimpleThemeAPI();
-        }
-    }
-
     getCurrentTheme() {
-        return this.themeSystem.getCurrentTheme();
+        return unifiedThemeSystem.getCurrentTheme();
     }
-
     isReady() {
-        return this.themeSystem.isReady();
+        return unifiedThemeSystem.isReady();
     }
-
     async waitForTheme() {
         if (this.isReady()) return;
         return new Promise(resolve => {
@@ -33,28 +18,12 @@ class SimpleThemeAPI {
             document.addEventListener('themeReady', onReady);
         });
     }
-
     async reloadTheme() {
-        return this.themeSystem.reloadTheme();
+        return unifiedThemeSystem.reloadTheme();
     }
-
-    applyToElement(element) {
-        // Force refresh since simplified system doesn't have per-element application
-        this.refreshTheme();
-    }
-
-    onThemeChange(callback) {
-        document.addEventListener('themeChanged', callback);
-    }
-
-    offThemeChange(callback) {
-        document.removeEventListener('themeChanged', callback);
-    }
-
     refreshTheme() {
-        this.themeSystem.forceRefresh();
+        unifiedThemeSystem.forceRefresh();
     }
-
     getThemeVariables() {
         const style = getComputedStyle(document.documentElement);
         return {
@@ -71,13 +40,9 @@ class SimpleThemeAPI {
     }
 }
 
-// Auto-initialize the theme system
-SimpleThemeAPI.autoInit();
-
-// Create instance for export
 const simpleThemeAPI = new SimpleThemeAPI();
 
-// Theme helper functions
+// Main theme API export
 export const theme = {
     get current() { return simpleThemeAPI.getCurrentTheme(); },
     get isReady() { return simpleThemeAPI.isReady(); },
@@ -86,7 +51,7 @@ export const theme = {
     getColors: () => simpleThemeAPI.getThemeVariables()
 };
 
-// Utility functions for easier theme integration
+// Utility: run callback with theme variables when ready
 export function withTheme(callback) {
     if (simpleThemeAPI.isReady()) {
         callback(simpleThemeAPI.getThemeVariables());
@@ -97,24 +62,7 @@ export function withTheme(callback) {
     }
 }
 
-export function themedElement(element, themeClass = 'themed') {
-    if (element) {
-        element.classList.add(themeClass);
-        simpleThemeAPI.applyToElement(element);
-    }
-    return element;
-}
-
+// Utility: get theme variables directly
 export function getThemeColors() {
     return simpleThemeAPI.getThemeVariables();
 }
-
-export function themeClass(baseClass, themeAware = true) {
-    return themeAware ? `${baseClass} themed` : baseClass;
-}
-
-export function applyTheme(element) {
-    return simpleThemeAPI.applyToElement(element);
-}
-
-export { SimpleThemeAPI, simpleThemeAPI };

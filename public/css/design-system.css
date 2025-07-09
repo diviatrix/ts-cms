@@ -1,8 +1,3 @@
-/* 
- * Minimal Design System CSS
- * Only essential variables and minimal login page/component styles
- */
-
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -16,21 +11,36 @@
     --theme-border-color: {{BORDER_COLOR}};
     --theme-font-family: {{FONT_FAMILY}};
     --default-border-radius: 1rem;
+    --default-gap: 1.5rem;
+    --default-padding: 1.5rem;
+    --default-margin: 1.5rem;
+    --default-font-size: 1rem;
 }
 
 body {
     background-color: var(--theme-background-color);
     color: var(--theme-text-color);
     font-family: var(--theme-font-family);
+    font-size: var(--default-font-size);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
 }
 
-/* Minimal login page layout */
+/* Inherit spacing and sizing from body/root */
+.login-wrapper, .card, .box, .tab-content, .tab-header, .navbar, .card-grid {
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+}
+
 .login-wrapper {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--theme-background-color, #181a1f);
+  padding: var(--default-padding);
 }
 .card {
   display: flex;
@@ -39,11 +49,12 @@ body {
   max-width: 420px;
   min-width: 260px;
   min-height: 320px;
-  margin: 0 auto 2rem auto;
+  margin: 0 auto var(--default-margin) auto;
   border-radius: var(--default-border-radius);
   box-shadow: 0 4px 24px rgba(0,0,0,0.10);
   background: var(--theme-surface-color, #23272e);
-  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  padding: var(--default-padding);
+  gap: var(--default-gap);
 }
 .card-title {
   font-size: 1.3rem;
@@ -89,11 +100,11 @@ body {
 .tab-header {
   display: flex;
   justify-content: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: var(--default-gap);
+  margin-bottom: var(--default-gap);
 }
 .tab-content {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--default-gap);
 }
 .tab-pane {
   display: none;
@@ -106,18 +117,19 @@ label {
   margin-bottom: 0.5rem;
   font-weight: 500;
 }
-input[type="text"], input[type="email"], input[type="password"] {
+input[type="text"], input[type="email"], input[type="password"], textarea {
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: var(--default-border-radius);
   border: 1.5px solid var(--theme-border-color, #333);
-  background: var(--theme-surface-color, #23272e);
+  background: var(--theme-secondary-color, #23272e);
   color: var(--theme-text-color, #fff);
   font-size: 1rem;
   margin-bottom: 1rem;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
-input:focus {
+input:focus, textarea:focus {
   outline: none;
   border-color: var(--theme-primary-color, #3cff7a);
 }
@@ -146,11 +158,10 @@ input:focus {
 }
 
 #messageContainer {
-  margin-top: 1.5rem;
+  margin-top: var(--default-gap);
   text-align: center;
 }
 
-/* Minimal, reusable, responsive navbar */
 .navbar {
   width: 100%;
   background: var(--theme-surface-color, #23272e);
@@ -195,14 +206,13 @@ input:focus {
   padding: 0;
 }
 
-/* Card grid layout for front page and admin */
 .card-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 2rem;
+  gap: var(--default-gap);
   justify-content: center;
   align-items: stretch;
-  margin: 2rem 0;
+  margin: var(--default-margin) 0;
 }
 .card-grid-item {
   flex: 1 1 320px;
@@ -217,35 +227,16 @@ input:focus {
   gap: 1em;
 }
 .empty-state {
-  padding: 1.5em;
+  padding: var(--default-padding);
   text-align: center;
   color: var(--theme-secondary-color, #aaa);
   font-size: 1.1em;
 }
 .error-state {
-  padding: 1.5em;
+  padding: var(--default-padding);
   text-align: center;
   color: #ff3c3c;
   font-size: 1.1em;
-}
-
-textarea {
-  width: 100%;
-  min-height: 8em;
-  padding: 0.75rem 1rem;
-  border-radius: var(--default-border-radius);
-  border: 1.5px solid var(--theme-border-color, #333);
-  background: var(--theme-surface-color, #23272e);
-  color: var(--theme-text-color, #fff);
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  transition: border-color 0.15s;
-  resize: vertical;
-  box-sizing: border-box;
-}
-textarea:focus {
-  outline: none;
-  border-color: var(--theme-primary-color, #3cff7a);
 }
 
 .box {
@@ -253,7 +244,7 @@ textarea:focus {
   color: var(--theme-text-color, #fff);
   border-radius: var(--default-border-radius);
   border: 1.5px solid var(--theme-border-color, #333);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  padding: var(--default-padding);
+  margin-bottom: var(--default-margin);
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }

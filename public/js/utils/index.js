@@ -13,7 +13,7 @@ import { messageSystem } from './message-system.js';
 
 // Import new unified theme system
 import { UnifiedThemeSystem, unifiedThemeSystem } from './theme-system.js';
-import { SimpleThemeAPI, theme, withTheme, themedElement, applyTheme, getThemeColors, themeClass } from './theme-api.js';
+import { theme, withTheme, getThemeColors } from './theme-api.js';
 
 // Import CMS integration
 import { cmsIntegration } from './cms-integration.js';
@@ -30,13 +30,9 @@ export {
     
     // New unified theme system
     UnifiedThemeSystem,
-    SimpleThemeAPI,
     theme,
     withTheme,
-    themedElement,
-    applyTheme,
     getThemeColors,
-    themeClass,
     
     // Global instances
     loadingManager,

@@ -47,23 +47,24 @@ function normalizeSettings(settings) {
     return settings || {};
 }
 
+// Streamlined cache logic
 const cache = {
     get() {
-        try {
-            const cache = JSON.parse(localStorage.getItem(THEME_CACHE_KEY));
-            if (!cache) return null;
-            if (Date.now() - cache.timestamp > THEME_CACHE_TTL) {
-                localStorage.removeItem(THEME_CACHE_KEY);
-                return null;
-            }
-            return cache.settings;
-        } catch { return null; }
+        const raw = localStorage.getItem(THEME_CACHE_KEY);
+        if (!raw) return null;
+        const cache = JSON.parse(raw);
+        if (Date.now() - cache.timestamp > THEME_CACHE_TTL) {
+            this.invalidate();
+            return null;
+        }
+        return cache.settings;
     },
     set(settings) {
         localStorage.setItem(THEME_CACHE_KEY, JSON.stringify({ settings, timestamp: Date.now() }));
     },
     getLastApplied() {
-        try { return JSON.parse(localStorage.getItem(THEME_LAST_APPLIED_KEY)); } catch { return null; }
+        const raw = localStorage.getItem(THEME_LAST_APPLIED_KEY);
+        return raw ? JSON.parse(raw) : null;
     },
     setLastApplied(settings) {
         localStorage.setItem(THEME_LAST_APPLIED_KEY, JSON.stringify(settings));
@@ -90,6 +91,9 @@ class UnifiedThemeSystem {
             this.loadPromise = null;
             this.loadTheme();
         });
+        document.addEventListener('dynamicContentLoaded', () => {
+            this.forceRefresh();
+        });
         this.loadTheme();
     }
 
@@ -104,7 +108,7 @@ class UnifiedThemeSystem {
         const cachedSettings = cache.get();
         const lastApplied = cache.getLastApplied();
         if (cachedSettings) {
-            await this.applyThemeSettings(cachedSettings);
+            await this.applyTheme(cachedSettings);
             if (!lastApplied || JSON.stringify(cachedSettings) !== JSON.stringify(lastApplied)) {
                 cache.setLastApplied(cachedSettings);
                 this.forceRefresh();
@@ -124,7 +128,7 @@ class UnifiedThemeSystem {
                     this.retryAttempts = 0;
                     let settings = normalizeSettings(themeResult.data.settings);
                     cache.set(settings);
-                    await this.applyThemeSettings(settings);
+                    await this.applyTheme(settings);
                     cache.setLastApplied(settings);
                     this.forceRefresh();
                     document.dispatchEvent(new CustomEvent('themeReady'));
@@ -136,71 +140,87 @@ class UnifiedThemeSystem {
             }
         } catch (error) {
             messageSystem.showError('Error: ' + (error?.message || error?.toString()));
-            this.applyFallback();
+            await this.applyFallback();
         } finally {
             this.loadPromise = null;
         }
     }
 
-    async applyThemeSettings(settings) {
-        await this.injectCSS(settings);
-        this.applyElements(settings);
-    }
-
-    applyFallback() {
-        this.currentTheme = DEFAULT_THEME;
-        this.themeState = THEME_STATES.FALLBACK;
-        this.injectCSS(DEFAULT_THEME.settings);
-        document.dispatchEvent(new CustomEvent('themeReady'));
-    }
-
-    async injectCSS(settings) {
-        const css = await this.generateCSS(settings);
+    // Centralized theme application
+    async applyTheme(settings, template = null) {
+        const css = this.buildThemeCSS(settings, template);
         const existing = document.getElementById('unified-theme-system');
         if (existing) existing.remove();
         this.styleElement = document.createElement('style');
         this.styleElement.id = 'unified-theme-system';
         this.styleElement.textContent = css;
         document.head.appendChild(this.styleElement);
+        this.applyElements(settings);
     }
 
+    // Unified CSS builder for all theme modes
+    buildThemeCSS(settings, template = null) {
+        const vars = {
+            PRIMARY_COLOR: settings.primary_color || '#00FF00',
+            SECONDARY_COLOR: settings.secondary_color || '#FFD700',
+            BACKGROUND_COLOR: settings.background_color || '#222222',
+            SURFACE_COLOR: settings.surface_color || '#444444',
+            TEXT_COLOR: settings.text_color || '#E0E0E0',
+            TEXT_SECONDARY: settings.text_secondary || '#C0C0C0',
+            TEXT_MUTED: settings.text_muted || '#A0A0A0',
+            BORDER_COLOR: settings.border_color || '#00FF00',
+            FONT_FAMILY: settings.font_family || "'Share Tech Mono', monospace",
+            CUSTOM_CSS: settings.custom_css || ''
+        };
+        if (template) {
+            return template
+                .replace(/{{PRIMARY_COLOR}}/g, vars.PRIMARY_COLOR)
+                .replace(/{{SECONDARY_COLOR}}/g, vars.SECONDARY_COLOR)
+                .replace(/{{BACKGROUND_COLOR}}/g, vars.BACKGROUND_COLOR)
+                .replace(/{{SURFACE_COLOR}}/g, vars.SURFACE_COLOR)
+                .replace(/{{TEXT_COLOR}}/g, vars.TEXT_COLOR)
+                .replace(/{{TEXT_SECONDARY}}/g, vars.TEXT_SECONDARY)
+                .replace(/{{TEXT_MUTED}}/g, vars.TEXT_MUTED)
+                .replace(/{{BORDER_COLOR}}/g, vars.BORDER_COLOR)
+                .replace(/{{FONT_FAMILY}}/g, vars.FONT_FAMILY)
+                .replace(/\/\* {{CUSTOM_CSS}} \*\//g, vars.CUSTOM_CSS);
+        }
+        // Fallback/minimal template
+        return `
+            :root {
+                --theme-primary-color: ${vars.PRIMARY_COLOR};
+                --theme-secondary-color: ${vars.SECONDARY_COLOR};
+                --theme-background-color: ${vars.BACKGROUND_COLOR};
+                --theme-surface-color: ${vars.SURFACE_COLOR};
+                --theme-text-color: ${vars.TEXT_COLOR};
+                --theme-border-color: ${vars.BORDER_COLOR};
+                --theme-font-family: ${vars.FONT_FAMILY};
+            }
+            body { background-color: var(--theme-background-color); color: var(--theme-text-color); font-family: var(--theme-font-family); }
+            .card, .card-body, .box { background-color: var(--theme-surface-color); border-color: var(--theme-border-color); color: var(--theme-text-color); }
+            .navbar { background-color: var(--theme-surface-color); }
+            .btn, .btn-primary { background-color: var(--theme-primary-color); border-color: var(--theme-primary-color); color: #181a1f; }
+            .btn-secondary { background-color: var(--theme-secondary-color); border-color: var(--theme-secondary-color); color: #181a1f; }
+            ${vars.CUSTOM_CSS}
+        `;
+    }
+
+    // Replace generateCSS, generateFallbackCSS, generateSimplePreviewCSS with unified usage
     async generateCSS(settings) {
         try {
             const response = await fetch('/css/design-system.css');
             if (!response.ok) throw new Error('Failed to load design system template');
             const template = await response.text();
-            return template
-                .replace(/{{PRIMARY_COLOR}}/g, settings.primary_color || '#00FF00')
-                .replace(/{{SECONDARY_COLOR}}/g, settings.secondary_color || '#FFD700')
-                .replace(/{{BACKGROUND_COLOR}}/g, settings.background_color || '#222222')
-                .replace(/{{SURFACE_COLOR}}/g, settings.surface_color || '#444444')
-                .replace(/{{TEXT_COLOR}}/g, settings.text_color || '#E0E0E0')
-                .replace(/{{TEXT_SECONDARY}}/g, settings.text_secondary || '#C0C0C0')
-                .replace(/{{TEXT_MUTED}}/g, settings.text_muted || '#A0A0A0')
-                .replace(/{{BORDER_COLOR}}/g, settings.border_color || '#00FF00')
-                .replace(/{{FONT_FAMILY}}/g, settings.font_family || "'Share Tech Mono', monospace")
-                .replace(/\/\* {{CUSTOM_CSS}} \*\//g, settings.custom_css || '');
+            return this.buildThemeCSS(settings, template);
         } catch {
-            return this.generateFallbackCSS(settings);
+            return this.buildThemeCSS(settings);
         }
     }
-
     generateFallbackCSS(settings) {
-        return `
-            :root {
-                --bs-primary: ${settings.primary_color || '#00FF00'};
-                --bs-secondary: ${settings.secondary_color || '#FFD700'};
-                --bs-body-bg: ${settings.background_color || '#222222'};
-                --bs-body-color: ${settings.text_color || '#E0E0E0'};
-                --bs-font-sans-serif: ${settings.font_family || "'Share Tech Mono', monospace"};
-            }
-            body { background-color: ${settings.background_color || '#222222'}; color: ${settings.text_color || '#E0E0E0'}; font-family: ${settings.font_family || "'Share Tech Mono', monospace"}; }
-            .card, .card-body { background-color: ${settings.surface_color || '#444444'}; border-color: ${settings.border_color || '#00FF00'}; color: ${settings.text_color || '#E0E0E0'}; }
-            .navbar { background-color: ${settings.surface_color || '#444444'}; }
-            .btn-primary { background-color: ${settings.primary_color || '#00FF00'}; border-color: ${settings.primary_color || '#00FF00'}; }
-            .btn-secondary { background-color: ${settings.secondary_color || '#FFD700'}; border-color: ${settings.secondary_color || '#FFD700'}; }
-            ${settings.custom_css || ''}
-        `;
+        return this.buildThemeCSS(settings);
+    }
+    generateSimplePreviewCSS(settings) {
+        return this.buildThemeCSS(settings);
     }
 
     applyElements(settings) {
@@ -304,7 +324,7 @@ class UnifiedThemeSystem {
                 this.applyPreviewStyles(result.data);
                 setTimeout(() => {
                     this.removePreviewStyles();
-                    if (originalTheme) this.applyThemeSettings(normalizeSettings(originalTheme.settings));
+                    if (originalTheme) this.applyTheme(normalizeSettings(originalTheme.settings));
                     else this.loadTheme();
                 }, 10000);
                 return { success: true, message: 'Theme preview applied successfully' };
@@ -320,7 +340,7 @@ class UnifiedThemeSystem {
         const existingPreview = document.getElementById('theme-preview-styles');
         if (existingPreview) existingPreview.remove();
         let settings = normalizeSettings(themeData.settings || themeData.theme?.settings);
-        const css = this.generateSimplePreviewCSS(settings);
+        const css = this.buildThemeCSS(settings);
         const previewStyle = document.createElement('style');
         previewStyle.id = 'theme-preview-styles';
         previewStyle.type = 'text/css';
@@ -330,28 +350,16 @@ class UnifiedThemeSystem {
         document.body.offsetHeight;
     }
 
-    generateSimplePreviewCSS(settings) {
-        return `
-            :root {
-                --bs-primary: ${settings.primary_color || '#00FF00'} !important;
-                --bs-secondary: ${settings.secondary_color || '#FFD700'} !important;
-                --bs-body-bg: ${settings.background_color || '#222222'} !important;
-                --bs-body-color: ${settings.text_color || '#E0E0E0'} !important;
-                --bs-font-sans-serif: ${settings.font_family || "'Share Tech Mono', monospace"} !important;
-            }
-            body { background-color: ${settings.background_color || '#222222'} !important; color: ${settings.text_color || '#E0E0E0'} !important; font-family: ${settings.font_family || "'Share Tech Mono', monospace"} !important; }
-            .btn-primary { background-color: ${settings.primary_color || '#00FF00'} !important; border-color: ${settings.primary_color || '#00FF00'} !important; }
-            .btn-secondary { background-color: ${settings.secondary_color || '#FFD700'} !important; border-color: ${settings.secondary_color || '#FFD700'} !important; }
-            .card, .card-body { background-color: ${settings.surface_color || '#444444'} !important; border: 1px solid ${settings.border_color || '#00FF00'} !important; color: ${settings.text_color || '#E0E0E0'} !important; }
-            .navbar { background-color: ${settings.surface_color || '#444444'} !important; }
-            .navbar-brand, .nav-link { color: ${settings.text_color || '#E0E0E0'} !important; }
-            ${settings.custom_css || ''}
-        `;
-    }
-
     removePreviewStyles() {
         const previewStyle = document.getElementById('theme-preview-styles');
         if (previewStyle) { previewStyle.remove(); document.body.offsetHeight; }
+    }
+
+    async applyFallback() {
+        this.currentTheme = DEFAULT_THEME;
+        this.themeState = THEME_STATES.FALLBACK;
+        await this.applyTheme(DEFAULT_THEME.settings);
+        document.dispatchEvent(new CustomEvent('themeReady'));
     }
 
     // Public API
