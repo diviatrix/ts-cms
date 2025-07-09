@@ -2,16 +2,6 @@
 
 ---
 
-## 📄 public/js/api-client.js
-- **Connected HTML:** All main pages (index.html, admin/index.html, login/index.html, profile/index.html, record/index.html, frontpage/index.html, nav/index.html)
-- **HTML Issue:** JS is loaded via modules, but API usage is scattered and not always clear in HTML structure.
-- **HTML Suggestion:** Document API usage per page; consider per-page API entry for clarity.
-- **Issue:** File is large (527 lines), mixes API logic, error handling, and auth helpers.
-- **Suggestion:** Split into smaller modules: core API, auth, error utils.
-- **Required Info:** Are all API methods used? Any legacy endpoints?
-
----
-
 ## 📄 public/admin/script.js
 - **Connected HTML:** admin/index.html
 - **HTML Issue:** All admin logic is loaded in one script; HTML is large and tab content is not lazy-loaded.

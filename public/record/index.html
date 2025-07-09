@@ -1,39 +1,40 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Record Management</title>
+    <title>Record</title>
     <link href="/css/design-system.css" rel="stylesheet">
   </head>
   <body>
     <div class="main-content">
       <div class="record-wrapper">
-        <div id="navPlaceholder"></div>
-        <div class="card">
-          <h1 id="recordTitle" class="card-title">Loading...</h1>
-          <h6 id="recordDescription" class="card-subtitle">Loading...</h6>
-          <div style="display: flex; gap: 1rem;">
-            <a id="downloadRecordButton" class="btn hidden" href="#" title="Download as Markdown">📥 Download</a>
-            <a id="editRecordButton" class="btn hidden" href="#" title="Edit Record">✏️ Edit</a>
-          </div>
-        </div>
-        <div id="loadingContainer" class="empty-state">
-          <span>Loading record content...</span>
-        </div>
+        <nav class="navbar">
+          <a class="navbar-brand" href="/">
+            <span class="logo">1337+</span>
+          </a>
+          <button class="navmenu-toggle" id="navbarToggle" aria-label="Toggle navigation">☰</button>
+          <ul class="navmenu-list" id="navbarNav">
+            <li><a class="btn hidden" href="/login" id="loginLink">Login/Register</a></li>
+            <li><a class="btn hidden" href="/profile" id="profileLink">Profile</a></li>
+            <li><a class="btn hidden" href="/admin" id="adminLink">Admin</a></li>
+            <li><a id="signOutButton" class="btn hidden" href="#">Sign Out</a></li>
+          </ul>
+        </nav>
+        <div id="loadingContainer">Loading...</div>
         <div id="contentContainer" class="hidden">
+          <h1 id="recordTitle"></h1>
+          <div id="recordDescription"></div>
           <div id="recordContent"></div>
-          <div id="imagePreviewContainer">
-            <img id="recordImagePreview" class="card-image" alt="Record image preview" />
-          </div>
-        </div>
-        <div class="card">
-          <span>By <span id="recordAuthor">Loading...</span> on <span id="recordDate">Loading...</span></span>
+          <div id="recordAuthor"></div>
+          <div id="recordDate"></div>
+          <img id="recordImagePreview" class="card-image" alt="Record image preview" />
+          <a id="editRecordButton" class="btn d-none" href="#">Edit</a>
+          <a id="downloadRecordButton" class="btn d-none" href="#">Download</a>
         </div>
       </div>
     </div>
-    <script src="/js/theme-init.js" type="module"></script>
-    <script src="/js/utils/cms-integration.js" type="module"></script>
-    <script src="/include-nav.js" type="module"></script>
     <script src="/nav/script.js" type="module"></script>
+    <script src="/js/utils/cms-integration.js" type="module"></script>
     <script src="/record/script.js" type="module"></script>
+    <script type="module">import { applyThemeFromAPI } from '../js/utils/theme-system.js'; applyThemeFromAPI();</script>
   </body>
 </html>

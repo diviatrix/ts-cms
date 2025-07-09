@@ -66,7 +66,6 @@
 - Enhanced API client for expired token handling
 - Improved redirect logic for different pages
 - Better authentication flow and error handling
-- Files: `api-client.js`, auth controllers
 
 ## [2025-07-06] - Record Download
 - Added markdown download functionality
@@ -236,7 +235,6 @@
 - **User Guidance**: Clear redirects and error messages
 
 ### 🎯 Files Modified
-- `public/js/api-client.js` - Enhanced token handling
 - `public/js/shared-components/auth-controller.js` - Improved redirect logic
 - `public/js/shared-components/base-controller.js` - Enhanced authentication checks
 
@@ -439,7 +437,6 @@
 - Page titles now show "Page Name - Site Name" format
 - Navigation branding with site name in navbar and footer
 - Admin panel redesigned with card-based layout
-- All API calls standardized via `api-client.js`
 
 ### Removed
 - Obsolete settings (maintenance mode, registration blocking)

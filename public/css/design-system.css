@@ -46,9 +46,9 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 420px;
-  min-width: 260px;
-  min-height: 320px;
+  max-width: 90%;
+  min-width: 100pt;
+  min-height: 30pt;
   margin: 0 auto var(--default-margin) auto;
   border-radius: var(--default-border-radius);
   box-shadow: 0 4px 24px rgba(0,0,0,0.10);

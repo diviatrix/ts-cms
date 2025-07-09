@@ -1,6 +1,6 @@
-// Auth/token logic extracted from api-client.js
-import { apiClient } from './api-core.js';
+import { apiClient } from '../api-core.js';
 import { jwtDecode } from './jwt-decode.js';
+import { updateNavMenu } from '../../nav/script.js';
 
 /**
  * Get the current auth token from localStorage.
@@ -20,6 +20,8 @@ function setAuthToken(token) {
     } else {
         localStorage.removeItem('token');
     }
+    document.dispatchEvent(new CustomEvent('navShouldUpdate'));
+    if (typeof updateNavMenu === 'function') updateNavMenu();
 }
 
 /**
@@ -55,6 +57,8 @@ function isAuthenticated(messages) {
  */
 function logout() {
     setAuthToken(null);
+    document.dispatchEvent(new CustomEvent('navShouldUpdate'));
+    if (typeof updateNavMenu === 'function') updateNavMenu();
     window.location.href = '/';
 }
 
@@ -89,6 +93,8 @@ const AuthAPI = {
         const response = await apiClient.post('/login', { login, password }, false);
         if (response.success && response.data?.token) {
             setAuthToken(response.data.token);
+            document.dispatchEvent(new CustomEvent('navShouldUpdate'));
+            if (typeof updateNavMenu === 'function') updateNavMenu();
         } else if (messages && response.message) {
             messages.showError(response.message);
         }

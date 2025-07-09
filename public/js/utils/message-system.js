@@ -8,7 +8,7 @@ let apiClient = null;
 
 const loadDependencies = async () => {
     if (!apiClient) {
-        const module = await import('../api-client.js');
+        const module = await import('../api-auth.js');
         apiClient = module.apiClient;
     }
 };

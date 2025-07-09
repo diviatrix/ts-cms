@@ -1,10 +1,18 @@
+<!--
+  This file is now only used as a reference for nav HTML.
+  Navigation is now included statically in all pages.
+-->
 <nav class="navbar">
   <a class="navbar-brand" href="/">
     <span class="logo">1337+</span>
   </a>
   <button class="navmenu-toggle" id="navbarToggle" aria-label="Toggle navigation">☰</button>
   <ul class="navmenu-list" id="navbarNav">
-    <li><a class="btn hidden" href="/login" id="loginLink">Login/Register</a></li>
+    <li style="position:relative;">
+      <a class="btn hidden" href="#" id="loginDropdownToggle">Login/Register</a>
+      <!-- Login/Register dropdown partial will be injected here by nav/script.js -->
+      <!-- See login-dropdown.html for markup -->
+    </li>
     <li><a class="btn hidden" href="/profile" id="profileLink">Profile</a></li>
     <li><a class="btn hidden" href="/admin" id="adminLink">Admin</a></li>
     <li><a id="signOutButton" class="btn hidden" href="#">Sign Out</a></li>

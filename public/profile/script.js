@@ -221,7 +221,7 @@ class ProfileController {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    initMessageContainer();
-    new ProfileController();
+document.addEventListener('navigationLoaded', () => {
+  initMessageContainer();
+  new ProfileController();
 });

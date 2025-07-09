@@ -28,9 +28,9 @@
       <p style="margin:0;">&copy; 2025 TypeScript CMS. All rights reserved.</p>
       <div data-theme-footer-links style="margin-top:0.5rem;"></div>
     </footer>
-    <script src="/js/theme-init.js" type="module"></script>
-    <script src="/js/utils/cms-integration.js" type="module"></script>
+    <script type="module">import { applyThemeFromAPI } from './js/utils/theme-system.js'; applyThemeFromAPI();</script>
     <script src="/nav/script.js" type="module"></script>
+    <script src="/js/utils/cms-integration.js" type="module"></script>
     <script src="/frontpage/script.js" type="module"></script>
   </body>
 </html>

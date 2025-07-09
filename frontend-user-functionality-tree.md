@@ -1,0 +1,267 @@
+## Global Frontend Flows & Initialization
+This section describes the cross-cutting frontend flows and initialization logic that apply to all or multiple pages in the application.
+
+- **Page Initialization**
+  - On every page load:
+    - Check authentication state (token in storage/cookie)
+    - If required, redirect to login or appropriate page based on user role
+    - Fetch current user profile (if authenticated)
+    - Initialize navigation bar (show/hide links based on user role)
+    - Initialize footer (load theme settings, links, etc.)
+    - Initialize message/error system (global feedback container)
+    - Initialize dynamic content containers:
+      - Record list (on front page, record list page, admin records tab)
+      - User list (on admin users tab)
+      - Theme list (on admin themes tab)
+      - Profile info display (on profile page, navbar, etc.)
+      - Settings fields (on admin settings tab)
+
+- **Theme Initialization & Switching**
+  - On page load:
+    - Load current theme from user settings or default
+    - Apply theme styles (colors, fonts, etc.) to all UI components
+    - Theme selector available in admin/settings and user profile (if present)
+    - Changing theme updates UI immediately and saves preference
+
+- **Dynamic Content Population**
+  - On relevant pages:
+    - Fetch and render records (front page, record list, admin records tab)
+    - Fetch and render users (admin users tab)
+    - Fetch and render themes (admin themes tab)
+    - Fetch and render profile info (profile page, navbar, profile info display)
+    - Fetch and render settings (admin settings tab)
+    - All lists and forms are populated and updated dynamically via JS after data is loaded
+    - UI updates in response to user actions (edit, save, delete, activate, etc.)
+
+- **Responsive & Adaptive UI**
+  - All pages:
+    - Layout adapts to screen size (mobile, tablet, desktop)
+    - Navigation and forms adjust for usability
+
+- **Error & Message System**
+  - Global feedback/message container initialized on each page
+  - Used for success, error, and info messages across all flows
+
+## Frontend User Interface & Component Tree
+This document provides a comprehensive, page-by-page and component-by-component breakdown of all user-facing frontend interfaces, their structure, and access conditions as of July 9, 2025. Each section details what is visible and editable for different user roles and authentication states.
+
+- **Profile Page** (`/profile/index.html`)
+  - Access: Authenticated users (user group)
+  - Profile form
+    - Editable fields:
+      - Public name
+      - Profile picture URL
+      - Bio
+    - (Note: Username and Email fields are not present in the current implementation)
+  - Password change form
+    - New password
+    - Confirm new password
+  - Profile info display (current user info)
+  - Message/feedback area
+  - Theme is initialized and applied on page load
+
+- **Front Page** (`/index.html`)
+  - Nav bar
+    - Links:
+      - Profile page (if logged in)
+      - Admin area (if admin)
+      - Login/Register dropdown
+  - User login/register dropdown
+    - If not logged in:
+      - Login form
+        - Login input
+        - Password input
+        - Login button (submits login)
+        - Link/button to open register form
+      - Register form
+        - Email input (unhidden for register)
+        - Register button (replaces login button)
+  - Record list
+    - All users:
+      - Record cards (JS-populated, markdown excerpt)
+      - Read button (opens single record page)
+    - If admin:
+      - Download button (downloads record as .md)
+      - Edit button (opens record edit form in admin panel)
+  - Footer (sticky, theme-driven)
+    - Footer text, links, etc.
+  - Theme is initialized and applied on page load
+
+- **Admin Panel** (`/admin/index.html`)
+  - Access: Admin group only
+  - Admin navigation bar
+    - Tabs:
+      - Users
+      - Records
+      - Themes
+      - Settings
+  - Tab content containers for each tab are present
+  - Theme is initialized and applied on page load
+  - (See next sections for detailed validation of each tab)
+
+  - **Users Tab** (`/admin/users.html`)
+    - User management interface
+      - User list section
+        - List of users (populated by JS)
+        - Filter: Active / Inactive
+        - (Note: No search/filter input present in current implementation)
+        - Action buttons for each user:
+          - Edit user (opens edit form)
+          - Activate user
+          - Deactivate user
+      - Edit user profile section
+        - Editable fields:
+          - Roles (groups/roles input)
+          - Server answer (editable JSON)
+        - (Note: Username and Email fields are not present in the edit form)
+        - Save/Cancel buttons
+        - Message/feedback area
+      - Behavior:
+        - Selecting an action hides user list, shows edit form
+        - Save submits changes, Cancel returns to list
+  - **Settings Tab** (`/admin/settings.html`)
+    - Settings management interface
+      - Theme selector dropdown
+      - Default user role input
+      - Save settings button
+      - Message/feedback area
+  - **Records Tab** (`/admin/records.html`)
+    - Record management interface
+      - Record list section
+        - List of records (populated by JS)
+        - Action buttons for each record:
+          - Edit record (opens edit form)
+          - Delete record
+      - Edit record form section
+        - Editable fields:
+          - Title
+          - Content (markdown editor)
+          - Author (if editable)
+        - Save/Cancel buttons
+        - Message/feedback area
+      - Behavior:
+        - Selecting edit hides list, shows edit form
+        - Save submits changes, Cancel returns to list
+  - **Themes Tab** (`/admin/themes.html`)
+    - Theme management interface
+      - Theme list section
+        - List of themes (populated by JS)
+        - Action buttons for each theme:
+          - Edit theme (opens edit form)
+          - Delete theme
+      - Edit theme form section
+        - Editable fields:
+          - Theme name
+          - Color selectors
+          - Font selectors
+          - Other theme settings
+        - Save/Cancel buttons
+        - Preview area for theme changes
+        - Message/feedback area
+      - Behavior:
+        - Selecting edit hides list, shows edit form
+        - Save submits changes, Cancel returns to list
+
+- **Admin Partial Templates** (used in admin panel)
+  - **Users Tab** (`/admin/partials/users-tab.html`)
+    - User management interface
+      - User list section
+        - List of users (populated by JS)
+        - Filter: Active / Inactive
+        - (Note: No search/filter input present in current implementation)
+        - Action buttons for each user:
+          - Edit user (opens edit form)
+          - Activate user
+          - Deactivate user
+      - Edit user profile section
+        - Editable fields:
+          - Roles (groups/roles input)
+          - Server answer (editable JSON)
+        - (Note: Username and Email fields are not present in the edit form)
+        - Save/Cancel buttons
+        - Message/feedback area
+      - Behavior:
+        - Selecting an action hides user list, shows edit form
+        - Save submits changes, Cancel returns to list
+  - **Records Tab** (`/admin/partials/records-tab.html`)
+    - Record management interface
+      - Record list section
+        - List of records (populated by JS)
+        - Action buttons for each record:
+          - Edit record (opens edit form)
+          - Delete record
+      - Edit record form section
+        - Editable fields:
+          - Title
+          - Content (markdown editor)
+          - Author (if editable)
+        - Save/Cancel buttons
+        - Message/feedback area
+      - Behavior:
+        - Selecting edit hides list, shows edit form
+        - Save submits changes, Cancel returns to list
+  - **Themes Tab** (`/admin/partials/themes-tab.html`)
+    - Theme management interface
+      - Theme list section
+        - List of themes (populated by JS)
+        - Action buttons for each theme:
+          - Edit theme (opens edit form)
+          - Delete theme
+      - Edit theme form section
+        - Editable fields:
+          - Theme name
+          - Color selectors
+          - Font selectors
+          - Other theme settings
+        - Save/Cancel buttons
+        - Preview area for theme changes
+        - Message/feedback area
+      - Behavior:
+        - Selecting edit hides list, shows edit form
+        - Save submits changes, Cancel returns to list
+  - **Settings Tab** (`/admin/partials/settings-tab.html`)
+    - Default user role input
+    - Save settings button
+    - Theme selector dropdown
+
+- **Single Record Page** (`/record/index.html`)
+  - All users: View full record content (markdown)
+  - If admin:
+    - Edit button (opens record edit form in admin panel)
+    - Download button (downloads as .md)
+
+- **Record Edit Form** (`/record/edit.html`)
+  - Access: Admin only
+  - Edit record content (markdown editor)
+  - Save/Cancel actions
+
+- **Record List Page** (`/record/list.html`)
+  - List of records
+    - Title, excerpt (markdown), author, date
+    - Read button (opens single record page)
+    - If admin:
+      - Download button
+      - Edit button
+
+- **Login/Register Dropdown** (`/nav/login-dropdown.html`)
+  - Login and register forms (shown based on auth state)
+
+- **User Profile Display** (`/profile/display.html`)
+  - Shows current user profile info (for nav/profile)
+
+- **Footer** (`/footer.html`)
+  - Sticky, theme-driven
+  - Footer text, links, etc.
+
+- **Navigation Bar** (`/nav/index.html`)
+  - Links:
+    - Profile page (if logged in)
+    - Admin area (if admin)
+    - Login/Register dropdown
+
+- **Profile Info Display** (`/profile/info-display.html`)
+  - Shows current user profile info (for nav/profile)
+
+---
+
+*This tree covers all main user-related frontend interfaces and components as of July 9, 2025. No script or API details included. Structure and access are based on current frontend implementation.*

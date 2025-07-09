@@ -272,5 +272,10 @@ class RecordDisplayController extends BasePageController {
 
 document.addEventListener('DOMContentLoaded', () => {
     initMessageContainer();
-    new RecordDisplayController();
+});
+
+// If there is a controller or main logic, wrap in:
+document.addEventListener('navigationLoaded', () => {
+  initMessageContainer();
+  new RecordDisplayController();
 });

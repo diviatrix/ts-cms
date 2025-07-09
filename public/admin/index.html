@@ -7,7 +7,18 @@
   <body>
     <div class="main-content">
       <div class="admin-wrapper">
-        <div id="navPlaceholder"></div>
+        <nav class="navbar">
+          <a class="navbar-brand" href="/">
+            <span class="logo">1337+</span>
+          </a>
+          <button class="navmenu-toggle" id="navbarToggle" aria-label="Toggle navigation">☰</button>
+          <ul class="navmenu-list" id="navbarNav">
+            <li><a class="btn hidden" href="/login" id="loginLink">Login/Register</a></li>
+            <li><a class="btn hidden" href="/profile" id="profileLink">Profile</a></li>
+            <li><a class="btn hidden" href="/admin" id="adminLink">Admin</a></li>
+            <li><a id="signOutButton" class="btn hidden" href="#">Sign Out</a></li>
+          </ul>
+        </nav>
         <h1>Admin Panel</h1>
         <div class="tab-header">
           <a class="btn" id="users-tab" href="#">👥 Users</a>
@@ -27,10 +38,9 @@
         </div>
       </div>
     </div>
-    <script src="/js/theme-init.js" type="module"></script>
-    <script src="/js/utils/cms-integration.js" type="module"></script>
-    <script src="/include-nav.js" type="module"></script>
     <script src="/nav/script.js" type="module"></script>
+    <script src="/js/utils/cms-integration.js" type="module"></script>
     <script src="/admin/script.js" type="module"></script>
+    <script type="module">import { applyThemeFromAPI } from '../js/utils/theme-system.js'; applyThemeFromAPI();</script>
   </body>
 </html>

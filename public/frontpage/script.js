@@ -98,7 +98,7 @@ class FrontPageController extends BasePageController {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    initMessageContainer();
-    new FrontPageController();
+document.addEventListener('navigationLoaded', () => {
+  initMessageContainer();
+  new FrontPageController();
 });

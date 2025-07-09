@@ -58,7 +58,7 @@ const tabContentMap = {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('navigationLoaded', () => {
     const tabButtons = document.querySelectorAll('.tab-header .btn');
     tabButtons.forEach(button => {
         button.addEventListener('click', async (e) => {
