@@ -491,3 +491,122 @@ npm test
 ```
 
 This will test all API endpoints and validate the expected responses. 
+
+## Automated Test Coverage
+
+The following endpoints are covered by automated tests:
+- POST /api/register
+- POST /api/login
+- GET /api/profile
+- PUT /api/profile
+- POST /api/profile (self-update with profile object)
+- GET /api/records
+- GET /api/records/:id
+- GET /api/themes
+- GET /api/themes/:id
+- GET /api/themes/:id/settings
+- GET /api/themes/active
+- GET /api/admin/users
+
+The following endpoints are implemented but **not currently covered by automated tests**:
+- POST /api/records
+- PUT /api/records/:id
+- DELETE /api/records/:id
+- GET /api/cms/settings
+- GET /api/cms/settings/:key
+- PUT /api/cms/settings/:key
+- PUT /api/cms/active-theme
+
+---
+
+### Themes
+
+#### GET /api/themes/active
+Get the currently active website theme and its settings (public endpoint).
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "theme": {
+      "id": "uuid",
+      "name": "Active Theme",
+      "description": "Theme description"
+    },
+    "settings": {
+      "primary_color": "#00FF00",
+      "secondary_color": "#FFD700",
+      "background_color": "#222222",
+      "surface_color": "#444444",
+      "text_color": "#E0E0E0",
+      "font_family": "'Share Tech Mono', monospace",
+      "custom_css": ""
+    }
+  },
+  "message": "Active theme retrieved successfully"
+}
+```
+
+> Note: This endpoint is tested and returns both the theme object and its settings. The previously documented `/api/cms/active-theme` endpoint may also exist, but `/api/themes/active` is the one covered by tests and should be used for retrieving the active theme.
+
+---
+
+### User Profile
+
+#### POST /api/profile
+Update the current user's profile (self-update) or, if admin, update any user's profile.
+
+**Request Body (self-update):**
+```json
+{
+  "profile": {
+    "public_name": "New Name",
+    "bio": "New bio",
+    "profile_picture_url": "/img/avatar.png"
+  }
+}
+```
+
+**Request Body (admin update):**
+```json
+{
+  "user_id": "target_user_uuid",
+  "profile": {
+    "public_name": "New Name",
+    "bio": "New bio"
+  },
+  "base": {
+    "email": "newemail@example.com"
+  },
+  "roles": ["user", "admin"]
+}
+```
+
+**Note:** The self-update form is covered by automated tests. Admin update is implemented but not covered by tests.
+
+---
+
+### Records (Content Management)
+
+#### POST /api/records
+Create a new record (requires admin role).
+
+#### PUT /api/records/:id
+Update an existing record (requires admin role).
+
+#### DELETE /api/records/:id
+Delete a record (requires admin role).
+
+**Note:** These endpoints are implemented but not currently covered by automated tests.
+
+---
+
+### CMS Settings
+
+#### GET /api/cms/settings
+#### GET /api/cms/settings/:key
+#### PUT /api/cms/settings/:key
+#### PUT /api/cms/active-theme
+
+**Note:** These endpoints are implemented but not currently covered by automated tests. 
