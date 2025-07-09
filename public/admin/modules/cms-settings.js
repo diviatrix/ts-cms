@@ -8,6 +8,7 @@ import { messages } from '../../js/utils/index.js';
 import { cmsIntegration } from '../../js/utils/cms-integration.js';
 import { BaseAdminController } from './base-admin-controller.js';
 import { ConfirmationDialog } from '../../js/utils/dialogs.js';
+import { applyThemeFromAPI } from '../../js/utils/theme-system.js';
 
 export class CMSSettings extends BaseAdminController {
     constructor() {
@@ -48,7 +49,7 @@ export class CMSSettings extends BaseAdminController {
                     if (response.success) {
                         messages.showSuccess('Theme applied successfully!');
                         // Optionally reload the theme system
-                        if (window.unifiedThemeSystem) await window.unifiedThemeSystem.reloadTheme();
+                        await applyThemeFromAPI();
                         this.loadCurrentWebsiteTheme();
                     } else {
                         messages.showError('Failed to apply theme: ' + response.message);

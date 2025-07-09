@@ -12,7 +12,6 @@ import { ConfirmationDialog } from './dialogs.js';
 import { messageSystem } from './message-system.js';
 
 // Import new unified theme system
-import { UnifiedThemeSystem, unifiedThemeSystem } from './theme-system.js';
 import { theme, withTheme, getThemeColors } from './theme-api.js';
 
 // Import CMS integration
@@ -29,7 +28,6 @@ export {
     messageSystem,
     
     // New unified theme system
-    UnifiedThemeSystem,
     theme,
     withTheme,
     getThemeColors,
@@ -37,7 +35,6 @@ export {
     // Global instances
     loadingManager,
     autoLogoutManager,
-    unifiedThemeSystem,
     cmsIntegration
 };
 export const messages = messageSystem;
