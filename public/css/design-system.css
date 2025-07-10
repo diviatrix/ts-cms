@@ -157,11 +157,6 @@ input:focus, textarea:focus {
   display: none !important;
 }
 
-#messageContainer {
-  margin-top: var(--default-gap);
-  text-align: center;
-}
-
 .navbar {
   width: 100%;
   background: var(--theme-surface-color, #23272e);

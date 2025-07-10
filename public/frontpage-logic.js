@@ -1,17 +1,8 @@
-import { RecordsAPI } from '../js/api-core.js';
-import { AuthAPI } from '../js/api-auth.js';
-import { messages } from '../js/ui-utils.js';
-import { BasePageController } from '../js/shared-components.js';
-import { jwtDecode } from '../js/jwt-decode.js';
-import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
-import { messageSystem } from '../js/utils/message-system.js';
-import { initMessageContainer } from '../js/shared-components/message-container.js';
-import { renderFrontpageCard } from '../js/shared-components/ui-snippets.js';
+import { RecordsAPI, AuthAPI } from './js/api-client.js';
+import { BasePageController } from './js/shared-components.js';
+import { jwtDecode } from './js/jwt-decode.js';
+import { renderFrontpageCard } from './js/shared-components/ui-snippets.js';
 
-/**
- * Front Page Controller
- * Handles the main page display of published records
- */
 class FrontPageController extends BasePageController {
   constructor() {
     super();
@@ -21,36 +12,25 @@ class FrontPageController extends BasePageController {
     this.init();
   }
 
-  /**
-   * Initialize the front page
-   */
   init() {
     this.fetchAndRenderRecords();
   }
 
-  /**
-   * Fetch and render all published records
-   */
   async fetchAndRenderRecords() {
     try {
       const response = await this.recordsAPI.getAll();
       if (!response.success) {
         console.error('Error fetching records:', response);
         this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
-        messages.showError(response.message || 'Failed to load posts');
         return;
       }
       this.renderRecords(response.data || []);
     } catch (error) {
       console.error('Error fetching records:', error);
       this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
-      messages.showError('Error: ' + (error?.message || error?.toString()));
     }
   }
 
-  /**
-   * Render records using CSS grid and card components, with auto-expanding cards for images
-   */
   renderRecords(records) {
     this.postsGrid.className = 'card-grid';
     this.postsGrid.innerHTML = '';
@@ -68,11 +48,8 @@ class FrontPageController extends BasePageController {
     }
   }
 
-  /**
-   * Check if current user has admin role
-   */
   checkAdminRole() {
-    if (!this.authAPI.isAuthenticated(messages)) {
+    if (!this.authAPI.isAuthenticated()) {
       return false;
     }
     try {
@@ -85,9 +62,6 @@ class FrontPageController extends BasePageController {
     }
   }
 
-  /**
-   * Setup event listeners for edit buttons
-   */
   setupEditButtons() {
     document.querySelectorAll('.edit-record-btn').forEach(button => {
       button.addEventListener('click', () => {
@@ -98,7 +72,7 @@ class FrontPageController extends BasePageController {
   }
 }
 
-document.addEventListener('navigationLoaded', () => {
-  initMessageContainer();
-  new FrontPageController();
-});
+// Replace navigationLoaded with DOMContentLoaded for reliable initialization
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => { new FrontPageController(); });
+} else { new FrontPageController(); }

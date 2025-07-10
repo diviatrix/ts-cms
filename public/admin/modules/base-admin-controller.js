@@ -3,9 +3,8 @@
  * Common functionality for all admin panel modules
  */
 
-import { loadingManager, messages } from '../../js/ui-utils.js';
 import { getThemeColors } from '../../js/utils/theme-api.js';
-import { AuthAPI } from '../../js/api-auth.js';
+import { AuthAPI } from '../../js/api-client.js';
 import { renderEmptyState, renderErrorState } from '../../js/shared-components/ui-snippets.js';
 
 /**
@@ -34,7 +33,6 @@ export class BaseAdminController {
         this.handleAuthRedirect();
         window.addEventListener('unhandledrejection', e => {
             console.error('Unhandled promise rejection:', e.reason);
-            messages.showError('An unexpected error occurred. Please refresh the page.');
         });
     }
 
@@ -48,7 +46,6 @@ export class BaseAdminController {
             try { await handler.call(this, event); }
             catch (error) {
                 console.error(`Error in event handler for ${eventType}:`, error);
-                messages.showError('An error occurred while processing your request.');
             }
         }, options);
     }
@@ -106,7 +103,7 @@ export class BaseAdminController {
 
     checkAuthentication() {
         if (!AuthAPI.isAuthenticated()) {
-            messages.showError('Not authenticated. Please log in.');
+            console.warn('Not authenticated. Please log in.');
             window.location.href = '/login';
             return false;
         }
@@ -136,28 +133,25 @@ export class BaseAdminController {
         container.innerHTML = `<div>${message}</div>`;
     }
 
-    async safeApiCall(apiCall, { loadingElements = [], loadingText = 'Loading...', successCallback, errorCallback, operationName = 'API Operation', requestData = null } = {}) {
+    async safeApiCall(apiCall, { successCallback, errorCallback} = {}) {
         try {
-            loadingElements.forEach(el => loadingManager.setLoading(el, true, loadingText));
             const response = await apiCall();
 
             if (response.success) {
                 successCallback?.(response.data);
                 return response;
             } else {
-                messages.showError(response.errors?.join(', ') || response.message || 'Operation failed');
+                console.error(response.errors?.join(', ') || response.message || 'Operation failed');
                 errorCallback?.(response);
                 return response;
             }
         } catch (error) {
-            messages.showError('An unexpected error occurred: ' + (error?.message || error?.toString()));
+            console.error('An unexpected error occurred: ' + (error?.message || error?.toString()));
             return { success: false, message: error.message || 'Network error occurred', errors: [error.message || 'Network error occurred'] };
-        } finally {
-            loadingElements.forEach(el => loadingManager.setLoading(el, false));
-        }
+        } 
     }
 
-    displayItemForEdit(item, { editTabSelector, formFields = {}, hideMessage = true } = {}) {
+    displayItemForEdit(item, { editTabSelector, formFields = {}} = {}) {
         if (editTabSelector) {
             const editTab = document.querySelector(editTabSelector);
             if (editTab) editTab.classList.remove('d-none');
@@ -171,10 +165,9 @@ export class BaseAdminController {
             }
         });
         this.currentItem = item;
-        if (hideMessage) messages.clearAll();
     }
 
-    handleNewItem({ editTabSelector, formFields = {}, hideMessage = true } = {}) {
+    handleNewItem({ editTabSelector, formFields = {}} = {}) {
         if (editTabSelector) {
             const editTab = document.querySelector(editTabSelector);
             if (editTab) editTab.classList.remove('d-none');
@@ -187,7 +180,6 @@ export class BaseAdminController {
             }
         });
         this.currentItem = null;
-        if (hideMessage) messages.clearAll();
     }
 
     setupConfirmationButtons(buttonSelector, { confirmClass = 'btn-danger', defaultClass = 'btn-secondary', confirmTitle = 'Click again to confirm', defaultTitle = 'Click again to confirm deletion', onConfirm = null } = {}) {
@@ -234,17 +226,17 @@ export class BaseAdminController {
 
     handleApiResponse(response, successCallback = null, errorCallback = null) {
         if (response && response.success) {
-            messages.showSuccess(response.message || 'Operation completed successfully');
+            console.log(response.message || 'Operation completed successfully');
             if (successCallback) successCallback(response.data);
         } else {
             if (response && response.status === 401) {
-                messages.showError('Your session has expired. Please log in again.');
+                console.warn('Your session has expired. Please log in again.');
             } else if (response && response.errors && response.errors.length > 0) {
-                messages.showError(response.errors.join(', '));
+                console.error(response.errors.join(', '));
             } else {
-                messages.showError((response && response.message) || 'An unexpected error occurred. Please try again.');
+                console.error((response && response.message) || 'An unexpected error occurred. Please try again.');
             }
             if (errorCallback) errorCallback(response);
         }
     }
-} 
+}

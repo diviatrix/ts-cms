@@ -1,4 +1,5 @@
 // Simple API helper for all HTTP requests with unified error handling
+// and authentication helpers (formerly api-core.js, now api-client.js)
 import { getAuthToken, setAuthToken } from './token-storage.js';
 import { jwtDecode } from './jwt-decode.js';
 import { updateNavMenu } from '../../nav/script.js';
@@ -54,7 +55,6 @@ export const UtilityAPI = {
 };
 
 // --- Auth helpers and API ---
-
 function isAuthenticated(messages) {
     const token = getAuthToken();
     if (!token) return false;
@@ -99,22 +99,20 @@ function getUserRole() {
 
 export const AuthAPI = {
     async login(login, password, messages) {
-        const response = await apiFetch('/login', { method: 'POST', data: { login, password }, auth: false });
+        const response = await apiFetch('/api/login', { method: 'POST', data: { login, password }, auth: false });
         if (response.success && response.data?.token) {
             setAuthToken(response.data.token);
             document.dispatchEvent(new CustomEvent('navShouldUpdate'));
             if (typeof updateNavMenu === 'function') updateNavMenu();
-        } else if (messages && response.message) {
-            console.error('Login failed:', response.message);
-        }
+        } else if (messages && response.message) { console.error('Login failed:', response.message); }
         return response;
     },
     async register(login, email, password) {
-        return apiFetch('/register', { method: 'POST', data: { login, email, password }, auth: false });
+        return apiFetch('/api/register', { method: 'POST', data: { login, email, password }, auth: false });
     },
     logout,
     isAuthenticated,
     getUserRole
 };
 
-export { isAuthenticated, logout, getUserRole };
+export { isAuthenticated, logout, getUserRole, apiFetch };

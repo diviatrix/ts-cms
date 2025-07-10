@@ -1,20 +1,9 @@
-/**
- * Form Handler Component
- * Reusable form validation and submission logic
- */
-
-import { loadingManager, messages } from '../ui-utils.js';
-
 // Common regex patterns
 const REGEX_PATTERNS = {
     EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     NO_SPACES: /^\S*$/
 };
 
-/**
- * Form Handler
- * Reusable form validation and submission logic
- */
 class FormHandler {
     constructor(form, {
         messageDisplay = null,
@@ -73,23 +62,17 @@ class FormHandler {
 
     validateForm() {
         let isValid = true;
-        Object.keys(this.validationRules).forEach(fieldName => {
-            if (!this.validateField(fieldName)) isValid = false;
-        });
-        if (!isValid) messages.showError('Please correct the errors below');
+        Object.keys(this.validationRules).forEach(fieldName => { if (!this.validateField(fieldName)) isValid = false; });
+        if (!isValid) console.error('Please correct the errors below');
         return isValid;
     }
 
     async handleSubmit() {
         if (!this.submitCallback) return;
         if (!this.validateForm()) return;
-        const loadingEls = this.loadingElements.length ? this.loadingElements : [this.form.querySelector('button[type="submit"]')].filter(Boolean);
-        loadingEls.forEach(el => loadingManager.setLoading(el, true, 'Submitting...'));
-        try {
-            await this.submitCallback(this.getFormData());
-        } finally {
-            loadingEls.forEach(el => loadingManager.setLoading(el, false));
-        }
+        
+        try { await this.submitCallback(this.getFormData()); } 
+        catch (error) { console.error('Error submitting form:', error); }
     }
 
     addFieldError(field, message) {

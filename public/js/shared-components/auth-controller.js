@@ -4,7 +4,6 @@
  */
 
 import { BasePageController } from './base-controller.js';
-import { messages } from '../ui-utils.js';
 
 /**
  * Authentication Page Controller
@@ -31,7 +30,7 @@ class AuthPageController extends BasePageController {
      * Handle successful authentication
      */
     handleAuthSuccess(redirectTo = '/') {
-        messages.showSuccess('Login successful!');
+        console.log('Login successful!');
         window.location.href = redirectTo;
     }
 
@@ -41,11 +40,11 @@ class AuthPageController extends BasePageController {
     handleAuthFailure(response) {
         // Handle different types of authentication errors
         if (response.status === 401) {
-            messages.showError('Invalid login credentials. Please try again.');
+            console.error('Invalid login credentials. Please try again.');
         } else if (response.errors && response.errors.length > 0) {
-            messages.showError(response.errors.join(', '));
+            console.error(response.errors.join(', '));
         } else {
-            messages.showError(response.message || 'Authentication failed. Please try again.');
+            console.error(response.message || 'Authentication failed. Please try again.');
         }
     }
 }

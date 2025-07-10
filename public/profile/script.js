@@ -1,10 +1,5 @@
-import { ProfileAPI } from '../js/api-core.js';
-import { AuthAPI } from '../js/api-auth.js';
-import { loadingManager, messages } from '../js/ui-utils.js';
-import { jwtDecode } from '../js/jwt-decode.js';
+import { ProfileAPI, AuthAPI } from '../js/api-client.js';
 import { setImagePreview } from '../js/utils/image-preview.js';
-import { messageSystem } from '../js/utils/message-system.js';
-import { initMessageContainer } from '../js/shared-components/message-container.js';
 
 /**
  * Profile Page Controller
@@ -36,11 +31,7 @@ class ProfileController {
     this.init();
   }
 
-  /**
-   * Initialize the profile page
-   */
   async init() {
-    // Simple auth check - if not authenticated, redirect to frontpage
     if (!this.authAPI.isAuthenticated(messages)) {
       window.location.href = '/';
       return;
@@ -50,34 +41,20 @@ class ProfileController {
     await this.loadProfile();
   }
 
-  /**
-   * Setup event listeners
-   */
   setupEventListeners() {
-    // Tab functionality
     this.setupTabs();
-    
-    // Profile form event listeners
+
     this.elements.saveButton.addEventListener('click', () => this.saveProfile());
     this.elements.profilePictureUrl.addEventListener('input', () => setImagePreview(this.elements.profilePicturePreview, this.elements.profilePictureUrl.value, 'Profile picture preview'));
-    
-    // Password change event listeners
     this.elements.changePasswordButton.addEventListener('click', () => this.handlePasswordUpdate());
     this.elements.newPassword.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        this.handlePasswordUpdate();
-      }
+      if (e.key === 'Enter') { this.handlePasswordUpdate(); }
     });
     this.elements.confirmPassword.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        this.handlePasswordUpdate();
-      }
+      if (e.key === 'Enter') { this.handlePasswordUpdate(); }
     });
   }
 
-  /**
-   * Setup tab functionality without Bootstrap
-   */
   setupTabs() {
     const tabLinks = document.querySelectorAll('.tab-header .btn');
     const tabPanes = document.querySelectorAll('.tab-pane');
@@ -95,16 +72,12 @@ class ProfileController {
     });
   }
 
-  /**
-   * Load profile data from API
-   */
   async loadProfile() {
     try {
       const response = await this.profileAPI.get();
       
       if (!response.success) {
         console.error('Error fetching profile:', response);
-        messages.showError(response.message || 'Failed to load profile');
         return;
       }
 
@@ -117,17 +90,13 @@ class ProfileController {
       this.elements.bio.value = profileData.bio || '';
       setImagePreview(this.elements.profilePicturePreview, this.elements.profilePictureUrl.value, 'Profile picture preview');
       
-      messages.showSuccess('Profile loaded successfully');
+      console.log('Profile loaded successfully');
       
     } catch (error) {
       console.error('Error loading profile:', error);
-      messages.showError('Error: ' + (error?.message || error?.toString()));
     }
   }
 
-  /**
-   * Save profile data to API
-   */
   async saveProfile() {
     try {
       // Get form data
@@ -137,24 +106,16 @@ class ProfileController {
         bio: this.elements.bio.value.trim()
       };
       
-      loadingManager.setLoading(this.elements.saveButton, true, 'Saving...');
-      
       const response = await this.profileAPI.update({ profile: profileData });
       
       if (response.success) {
-        messages.showSuccess('Profile saved successfully');
+        console.log('Profile saved successfully');
         // Reload profile to show updated data
         await this.loadProfile();
       } else {
-        messages.showError(response.message || 'Failed to save profile');
+        console.error('Failed to save profile:', response.message);
       }
-      
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      messages.showError('Error: ' + (error?.message || error?.toString()));
-    } finally {
-      loadingManager.setLoading(this.elements.saveButton, false);
-    }
+    } catch (error) { console.error('Error saving profile:', error); } 
   }
 
   /**
@@ -169,22 +130,18 @@ class ProfileController {
     }
 
     try {
-      loadingManager.setLoading(this.elements.changePasswordButton, true, 'Updating...');
       const response = await this.profileAPI.updatePassword({
         newPassword: newPassword
       });
       if (response.success) {
-        messages.showSuccess('Password updated successfully');
+        console.log('Password updated successfully');
         this.clearPasswordForm();
       } else {
-        messages.showError(response.message || 'Failed to update password');
+        console.error('Failed to update password:', response.message);
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      messages.showError('Error: ' + (error?.message || error?.toString()));
-    } finally {
-      loadingManager.setLoading(this.elements.changePasswordButton, false);
-    }
+    } 
   }
 
   /**
@@ -193,19 +150,19 @@ class ProfileController {
   validatePassword(newPassword, confirmPassword) {
     // Check if passwords match
     if (newPassword !== confirmPassword) {
-      messages.showError('Passwords do not match.');
+      console.error('Passwords do not match.');
       return false;
     }
 
     // Check password length
     if (newPassword.length < 6) {
-      messages.showError('Password must be at least 6 characters long.');
+      console.error('Password must be at least 6 characters long.');
       return false;
     }
 
     // Check if password is not empty
     if (!newPassword.trim()) {
-      messages.showError('Password cannot be empty.');
+      console.error('Password cannot be empty.');
       return false;
     }
 
@@ -222,6 +179,5 @@ class ProfileController {
 }
 
 document.addEventListener('navigationLoaded', () => {
-  initMessageContainer();
   new ProfileController();
 });

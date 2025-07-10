@@ -4,11 +4,9 @@
  */
 
 import { RecordsAPI } from '../../js/api-core.js';
-import { AuthAPI } from '../../js/api-auth.js';
-import { ConfirmationDialog, messages } from '../../js/ui-utils.js';
 import { DownloadUtils } from '../../js/utils/download-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
-import { renderCardTitle, renderMetaRow, renderEditButton, renderDeleteButton, renderEmptyState, renderErrorState } from '../../js/shared-components/ui-snippets.js';
+import { renderCardTitle } from '../../js/shared-components/ui-snippets.js';
 import { AdminUtils } from './admin-utils.js';
 
 export class RecordManagement extends BaseAdminController {
@@ -23,9 +21,6 @@ export class RecordManagement extends BaseAdminController {
         this.setupEventHandlers();
     }
 
-    /**
-     * Setup record management event handlers
-     */
     setupEventHandlers() {
         // Bind direct element events
         this.bindEvents({
@@ -52,24 +47,17 @@ export class RecordManagement extends BaseAdminController {
                         const recordData = JSON.parse(target.dataset.record);
                         this.displayRecordForEdit(recordData);
                     } catch (error) {
-                        console.error('Error parsing record data:', error);
-                        messages.showError('Error loading record data: ' + (error?.message || error?.toString()));
+                        console.error('Error loading record data: ' + (error?.message || error?.toString()));
                     }
                 }
             }
         });
     }
 
-    /**
-     * Load records and populate the data table
-     */
     async loadRecords() {
         if (!this.checkAuthentication()) {
             return;
         }
-
-        messages.clearAll();
-        this.showContainerLoading(this.elements.recordListContainer, 'Loading records...');
         
         const response = await this.safeApiCall(
             () => RecordsAPI.getAll(),
@@ -104,9 +92,6 @@ export class RecordManagement extends BaseAdminController {
         }
     }
 
-    /**
-     * Display record for editing
-     */
     displayRecordForEdit(record) {
         // Always refresh elements after the form is rendered
         this.elements = AdminUtils.getDOMElements();
@@ -128,9 +113,6 @@ export class RecordManagement extends BaseAdminController {
         this.elements.recordCategories.value = (record.categories && record.categories.join(', ')) || '';
     }
 
-    /**
-     * Handle new record creation
-     */
     handleNewRecord() {
         // Always refresh elements after the form is rendered
         this.elements = AdminUtils.getDOMElements();
@@ -152,14 +134,9 @@ export class RecordManagement extends BaseAdminController {
         this.elements.recordCategories.value = '';
     }
 
-    /**
-     * Handle record save (create or update)
-     */
     async handleRecordSave() {
         const recordId = this.elements.recordInfo.dataset.currentRecordId;
-        if (!this.checkAuthentication()) {
-            return;
-        }
+        if (!this.checkAuthentication()) { return; }
         const recordData = {
             title: this.elements.recordTitle.value,
             description: this.elements.recordDescription.value,
@@ -186,9 +163,7 @@ export class RecordManagement extends BaseAdminController {
             }
         );
         this.handleApiResponse(response);
-        if (response.success && !recordId && response.data?.id) {
-            this.elements.recordInfo.dataset.currentRecordId = response.data.id;
-        }
+        if (response.success && !recordId && response.data?.id) { this.elements.recordInfo.dataset.currentRecordId = response.data.id; }
     }
 
     /**
@@ -197,31 +172,23 @@ export class RecordManagement extends BaseAdminController {
     async handleRecordDelete(recordId) {
         const idToDelete = recordId || this.elements.recordInfo.dataset.currentRecordId;
         if (!idToDelete) {
-            messages.showError('No record selected for deletion.');
+            console.error('No record selected for deletion.');
             return;
         }
-        if (!this.checkAuthentication()) {
-            return;
-        }
-        const response = await this.safeApiCall(
-            () => RecordsAPI.delete(idToDelete),
-            {
-                loadingElements: [this.elements.recordDeleteButton],
-                loadingText: 'Deleting...',
-                operationName: 'Delete Record',
-                requestData: { recordId: idToDelete },
-                successCallback: () => {
-                    this.elements.recordEditTab.classList.add('d-none');
-                    this.loadRecords();
-                }
+        if (!this.checkAuthentication()) { return; }
+        const response = await this.safeApiCall(() => RecordsAPI.delete(idToDelete), {
+            loadingElements: [this.elements.recordDeleteButton],
+            loadingText: 'Deleting...',
+            operationName: 'Delete Record',
+            requestData: { recordId: idToDelete },
+            successCallback: () => {
+                this.elements.recordEditTab.classList.add('d-none');
+                this.loadRecords();
             }
-        );
+        });
         this.handleApiResponse(response);
     }
 
-    /**
-     * Check URL for record ID and open for edit
-     */
     async checkUrlForRecordId(recordsTabBtn) {
         const hash = window.location.hash;
         const params = new URLSearchParams(hash.substring(hash.indexOf('?') + 1));
@@ -237,13 +204,12 @@ export class RecordManagement extends BaseAdminController {
                 try {
                     const response = await RecordsAPI.getById(editRecordId);
                     if (!response.success) {
-                        messages.showError('Failed to load record for edit');
+                        console.error('Failed to load record for edit', response.message);
                         return;
                     }
                     this.displayRecordForEdit(response.data);
                 } catch (error) {
                     console.error('Error fetching record for edit:', error);
-                    messages.showError('Error loading record for edit');
                 }
             }, { once: true });
         }
@@ -259,10 +225,10 @@ export class RecordManagement extends BaseAdminController {
                     if (response.success) {
                         this.displayRecordForEdit(response.data);
                     } else {
-                        messages.showError('Failed to load record for editing.');
+                        console.error('Failed to load record for editing', response.message);
                     }
                 } catch (error) {
-                    messages.showError('Error loading record for editing.');
+                    console.error('Error loading record for editing:', error);
                 }
             });
         });
@@ -290,7 +256,7 @@ export class RecordManagement extends BaseAdminController {
     handleRecordDownload() {
         const recordId = this.elements.recordInfo.dataset.currentRecordId;
         if (!recordId) {
-            messages.showError('No record selected for download.');
+            console.error('No record selected for download.');
             return;
         }
 

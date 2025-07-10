@@ -1,15 +1,4 @@
-/**
- * UI Utils Index
- * Main export file for all utility modules
- */
-
-// Import all utilities
-import { LoadingManager, loadingManager } from './loading-manager.js';
-import { AutoLogoutManager, autoLogoutManager } from './auto-logout.js';
-import { ConfirmationDialog } from './dialogs.js';
-
-// Import new unified message system
-import { messageSystem } from './message-system.js';
+import { autoLogoutManager } from './auto-logout.js';
 
 // Import new unified theme system
 import { theme, withTheme, getThemeColors } from './theme-api.js';
@@ -19,24 +8,12 @@ import { cmsIntegration } from './cms-integration.js';
 
 // Re-export all utilities
 export {
-    // Legacy utilities (kept for backward compatibility)
-    LoadingManager,
-    AutoLogoutManager,
-    ConfirmationDialog,
-    
-    // New unified message system
-    messageSystem,
-    
     // New unified theme system
     theme,
     withTheme,
     getThemeColors,
     
     // Global instances
-    loadingManager,
     autoLogoutManager,
     cmsIntegration
 };
-export const messages = messageSystem;
-
-// Remove all legacy compatibility and references to deleted modules

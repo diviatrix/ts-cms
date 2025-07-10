@@ -4,8 +4,6 @@
  */
 
 import { AdminAPI, ProfileAPI } from '../../js/api-core.js';
-import { AuthAPI } from '../../js/api-auth.js';
-import { loadingManager, messages } from '../../js/ui-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
 import { renderCardTitle, renderMetaRow, renderEditButton, renderDeleteButton, renderActivateButton, renderDeactivateButton, renderEmptyState, renderErrorState } from '../../js/shared-components/ui-snippets.js';
 
@@ -81,7 +79,7 @@ export class UserManagement extends BaseAdminController {
                         const userData = JSON.parse(target.dataset.user);
                         this.displayUserProfile(userData);
                     } catch (error) {
-                        messages.showError('Error loading user data: ' + (error?.message || error?.toString()));
+                        console.error('Error loading user data: ' + (error?.message || error?.toString()));
                     }
                 }
             }
@@ -128,7 +126,6 @@ export class UserManagement extends BaseAdminController {
                         this.displayUserProfile(userData);
                     } catch (err) {
                         console.error('[UserManagement] Failed to parse user data:', err, btn.getAttribute('data-user'));
-                        messages.showError('Failed to parse user data for editing.');
                     }
                     break;
                 case 'delete-user':
@@ -166,7 +163,6 @@ export class UserManagement extends BaseAdminController {
             return;
         }
 
-        messages.clearAll();
         this.showContainerLoading(this.elements.userListContainer, 'Loading users...');
         
         const response = await this.safeApiCall(
@@ -231,7 +227,7 @@ export class UserManagement extends BaseAdminController {
     async handleUserSave() {
         const userIdToUpdate = this.elements.adminProfileInfo.dataset.currentUserId;
         if (!userIdToUpdate) {
-            messages.showError('No user selected for saving.');
+            console.warn('No user selected for saving.');
             return;
         }
 
@@ -252,7 +248,6 @@ export class UserManagement extends BaseAdminController {
             };
         } catch (e) {
             console.error('Invalid JSON format:', e);
-            messages.showError('Invalid JSON format.');
             return;
         }
 
@@ -319,7 +314,7 @@ export class UserManagement extends BaseAdminController {
 
     async handleUserToggle(userId, action) {
         if (!userId || !action) {
-            messages.showError('Invalid user or action.');
+            console.warn('Invalid user or action.');
             return;
         }
 

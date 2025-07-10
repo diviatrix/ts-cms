@@ -1,30 +1,19 @@
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
-import { RecordsAPI } from '../js/api-core.js';
-import { AuthAPI } from '../js/api-auth.js';
+import { RecordsAPI, AuthAPI } from '../js/api-client.js';
 import { BasePageController } from '../js/shared-components.js';
 import { jwtDecode } from '../js/jwt-decode.js';
-import { messages } from '../js/ui-utils.js';
 import { DownloadUtils } from '../js/utils/download-utils.js';
 import { setImagePreview } from '../js/utils/image-preview.js';
-import { messageSystem } from '../js/utils/message-system.js';
-import { initMessageContainer } from '../js/shared-components/message-container.js';
 
-/**
- * Record Display Controller
- * Handles individual record display with admin edit functionality
- */
 class RecordDisplayController extends BasePageController {
   constructor() {
-    // Create message display for user feedback
     const messageDiv = document.createElement('div');
     messageDiv.className = 'mt-3';
     const container = document.querySelector('.record-wrapper');
     
     if (container) {
-      // Insert message div at the top of the record-wrapper
       container.insertBefore(messageDiv, container.firstChild);
     } else {
-      // Fallback: append to body
       document.body.appendChild(messageDiv);
     }
     
@@ -38,9 +27,6 @@ class RecordDisplayController extends BasePageController {
     this.init();
   }
 
-  /**
-   * Get all record display elements
-   */
   getRecordElements() {
     return {
       title: document.getElementById('recordTitle'),
@@ -54,17 +40,11 @@ class RecordDisplayController extends BasePageController {
     };
   }
 
-  /**
-   * Get record ID from URL parameters
-   */
   getRecordIdFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('id');
   }
 
-  /**
-   * Initialize the record display
-   */
   async init() {
     if (!this.recordId) {
       this.showRecordNotFound('No record ID provided.');
@@ -74,9 +54,6 @@ class RecordDisplayController extends BasePageController {
     await this.loadAndDisplayRecord();
   }
 
-  /**
-   * Load and display the record
-   */
   async loadAndDisplayRecord() {
     try {
       const response = await this.recordsAPI.getById(this.recordId);
@@ -92,20 +69,10 @@ class RecordDisplayController extends BasePageController {
     } catch (error) {
       console.error('Error fetching record:', error);
       this.showNetworkError();
-      messages.showError('Error: ' + (error?.message || error?.toString()));
     }
   }
 
-  /**
-   * Handle record load error
-   */
   handleRecordLoadError(response) {
-    // Hide loading container
-    const loadingContainer = document.getElementById('loadingContainer');
-    if (loadingContainer) {
-      loadingContainer.style.display = 'none';
-    }
-
     if (response.errors?.some(err => err.includes('not found'))) {
       this.showRecordNotFound('The requested record does not exist.');
     } else {
@@ -114,17 +81,9 @@ class RecordDisplayController extends BasePageController {
     this.message.showApiResponse(response);
   }
 
-  /**
-   * Display the record content
-   */
   displayRecord(record) {
-    // Hide loading container and show content container
-    const loadingContainer = document.getElementById('loadingContainer');
     const contentContainer = document.getElementById('contentContainer');
-    
-    if (loadingContainer) {
-      loadingContainer.style.display = 'none';
-    }
+
     if (contentContainer) {
       contentContainer.classList.remove('hidden');
     }
@@ -156,9 +115,6 @@ class RecordDisplayController extends BasePageController {
     this.setupDownloadFeature(record);
   }
 
-  /**
-   * Setup admin-specific features
-   */
   setupAdminFeatures(record) {
     if (!this.isUserAdmin()) {
       return;
@@ -170,9 +126,6 @@ class RecordDisplayController extends BasePageController {
     });
   }
 
-  /**
-   * Setup download functionality for all authenticated users
-   */
   setupDownloadFeature(record) {
     if (!this.authAPI.isAuthenticated(messages)) {
       return;
@@ -186,16 +139,10 @@ class RecordDisplayController extends BasePageController {
     }
   }
 
-  /**
-   * Handle record download as markdown
-   */
   handleRecordDownload(record) {
     DownloadUtils.downloadAsMarkdown(record.title, record.content);
   }
 
-  /**
-   * Check if current user is admin
-   */
   isUserAdmin() {
     if (!this.authAPI.isAuthenticated(messages)) {
       return false;
@@ -211,16 +158,10 @@ class RecordDisplayController extends BasePageController {
     }
   }
 
-  /**
-   * Handle edit record action
-   */
   handleEditRecord(recordId) {
     window.location.href = `/admin#records?editRecordId=${recordId}`;
   }
 
-  /**
-   * Show record not found message
-   */
   showRecordNotFound(description) {
     const contentContainer = document.getElementById('contentContainer');
     if (contentContainer) {
@@ -270,12 +211,7 @@ class RecordDisplayController extends BasePageController {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    initMessageContainer();
-});
+
 
 // If there is a controller or main logic, wrap in:
-document.addEventListener('navigationLoaded', () => {
-  initMessageContainer();
-  new RecordDisplayController();
-});
+document.addEventListener('navigationLoaded', () => { new RecordDisplayController(); });

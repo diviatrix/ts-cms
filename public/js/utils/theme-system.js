@@ -12,8 +12,8 @@ const DEFAULT_THEME = {
 
 async function fetchThemeSettings() {
     if (!apiClient) {
-        const module = await import('../api-auth.js');
-        apiClient = module.apiClient;
+        const module = await import('../api-client.js');
+        apiClient = module.AuthAPI;
         }
         try {
             const result = await apiClient.get('/cms/active-theme');

@@ -3,17 +3,20 @@
  * Handles CMS settings form and theme management
  */
 
-import { apiClient } from '../../js/api-core.js';
-import { messages } from '../../js/utils/index.js';
+import { apiFetch } from '../../js/api-client.js';
 import { cmsIntegration } from '../../js/utils/cms-integration.js';
 import { BaseAdminController } from './base-admin-controller.js';
-import { ConfirmationDialog } from '../../js/utils/dialogs.js';
 import { applyThemeFromAPI } from '../../js/utils/theme-system.js';
 
 export class CMSSettings extends BaseAdminController {
     constructor() {
         super({
-            apiClient
+            apiClient: {
+                get: (url) => apiFetch(url),
+                post: (url, data) => apiFetch(url, { method: 'POST', data }),
+                put: (url, data) => apiFetch(url, { method: 'PUT', data }),
+                delete: (url) => apiFetch(url, { method: 'DELETE' })
+            }
         });
         this.availableThemes = [];
         this.currentTheme = null;
@@ -23,7 +26,6 @@ export class CMSSettings extends BaseAdminController {
     init() {
         this.setupEventListeners();
         this.setupDownloadSettingsButton();
-        this.setupMessageRenderer();
         this.loadCMSSettings(); // Always load settings/themes on init
     }
 
@@ -37,6 +39,7 @@ export class CMSSettings extends BaseAdminController {
         // Add event listener for Apply Theme button
         const applyBtn = document.getElementById('applyWebsiteTheme');
         const themeSelect = document.getElementById('activeThemeSelect');
+        
         if (applyBtn && themeSelect) {
             applyBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
@@ -47,15 +50,15 @@ export class CMSSettings extends BaseAdminController {
                 try {
                     const response = await this.apiClient.put('/cms/active-theme', { theme_id: selectedThemeId });
                     if (response.success) {
-                        messages.showSuccess('Theme applied successfully!');
+                        console.log('Theme applied successfully!');
                         // Optionally reload the theme system
                         await applyThemeFromAPI();
                         this.loadCurrentWebsiteTheme();
                     } else {
-                        messages.showError('Failed to apply theme: ' + response.message);
+                        console.error('Failed to apply theme: ' + response.message);
                     }
                 } catch (error) {
-                    messages.showError('Error applying theme: ' + (error?.message || error));
+                    console.error('Error applying theme: ' + (error?.message || error));
                 } finally {
                     applyBtn.removeAttribute('aria-disabled');
                     applyBtn.classList.remove('disabled');
@@ -81,19 +84,6 @@ export class CMSSettings extends BaseAdminController {
         }
     }
 
-    setupMessageRenderer() {
-        const div = document.getElementById('cmsSettingsMessageDiv');
-        if (!div) return;
-        messages.subscribe(msgs => {
-            if (!msgs.length) {
-                div.innerHTML = '';
-                return;
-            }
-            const msg = msgs[msgs.length - 1];
-            div.innerHTML = `<div class="alert alert-${msg.type}">${msg.text}</div>`;
-        });
-    }
-
     async loadCMSSettings() {
         try {
             // Load CMS settings
@@ -106,68 +96,53 @@ export class CMSSettings extends BaseAdminController {
             await this.loadCurrentWebsiteTheme();
 
         } catch (error) {
-            messages.showError('Error loading CMS settings: ' + error.message);
+            console.error('Error loading CMS settings: ' + error.message);
         }
     }
 
     async loadSettings() {
         try {
-        const response = await this.safeApiCall(
-            () => this.apiClient.get('/cms/settings'),
-            {
-                operationName: 'Load CMS Settings',
-                successCallback: (data) => {
-                        this.populateSettingsForm(data);
+            const response = await this.safeApiCall(
+                () => this.apiClient.get('/cms/settings'),
+                {
+                    operationName: 'Load CMS Settings',
+                    successCallback: (data) => {
+                            this.populateSettingsForm(data);
+                    }
                 }
-            }
-        );
+            );
 
-        if (!response.success) {
-            messages.showError('Failed to load settings: ' + response.message);
-        }
-        } catch (error) {
-            console.error('Error loading settings:', error);
-        }
+            if (!response.success) { console.error('Failed to load settings: ' + response.message); }
+        } catch (error) { console.error('Error loading settings:', error);}
     }
 
     populateSettingsForm(settings) {
         const fields = ['siteName', 'siteDescription', 'defaultUserRole'];
         fields.forEach(field => {
             const element = document.getElementById(field);
-            if (element && settings[field] !== undefined) {
-                element.value = settings[field];
-        }
+            if (element && settings[field] !== undefined) { element.value = settings[field]; }
         });
 
         // Handle checkboxes
         const checkboxes = ['maintenanceMode', 'allowRegistration'];
         checkboxes.forEach(field => {
             const element = document.getElementById(field);
-            if (element && settings[field] !== undefined) {
-                element.checked = settings[field];
-        }
+            if (element && settings[field] !== undefined) { element.checked = settings[field]; }
         });
     }
 
     async loadAvailableThemes() {
         try {
-        const response = await this.safeApiCall(
-            () => this.apiClient.get('/themes'),
-            {
-                    operationName: 'Load Themes',
+            const response = await this.safeApiCall(() => this.apiClient.get('/themes'), {
+                operationName: 'Load Themes',
                 successCallback: (data) => {
-                        this.availableThemes = data || [];
+                    this.availableThemes = data || [];
                     this.populateThemeSelector();
                 }
-            }
-        );
+            });
 
-        if (!response.success) {
-            messages.showError('Failed to load themes: ' + response.message);
-            }
-        } catch (error) {
-            console.error('Error loading themes:', error);
-        }
+            if (!response.success) { console.error('Failed to load themes: ' + response.message); }
+        } catch (error) { console.error('Error loading themes:', error); }
     }
 
     populateThemeSelector() {
@@ -187,24 +162,19 @@ export class CMSSettings extends BaseAdminController {
     }
 
     async loadCurrentWebsiteTheme() {
-        const response = await this.safeApiCall(
-            () => this.apiClient.get('/cms/active-theme'),
-            {
-                operationName: 'Load Current Website Theme',
-                successCallback: (data) => {
-                    if (data) {
-                        this.currentTheme = data;
-                        this.updateCurrentThemeDisplay();
-                        
-                        // Update theme selector
-                        const themeSelect = document.getElementById('activeThemeSelect');
-                        if (themeSelect) {
-                            themeSelect.value = this.currentTheme.id;
-                        }
+        const response = await this.safeApiCall(() => this.apiClient.get('/cms/active-theme'), {
+            operationName: 'Load Current Website Theme',
+            successCallback: (data) => {
+                if (data) {
+                    this.currentTheme = data;
+                    this.updateCurrentThemeDisplay();
+                    const themeSelect = document.getElementById('activeThemeSelect');
+                    if (themeSelect) {
+                        themeSelect.value = this.currentTheme.id;
                     }
                 }
             }
-        );
+        });
 
         if (!response.success) {
             // If no active theme is set, apply the default theme first
@@ -216,7 +186,7 @@ export class CMSSettings extends BaseAdminController {
                     {
                         operationName: 'Apply Default Theme',
                         successCallback: () => {
-                            console.log('Default theme applied successfully');
+                            console.log(operationName + 'Default theme applied successfully');
                             this.currentTheme = defaultTheme;
                             this.updateCurrentThemeDisplay();
                             
@@ -277,13 +247,12 @@ export class CMSSettings extends BaseAdminController {
                 }
             );
             if (response.success) {
-                messages.showSuccess('Settings saved successfully');
+                console.log('Settings saved successfully');
             await this.loadSettings();
             await cmsIntegration.refresh();
             }
         } catch (error) {
             console.error('Error saving settings:', error);
-            messages.showError('Failed to save settings');
     }
     }
 
@@ -322,7 +291,6 @@ export class CMSSettings extends BaseAdminController {
             URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Error downloading settings:', error);
-            messages.showError('Failed to download settings');
         }
     }
 }

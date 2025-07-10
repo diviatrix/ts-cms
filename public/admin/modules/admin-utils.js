@@ -1,24 +1,4 @@
-/**
- * Admin Utilities Module
- * Shared utilities and helpers for the admin panel
- */
-
 export class AdminUtils {
-    /**
-     * Setup save shortcut for profile editing
-     */
-    static setupSaveShortcut(saveButton) {
-        // Quick actions
-        keyboardShortcuts.register('ctrl+s', () => {
-            if (saveButton && !saveButton.disabled) {
-                saveButton.click();
-            }
-        }, 'Save profile changes');
-    }
-
-    /**
-     * Initialize data tables configuration
-     */
     static getDataTableConfigs() {
         return {
             users: {
@@ -70,9 +50,6 @@ export class AdminUtils {
         };
     }
 
-    /**
-     * Get DOM elements for admin panel
-     */
     static getDOMElements() {
         return {
             // User management elements

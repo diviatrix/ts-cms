@@ -1,17 +1,16 @@
-/**
- * Theme Management Module for Admin Panel
- */
-
-import { apiClient } from '../../js/api-core.js';
-import { messages } from '../../js/ui-utils.js';
+import { apiFetch } from '../../js/api-client.js';
 import { BaseAdminController } from './base-admin-controller.js';
 import { ConfirmationDialog } from '../../js/utils/dialogs.js';
-import { renderCardTitle, renderMetaRow, renderEditButton, renderDeleteButton, renderEmptyState, renderErrorState } from '../../js/shared-components/ui-snippets.js';
 
 export class ThemeManagement extends BaseAdminController {
     constructor() {
         super({
-            apiClient
+            apiClient: {
+                get: (url) => apiFetch(url),
+                post: (url, data) => apiFetch(url, { method: 'POST', data }),
+                put: (url, data) => apiFetch(url, { method: 'PUT', data }),
+                delete: (url) => apiFetch(url, { method: 'DELETE' })
+            }
         });
         
         this.currentTheme = null;
@@ -58,7 +57,7 @@ export class ThemeManagement extends BaseAdminController {
                 }
             );
             if (!response.success) {
-                messages.showError('Failed to load themes: ' + response.message);
+                console.error('Failed to load themes:', response.message);
             }
         } catch (error) {
             console.error('Error loading themes:', error);
@@ -281,7 +280,6 @@ export class ThemeManagement extends BaseAdminController {
 
     async saveThemeSettings(themeId) {
         const applyBtn = document.getElementById('themeApplyBtn');
-        if (applyBtn) loadingManager.setLoading(applyBtn, true, 'Applying...');
         if (!themeId) {
             console.error('Cannot save theme settings: themeId is required');
             throw new Error('Theme ID is required');
@@ -318,9 +316,7 @@ export class ThemeManagement extends BaseAdminController {
         } catch (error) {
             console.error('Error saving theme settings:', error);
             throw error; // Re-throw to let the calling function handle it
-        } finally {
-            if (applyBtn) loadingManager.setLoading(applyBtn, false);
-        }
+        } 
     }
 
     async deleteTheme() {
@@ -397,7 +393,7 @@ export class ThemeManagement extends BaseAdminController {
         // Preview favicon and logo
         this.previewFaviconAndLogo();
         
-        messages.showInfo('Theme preview applied. Refresh page to revert.');
+        console.log('Theme preview applied. Refresh page to revert.');
     }
 
     generateThemeCSS() {

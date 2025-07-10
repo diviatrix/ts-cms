@@ -1,7 +1,5 @@
 console.log('nav/script.js loaded');
 
-import { jwtDecode } from '../js/jwt-decode.js';
-
 // Inject login/register dropdown partial into navbar
 fetch('/nav/login-dropdown.html')
   .then(res => res.text())
@@ -69,7 +67,8 @@ function setupLoginDropdown() {
     }
     loginDropdownMessage.textContent = 'Logging in...';
     try {
-      const { AuthAPI } = await import('../js/api-auth.js');
+      // Use AuthAPI from api-client.js
+      const { AuthAPI } = await import('../js/api-client.js');
       const response = await AuthAPI.login(login, password);
       if (response.success) {
         loginDropdownMessage.textContent = 'Login successful!';
@@ -94,7 +93,8 @@ function setupLoginDropdown() {
     }
     loginDropdownMessage.textContent = 'Registering...';
     try {
-      const { AuthAPI } = await import('../js/api-auth.js');
+      // Use AuthAPI from api-client.js
+      const { AuthAPI } = await import('../js/api-client.js');
       const response = await AuthAPI.register(login, email, password);
       if (response.success) {
         loginDropdownMessage.textContent = 'Registration successful! You can now log in.';
@@ -108,6 +108,15 @@ function setupLoginDropdown() {
   });
 }
 
+// Ensure nav menu updates after DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    updateNavMenu();
+  });
+} else {
+  updateNavMenu();
+}
+
 // Hide dropdown for authenticated users
 export function updateNavMenu() {
   const token = localStorage.getItem('token');
@@ -119,7 +128,9 @@ export function updateNavMenu() {
       payload = JSON.parse(atob(token.split('.')[1]));
       isAuthenticated = payload.exp * 1000 > Date.now();
       roles = payload.roles || payload.groups || [];
-    } catch {}
+    } catch (e) {
+      console.error('Token decode error in updateNavMenu:', e);
+    }
   }
   console.log('updateNavMenu called', { token, payload, isAuthenticated, roles });
   const loginLink = document.getElementById('loginLink');
