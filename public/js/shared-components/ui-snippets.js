@@ -32,7 +32,8 @@ export function renderErrorState(message = 'Failed to load data') {
   return `<div class="error-state">${message}</div>`;
 }
 
-export function renderFrontpageCard(record, isAdmin) {
+// todo, move to  frontpage-logic.js, maybe refactor to use a more generic card rendering function
+export function renderFrontpageCard(record, isAdmin = false) {
   const truncatedContent = record.content.substring(0, 150);
   const formattedDate = new Date(record.created_at).toLocaleDateString();
   const editButtonClass = isAdmin ? '' : 'd-none';
@@ -42,7 +43,7 @@ export function renderFrontpageCard(record, isAdmin) {
     <h5 class="card-title">${escapeHtml(record.title)}</h5>
     <h6 class="card-subtitle">${escapeHtml(record.description)}</h6>
     <div class="card-text">${truncatedContent}...</div>
-    <div class="card-footer">
+    <div class="meta-row">
       <small>${escapeHtml(record.public_name)} on ${formattedDate}</small>
       <div>
         <a href="/record/index.html?id=${record.id}" class="btn">Read</a>
@@ -56,4 +57,4 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
-} 
+}

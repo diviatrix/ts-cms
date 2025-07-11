@@ -5,6 +5,19 @@ import { jwtDecode } from './jwt-decode.js';
 import { updateNavMenu } from '../../nav/script.js';
 
 async function apiFetch(url, { method = 'GET', data, auth = true } = {}) {
+  // Always check token validity before sending
+  const token = getAuthToken();
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const isExpired = payload.exp * 1000 <= Date.now();
+      if (isExpired) {
+        setAuthToken(null);
+      }
+    } catch (error) {
+      setAuthToken(null);
+    }
+  }
   const headers = { 'Content-Type': 'application/json' };
   if (auth && getAuthToken()) headers['Authorization'] = `Bearer ${getAuthToken()}`;
   let res;

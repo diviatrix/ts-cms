@@ -8,6 +8,7 @@ import { DownloadUtils } from '../../js/utils/download-utils.js';
 import { BaseAdminController } from './base-admin-controller.js';
 import { renderCardTitle } from '../../js/shared-components/ui-snippets.js';
 import { AdminUtils } from './admin-utils.js';
+import { ConfirmationDialog } from '../../js/utils/dialogs.js';
 
 export class RecordManagement extends BaseAdminController {
     constructor(elements, dataTable) {

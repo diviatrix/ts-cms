@@ -1,6 +1,7 @@
 import { apiFetch } from '../../js/api-client.js';
 import { BaseAdminController } from './base-admin-controller.js';
 import { ConfirmationDialog } from '../../js/utils/dialogs.js';
+import { applyThemeFromAPI } from '../../js/utils/theme-system.js';
 
 export class ThemeManagement extends BaseAdminController {
     constructor() {
@@ -21,7 +22,7 @@ export class ThemeManagement extends BaseAdminController {
 
     init() {
         this.setupEventHandlers();
-        this.loadThemes(); // Load themes immediately when initialized
+        this.loadThemes(); 
     }
 
     setupEventHandlers() {
@@ -29,17 +30,6 @@ export class ThemeManagement extends BaseAdminController {
         this.bindEvents({
             '#newThemeButton': {
                 click: () => this.showNewThemeForm()
-            },
-            '#themeIsActive': {
-                change: (e) => {
-                    // This checkbox only controls the theme's is_active property
-                    // The actual website theme is controlled by CMS settings
-                    if (e.target.checked && this.currentTheme) {
-                        this.setThemeAsActive(this.currentTheme.id);
-                    } else if (!e.target.checked && this.currentTheme) {
-                        this.setThemeAsInactive(this.currentTheme.id);
-                    }
-                }
             }
         });
     }
@@ -47,8 +37,7 @@ export class ThemeManagement extends BaseAdminController {
     async loadThemes() {
         try {
             const response = await this.safeApiCall(
-                () => this.apiClient.get('/themes'),
-                {
+                () => this.apiClient.get('/api/themes'), {
                     operationName: 'Load Themes',
                     successCallback: (data) => {
                         this.themes = data || [];
@@ -58,9 +47,11 @@ export class ThemeManagement extends BaseAdminController {
             );
             if (!response.success) {
                 console.error('Failed to load themes:', response.message);
+                this.showMessage('Failed to load themes', 'error');
             }
-        } catch (error) {
-            console.error('Error loading themes:', error);
+        } catch (err) {
+            console.error('Operation failed', err);
+            this.showMessage('Failed to load themes', 'error');
         }
     }
 
@@ -196,7 +187,7 @@ export class ThemeManagement extends BaseAdminController {
         document.getElementById('themeIsActive').checked = theme.is_active;
         // Load theme settings
         try {
-            const settings = await this.apiClient.get(`/themes/${theme.id}/settings`);
+            const settings = await this.apiClient.get(`/api/themes/${theme.id}/settings`);
             if (settings.success) {
                 const settingsData = settings.data;
                 const setValue = (id, value) => {
@@ -244,8 +235,8 @@ export class ThemeManagement extends BaseAdminController {
 
         const isUpdate = Boolean(this.currentTheme);
         const apiCall = isUpdate
-            ? () => this.apiClient.put(`/themes/${this.currentTheme.id}`, themeData)
-            : () => this.apiClient.post('/themes', themeData);
+            ? () => this.apiClient.put(`/api/themes/${this.currentTheme.id}`, themeData)
+            : () => this.apiClient.post('/api/themes', themeData);
 
         const response = await this.safeApiCall(
             apiCall,
@@ -307,7 +298,7 @@ export class ThemeManagement extends BaseAdminController {
             for (const [key, value] of Object.entries(settings)) {
                 // Only send non-empty values
                 if (value !== undefined && value !== null && value.trim() !== '') {
-                    await this.apiClient.post(`/themes/${themeId}/settings`, {
+                    await this.apiClient.post(`/api/themes/${themeId}/settings`, {
                         key: key,
                         value: value
                     });
@@ -333,7 +324,7 @@ export class ThemeManagement extends BaseAdminController {
 
         const deleteBtn = document.querySelector('.delete-theme-btn.btn-danger');
         const response = await this.safeApiCall(
-            () => this.apiClient.delete(`/themes/${this.currentTheme.id}`),
+            () => this.apiClient.delete(`/api/themes/${this.currentTheme.id}`),
             {
                 operationName: 'Delete Theme',
                 loadingElement: deleteBtn,
@@ -351,12 +342,15 @@ export class ThemeManagement extends BaseAdminController {
     async setThemeAsActive(themeId) {
         const activeBtn = document.getElementById('themeIsActive');
         const response = await this.safeApiCall(
-            () => this.apiClient.put(`/themes/${themeId}`, { is_active: true }),
+            () => this.apiClient.put(`/api/themes/${themeId}`, { is_active: true }),
             {
                 operationName: 'Set Theme as Active',
                 loadingElement: activeBtn,
                 loadingText: 'Setting as Active...',
-                successCallback: () => {
+                successCallback: async () => {
+                    this.showMessage('Theme set as active!', 'success');
+                    this.removePreviewStyles(); // Remove preview before applying real theme
+                    await applyThemeFromAPI();
                     this.loadThemes();
                 }
             }
@@ -367,7 +361,7 @@ export class ThemeManagement extends BaseAdminController {
 
     async setThemeAsInactive(themeId) {
         const response = await this.safeApiCall(
-            () => this.apiClient.put(`/themes/${themeId}`, { is_active: false }),
+            () => this.apiClient.put(`/api/themes/${themeId}`, { is_active: false }),
             {
                 operationName: 'Set Theme as Inactive',
                 successCallback: () => {
@@ -491,5 +485,10 @@ export class ThemeManagement extends BaseAdminController {
                 }
             }
         }
+    }
+
+    removePreviewStyles() {
+        const existingStyle = document.getElementById('theme-preview-styles');
+        if (existingStyle) existingStyle.remove();
     }
 }

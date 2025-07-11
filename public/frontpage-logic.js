@@ -1,6 +1,5 @@
-import { RecordsAPI, AuthAPI } from './js/api-client.js';
+import { RecordsAPI, getUserRole } from './js/api-client.js';
 import { BasePageController } from './js/shared-components.js';
-import { jwtDecode } from './js/jwt-decode.js';
 import { renderFrontpageCard } from './js/shared-components/ui-snippets.js';
 
 class FrontPageController extends BasePageController {
@@ -8,7 +7,6 @@ class FrontPageController extends BasePageController {
     super();
     this.postsGrid = document.getElementById('postsGrid');
     this.recordsAPI = RecordsAPI;
-    this.authAPI = AuthAPI;
     this.init();
   }
 
@@ -18,7 +16,8 @@ class FrontPageController extends BasePageController {
 
   async fetchAndRenderRecords() {
     try {
-      const response = await this.recordsAPI.getAll();
+      // Always request only published records for the front page
+      const response = await this.recordsAPI.getAll({ published: true });
       if (!response.success) {
         console.error('Error fetching records:', response);
         this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
@@ -38,36 +37,10 @@ class FrontPageController extends BasePageController {
       this.postsGrid.innerHTML = '<p>No posts available yet.</p>';
       return;
     }
-    const isAdmin = this.checkAdminRole();
+    const isAdmin = getUserRole().includes('admin');
     records.forEach((record) => {
       const postCard = renderFrontpageCard(record, isAdmin);
       this.postsGrid.insertAdjacentHTML('beforeend', postCard);
-    });
-    if (isAdmin) {
-      this.setupEditButtons();
-    }
-  }
-
-  checkAdminRole() {
-    if (!this.authAPI.isAuthenticated()) {
-      return false;
-    }
-    try {
-      const token = localStorage.getItem('token');
-      const decodedToken = jwtDecode(token);
-      return decodedToken?.roles?.includes('admin') || false;
-    } catch (error) {
-      console.error('Error decoding token for admin check:', error);
-      return false;
-    }
-  }
-
-  setupEditButtons() {
-    document.querySelectorAll('.edit-record-btn').forEach(button => {
-      button.addEventListener('click', () => {
-        const recordId = button.dataset.recordId;
-        window.location.href = `/admin#records?editRecordId=${recordId}`;
-      });
     });
   }
 }

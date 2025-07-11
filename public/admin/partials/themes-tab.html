@@ -1,14 +1,14 @@
 <div class="themes-panel">
   <div class="themes-list-section">
     <h2>Themes</h2>
-    <div class="card-footer">
+    <div class="meta-row">
       <a id="newThemeButton" class="btn" href="#">Create New Theme</a>
     </div>
     <div id="themeList">
       <!-- Theme list will be populated by JavaScript -->
     </div>
   </div>
-  <div class="themes-edit-section">
+  <div class="themes-edit-section hidden">
     <div id="themeEditTab" class="card">
       <h2 class="card-title">Edit Theme</h2>
       <div id="themeInfo" data-current-theme-id="">
@@ -98,10 +98,11 @@
           </div>
         </div>
       </div>
-      <div class="card-footer">
+      <div class="meta-row">
         <a id="themeSaveButton" class="btn" href="#">Save Theme</a>
         <a id="themeDeleteButton" class="btn" href="#">Delete Theme</a>
         <a id="themePreviewButton" class="btn" href="#" title="Preview Theme">👁️</a>
+        <a id="themeCancelButton" class="btn" href="#">Cancel</a>
       </div>
       <div id="themeMessageDiv"></div>
     </div>

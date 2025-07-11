@@ -20,3 +20,12 @@ export {
     BreadcrumbNav,
     UnsavedChangesDetector
 };
+
+// Simple hash/query parser for all frontend and admin use
+export function parseHashQuery() {
+    const hash = window.location.hash || '';
+    // Example: #records?editRecordId=123
+    const [tab, query] = hash.replace(/^#/, '').split('?');
+    const params = new URLSearchParams(query || '');
+    return { tab, params };
+}

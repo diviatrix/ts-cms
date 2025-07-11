@@ -48,7 +48,7 @@ export class CMSSettings extends BaseAdminController {
                 applyBtn.setAttribute('aria-disabled', 'true');
                 applyBtn.classList.add('disabled');
                 try {
-                    const response = await this.apiClient.put('/cms/active-theme', { theme_id: selectedThemeId });
+                    const response = await this.apiClient.put('/api/cms/active-theme', { theme_id: selectedThemeId });
                     if (response.success) {
                         console.log('Theme applied successfully!');
                         // Optionally reload the theme system
@@ -103,7 +103,7 @@ export class CMSSettings extends BaseAdminController {
     async loadSettings() {
         try {
             const response = await this.safeApiCall(
-                () => this.apiClient.get('/cms/settings'),
+                () => this.apiClient.get('/api/cms/settings'),
                 {
                     operationName: 'Load CMS Settings',
                     successCallback: (data) => {
@@ -133,7 +133,7 @@ export class CMSSettings extends BaseAdminController {
 
     async loadAvailableThemes() {
         try {
-            const response = await this.safeApiCall(() => this.apiClient.get('/themes'), {
+            const response = await this.safeApiCall(() => this.apiClient.get('/api/themes'), {
                 operationName: 'Load Themes',
                 successCallback: (data) => {
                     this.availableThemes = data || [];
@@ -162,7 +162,7 @@ export class CMSSettings extends BaseAdminController {
     }
 
     async loadCurrentWebsiteTheme() {
-        const response = await this.safeApiCall(() => this.apiClient.get('/cms/active-theme'), {
+        const response = await this.safeApiCall(() => this.apiClient.get('/api/cms/active-theme'), {
             operationName: 'Load Current Website Theme',
             successCallback: (data) => {
                 if (data) {
@@ -239,7 +239,7 @@ export class CMSSettings extends BaseAdminController {
         try {
             const formData = this.getFormData();
             const response = await this.safeApiCall(
-                () => this.apiClient.post('/cms/settings', formData),
+                () => this.apiClient.post('/api/cms/settings', formData),
                 {
                     operationName: 'Save CMS Settings',
                     loadingElement: document.getElementById('saveGeneralSettings'),
@@ -247,48 +247,49 @@ export class CMSSettings extends BaseAdminController {
                 }
             );
             if (response.success) {
-                console.log('Settings saved successfully');
-            await this.loadSettings();
-            await cmsIntegration.refresh();
+                console.log('Settings saved successfully!');
+                // Optionally, reload the settings or provide user feedback
+                this.loadSettings();
+            } else {
+                console.error('Failed to save settings: ' + response.message);
             }
         } catch (error) {
-            console.error('Error saving settings:', error);
-    }
+            console.error('Error saving settings: ' + (error?.message || error));
+        }
     }
 
     getFormData() {
-        const data = {};
         const fields = ['siteName', 'siteDescription', 'defaultUserRole'];
+        const formData = {};
         fields.forEach(field => {
             const element = document.getElementById(field);
-            if (element) {
-                data[field] = element.value;
-        }
+            if (element) { formData[field] = element.value.trim(); }
         });
 
+        // Handle checkboxes
         const checkboxes = ['maintenanceMode', 'allowRegistration'];
         checkboxes.forEach(field => {
             const element = document.getElementById(field);
-            if (element) {
-                data[field] = element.checked;
-            }
+            if (element) { formData[field] = element.checked; }
         });
 
-        return data;
-        }
+        return formData;
+    }
 
-    downloadSettings() {
+    async downloadSettings() {
         try {
-            const data = this.getFormData();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'cms-settings.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            const response = await this.apiClient.get('/api/cms/settings/download');
+            if (response && response.url) {
+                // Create a link element to trigger the download
+                const link = document.createElement('a');
+                link.href = response.url;
+                link.download = 'cms_settings.json';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                console.error('Invalid response from server:', response);
+            }
         } catch (error) {
             console.error('Error downloading settings:', error);
         }

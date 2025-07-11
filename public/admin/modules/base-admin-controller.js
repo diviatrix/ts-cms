@@ -3,7 +3,7 @@
  * Common functionality for all admin panel modules
  */
 
-import { getThemeColors } from '../../js/utils/theme-api.js';
+import { getThemeColors } from '../../js/utils/theme-system.js'; // Use theme-system.js instead
 import { AuthAPI } from '../../js/api-client.js';
 import { renderEmptyState, renderErrorState } from '../../js/shared-components/ui-snippets.js';
 

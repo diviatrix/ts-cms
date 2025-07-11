@@ -1,14 +1,14 @@
 <div class="records-panel">
   <div class="records-list-section">
     <h2>Records</h2>
-    <div class="card-footer">
+    <div class="meta-row">
       <a id="newRecordButton" class="btn" href="#">Create New Record</a>
     </div>
     <div id="recordListContainer">
       <!-- Record list will be populated by JavaScript -->
     </div>
   </div>
-  <div class="records-edit-section">
+  <div class="records-edit-section hidden">
     <div id="recordEditTab" class="card">
       <h2 class="card-title">Edit Record</h2>
       <div id="recordInfo" data-current-record-id="">
@@ -40,13 +40,14 @@
           <input type="checkbox" id="recordIsPublished">
           <label for="recordIsPublished">Published</label>
         </div>
+        <div class="meta-row">
+          <a id="recordSaveButton" class="btn" href="#">Save Record</a>
+          <a id="recordDeleteButton" class="btn" href="#">Delete Record</a>
+          <a id="recordDownloadButton" class="btn" href="#">Download</a>
+          <a id="recordCancelButton" class="btn" href="#">Cancel</a>
+        </div>
+        <div id="recordMessageDiv"></div>
       </div>
-      <div class="card-footer">
-        <a id="recordSaveButton" class="btn" href="#">Save Record</a>
-        <a id="recordDeleteButton" class="btn" href="#">Delete Record</a>
-        <a id="recordDownloadButton" class="btn" href="#" title="Download as Markdown">📥</a>
-      </div>
-      <div id="recordMessageDiv"></div>
     </div>
   </div>
 </div>

@@ -106,6 +106,15 @@ class BasePageController {
     handleNetworkErrorMessage(error) {
         console.error(error.message || 'Network error occurred. Please try again.');
     }
+
+    // Simple hash/query parser for all frontend and admin use
+    static parseHashQuery() {
+        const hash = window.location.hash || '';
+        // Example: #records?editRecordId=123
+        const [tab, query] = hash.replace(/^#/, '').split('?');
+        const params = new URLSearchParams(query || '');
+        return { tab, params };
+    }
 }
 
 export { BasePageController };

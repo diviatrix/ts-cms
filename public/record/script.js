@@ -82,37 +82,44 @@ class RecordDisplayController extends BasePageController {
   }
 
   displayRecord(record) {
+    const loadingContainer = document.getElementById('loadingContainer');
+    if (loadingContainer) loadingContainer.style.display = 'none';
     const contentContainer = document.getElementById('contentContainer');
-
     if (contentContainer) {
       contentContainer.classList.remove('hidden');
-    }
-
-    if (this.elements.title) {
-      this.elements.title.textContent = record.title;
-    }
-    if (this.elements.description) {
-      this.elements.description.textContent = record.description;
-    }
-    if (this.elements.content) {
-      this.elements.content.innerHTML = `
-        <div class="card-body">
-          <div class="px-4 py-3">
-            ${marked.parse(record.content)}
+      contentContainer.style.display = '';
+      // Build a modern card layout for the record
+      contentContainer.innerHTML = `
+        <div class="card record-card">
+          <div class="card-body">
+            <h1 class="card-title" id="recordTitle">${record.title}</h1>
+            <div class="mb-2 text-muted" id="recordDate">${record.created_at ? new Date(record.created_at).toLocaleDateString() : ''}</div>
+            ${record.image_url ? `<img id="recordImagePreview" class="card-image mb-3" src="${record.image_url}" alt="${record.title}" />` : ''}
+            <div class="mb-3" id="recordDescription">${record.description || ''}</div>
+            <div id="recordContent">${marked.parse(record.content || '')}</div>
+            <div class="mt-3">
+              ${record.tags && record.tags.length ? `<span class="me-2">Tags:</span>${record.tags.map(tag => `<span class='badge bg-secondary me-1'>${tag}</span>`).join('')}` : ''}
+              ${record.categories && record.categories.length ? `<span class="ms-3 me-2">Categories:</span>${record.categories.map(cat => `<span class='badge bg-primary me-1'>${cat}</span>`).join('')}` : ''}
+            </div>
+            <div class="mt-3" id="recordAuthor">${record.public_name ? `By ${record.public_name}` : ''}</div>
+            <div class="mt-4">
+              <a id="editRecordButton" class="btn d-none" href="#">Edit</a>
+              <a id="downloadRecordButton" class="btn d-none" href="#">Download</a>
+            </div>
           </div>
         </div>
       `;
     }
-    setImagePreview(this.elements.imagePreview, record.image_url, record.title);
-    if (this.elements.author) {
-      this.elements.author.textContent = record.public_name;
+    console.log('[Record] Displaying record:', record);
+    // Re-acquire element references after innerHTML update
+    this.elements = this.getRecordElements();
+    if (this.elements.imagePreview) {
+      setImagePreview(this.elements.imagePreview, record.image_url, record.title);
     }
-    if (this.elements.date) {
-      this.elements.date.textContent = new Date(record.created_at).toLocaleDateString();
-    }
-    
     // Setup download feature for authenticated users
     this.setupDownloadFeature(record);
+    // Setup admin features if user is admin
+    this.setupAdminFeatures(record);
   }
 
   setupAdminFeatures(record) {
@@ -127,7 +134,7 @@ class RecordDisplayController extends BasePageController {
   }
 
   setupDownloadFeature(record) {
-    if (!this.authAPI.isAuthenticated(messages)) {
+    if (!this.authAPI.isAuthenticated()) {
       return;
     }
 
@@ -144,7 +151,7 @@ class RecordDisplayController extends BasePageController {
   }
 
   isUserAdmin() {
-    if (!this.authAPI.isAuthenticated(messages)) {
+    if (!this.authAPI.isAuthenticated()) {
       return false;
     }
 
@@ -163,9 +170,12 @@ class RecordDisplayController extends BasePageController {
   }
 
   showRecordNotFound(description) {
+    const loadingContainer = document.getElementById('loadingContainer');
+    if (loadingContainer) loadingContainer.style.display = 'none';
     const contentContainer = document.getElementById('contentContainer');
     if (contentContainer) {
       contentContainer.classList.remove('hidden');
+      contentContainer.style.display = '';
       contentContainer.innerHTML = `
         <div class="alert alert-warning">
           <h4>Record Not Found</h4>
@@ -174,15 +184,19 @@ class RecordDisplayController extends BasePageController {
         </div>
       `;
     }
+    console.warn('[Record] Not found:', description);
   }
 
   /**
    * Show record error message
    */
   showRecordError(description) {
+    const loadingContainer = document.getElementById('loadingContainer');
+    if (loadingContainer) loadingContainer.style.display = 'none';
     const contentContainer = document.getElementById('contentContainer');
     if (contentContainer) {
       contentContainer.classList.remove('hidden');
+      contentContainer.style.display = '';
       contentContainer.innerHTML = `
         <div class="alert alert-danger">
           <h4>Error Loading Record</h4>
@@ -191,15 +205,19 @@ class RecordDisplayController extends BasePageController {
         </div>
       `;
     }
+    console.error('[Record] Error:', description);
   }
 
   /**
    * Show network error message
    */
   showNetworkError() {
+    const loadingContainer = document.getElementById('loadingContainer');
+    if (loadingContainer) loadingContainer.style.display = 'none';
     const contentContainer = document.getElementById('contentContainer');
     if (contentContainer) {
       contentContainer.classList.remove('hidden');
+      contentContainer.style.display = '';
       contentContainer.innerHTML = `
         <div class="alert alert-danger">
           <h4>Network Error</h4>
@@ -208,10 +226,14 @@ class RecordDisplayController extends BasePageController {
         </div>
       `;
     }
+    console.error('[Record] Network error');
   }
 }
 
 
 
 // If there is a controller or main logic, wrap in:
-document.addEventListener('navigationLoaded', () => { new RecordDisplayController(); });
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[Record] RecordDisplayController initializing');
+  new RecordDisplayController();
+});

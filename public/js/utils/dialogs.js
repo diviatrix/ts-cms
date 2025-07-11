@@ -3,8 +3,6 @@
  * Provides modal confirmation dialogs
  */
 
-import { getThemeColors } from './theme-api.js';
-
 /**
  * Confirmation Dialog Utility
  */
@@ -21,14 +19,6 @@ class ConfirmationDialog {
         const existing = document.getElementById('confirmationDialogModal');
         if (existing) existing.remove();
 
-        // Get theme colors
-        const theme = getThemeColors();
-        const surface = theme.surfaceColor || '#fff';
-        const text = theme.textColor || '#222';
-        const border = theme.borderColor || '#00FF00';
-        const primary = theme.primaryColor || '#00FF00';
-        const font = theme.fontFamily || 'inherit';
-
         // Create modal HTML
         const modal = document.createElement('div');
         modal.id = 'confirmationDialogModal';
@@ -39,7 +29,7 @@ class ConfirmationDialog {
         modal.style.zIndex = '9999';
         modal.innerHTML = `
             <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
-                <div class="modal-content" style="background:${surface};color:${text};border:2px solid ${border};font-family:${font};">
+                <div class="modal-content" style="background:#fff;color:#222;border:2px solid #00FF00;font-family:inherit;">
                     <div class="modal-header border-0">
                         <h5 class="modal-title">${title}</h5>
                     </div>
@@ -48,7 +38,7 @@ class ConfirmationDialog {
                     </div>
                     <div class="modal-footer border-0 d-flex justify-content-end">
                         <button type="button" class="btn btn-secondary me-2" data-action="cancel">${cancelText}</button>
-                        <button type="button" class="btn btn-primary" style="background:${primary};border-color:${primary}" data-action="confirm">${confirmText}</button>
+                        <button type="button" class="btn btn-primary" style="background:#00FF00;border-color:#00FF00" data-action="confirm">${confirmText}</button>
                     </div>
                 </div>
             </div>
