@@ -1,0 +1,39 @@
+<div id="recordEditTab" class="card">
+  <h2 class="card-title">Edit Record</h2>
+  <div id="recordInfo" data-current-record-id="">
+    <div class="field">
+      <label for="recordTitle">Title:</label>
+      <input type="text" id="recordTitle">
+    </div>
+    <div class="field">
+      <label for="recordDescription">Description:</label>
+      <input type="text" id="recordDescription">
+    </div>
+    <div class="field">
+      <label for="recordImageUrl">Image URL (optional):</label>
+      <input type="url" id="recordImageUrl" placeholder="/img/placeholder-square.png">
+    </div>
+    <div class="field">
+      <label for="recordContent">Content (Markdown):</label>
+      <textarea id="recordContent" rows="10"></textarea>
+    </div>
+    <div class="field">
+      <label for="recordTags">Tags (comma-separated):</label>
+      <input type="text" id="recordTags">
+    </div>
+    <div class="field">
+      <label for="recordCategories">Categories (comma-separated):</label>
+      <input type="text" id="recordCategories">
+    </div>
+    <div class="field">
+      <input type="checkbox" id="recordIsPublished">
+      <label for="recordIsPublished">Published</label>
+    </div>
+    <div class="meta-row">
+      <button id="recordSaveButton" class="btn">Save Record</button>
+      <button id="recordDeleteButton" class="btn">Delete Record</button>
+      <button id="recordCancelButton" class="btn">Cancel</button>
+    </div>
+    <div id="recordMessageDiv"></div>
+  </div>
+</div>

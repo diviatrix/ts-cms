@@ -19,14 +19,14 @@
     --theme-hover: #2fdc6e;
     --theme-shadow: 0 4px 24px rgba(0,0,0,0.10);
     --theme-radius: 1rem;
-    --theme-spacing: 1.5rem;
+    --theme-spacing: 0.5rem;
     --theme-font-size: 1rem;
     --theme-font-weight-bold: 700;
     --theme-font-weight-medium: 500;
     --theme-font-weight-normal: 400;
     --theme-letter-spacing-normal: 0.05em;
     --theme-letter-spacing-wide: 0.1em;
-    --theme-line-height: 1.6;
+    --theme-line-height: 1;
     --theme-body-margin: 0;
     --theme-body-padding: 0;
     --theme-border-width: 1.5px;

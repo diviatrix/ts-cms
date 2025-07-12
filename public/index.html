@@ -11,10 +11,10 @@
         <span class="logo">1337+</span>
       </a>
       <ul class="navmenu-list" id="navbarNav">
-        <li><a class="btn hidden" href="#" id="loginDropdownToggle">Login/Register</a></li>
-        <li><a class="btn hidden" href="/profile" id="profileLink">Profile</a></li>
-        <li><a class="btn hidden" href="/admin" id="adminLink">Admin</a></li>
-        <li><a id="signOutButton" class="btn hidden" href="#">Sign Out</a></li>
+        <li class="hidden"><a class="btn" href="#" id="loginDropdownToggle">Login/Register</a></li>
+        <li class="hidden"><a class="btn" href="/pages/profile-page.html" id="profileLink">Profile</a></li>
+        <li class="hidden"><a class="btn" href="/pages/admin-page.html" id="adminLink">Admin</a></li>
+        <li class="hidden"><a id="signOutButton" class="btn" href="#">Sign Out</a></li>
       </ul>
     </nav>
     <div class="main-content" style="padding-top: 4.5rem;">
@@ -27,9 +27,6 @@
       <p style="margin:0;">&copy; 2025 TypeScript CMS. All rights reserved.</p>
       <div data-theme-footer-links style="margin-top:0.5rem;"></div>
     </footer>
-    <script type="module">import { applyThemeFromAPI } from './js/utils/theme-system.js'; applyThemeFromAPI();</script>
-    <script src="/nav/script.js" type="module"></script>
-    <script src="/js/utils/cms-integration.js" type="module"></script>
-    <script src="/frontpage-logic.js" type="module"></script>
+    <script src="/js/core/app.js" type="module"></script>
   </body>
 </html>

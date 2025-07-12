@@ -1,0 +1,42 @@
+<div class="card">
+  <h2 class="card-title">CMS Settings</h2>
+  <form id="cmsSettingsForm">
+    <div class="field">
+      <label for="activeThemeSelect">Website Theme:</label>
+      <select id="activeThemeSelect" name="activeTheme"></select>
+    </div>
+    <div class="meta-row">
+      <button id="applyWebsiteTheme" class="btn">Apply Theme</button>
+    </div>
+    <div id="currentThemeInfo" class="field" style="display:none;">
+      <strong>Current Theme:</strong>
+      <span id="currentThemeName"></span>
+      <div id="currentThemeDescription"></div>
+    </div>
+    <div class="field">
+      <label for="siteName">Site Name:</label>
+      <input type="text" id="siteName" name="siteName">
+    </div>
+    <div class="field">
+      <label for="siteDescription">Site Description:</label>
+      <textarea id="siteDescription" name="siteDescription" rows="3"></textarea>
+    </div>
+    <div class="field">
+      <input type="checkbox" id="maintenanceMode" name="maintenanceMode">
+      <label for="maintenanceMode">Maintenance Mode</label>
+    </div>
+    <div class="field">
+      <input type="checkbox" id="allowRegistration" name="allowRegistration">
+      <label for="allowRegistration">Allow Registration</label>
+    </div>
+    <div class="field">
+      <label for="defaultUserRole">Default User Role:</label>
+      <input type="text" id="defaultUserRole" name="defaultUserRole">
+    </div>
+    <div class="meta-row">
+      <button id="saveGeneralSettings" class="btn">Save Settings</button>
+      <button id="downloadSettingsJsonButton" class="btn">Download settings as JSON</button>
+    </div>
+    <div id="settingsMessageDiv"></div>
+  </form>
+</div>
