@@ -1,163 +1,160 @@
 import { ProfileAPI } from '../../core/api-client.js';
-import { setImagePreview } from '../../utils/image-preview.js';
+import { ImagePreview } from '../../components/image-preview.js';
 
-/**
- * Profile Page Controller
- * Manages user profile updates.
- */
 export default class ProfileController {
-  constructor(app) {
-    this.app = app;
-
-    // Redirect if not authenticated
-    if (!this.app.user.isAuthenticated) {
-      window.location.href = '/';
-      return;
+    constructor(app) {
+        this.app = app;
+        this.profileAPI = ProfileAPI;
+        this.container = document.getElementById('profileContent');
+        this.init();
     }
-    
-    // Get DOM elements
-    this.elements = {
-      publicName: document.getElementById('publicName'),
-      profilePictureUrl: document.getElementById('profilePictureUrl'),
-      profilePicturePreview: document.getElementById('profilePicturePreview'),
-      bio: document.getElementById('bio'),
-      saveButton: document.getElementById('saveButton'),
-      messageDiv: document.getElementById('messageDiv'),
-      
-      newPassword: document.getElementById('newPassword'),
-      confirmPassword: document.getElementById('confirmPassword'),
-      changePasswordButton: document.getElementById('changePasswordButton'),
-      passwordMessageDiv: document.getElementById('passwordMessageDiv')
-    };
-    
-    this.init();
-  }
 
-  async init() {
-    this.setupEventListeners();
-    await this.loadProfile();
-  }
+    async init() {
+        if (!this.app.user.isAuthenticated) {
+            window.location.href = '/';
+            return;
+        }
+        await this.loadProfile();
+    }
 
-  setupEventListeners() {
-    this.setupTabs();
+    async loadProfile() {
+        try {
+            const response = await this.profileAPI.get();
+            if (response.success) {
+                this.renderProfile(response.data);
+            } else {
+                this.showError(response.message || 'Failed to load profile');
+            }
+        } catch (error) {
+            console.error('Error loading profile:', error);
+            this.showError('Failed to connect to server');
+        }
+    }
 
-    this.elements.saveButton.addEventListener('click', () => this.saveProfile());
-    this.elements.profilePictureUrl.addEventListener('input', () => setImagePreview(this.elements.profilePicturePreview, this.elements.profilePictureUrl.value, 'Profile picture preview'));
-    
-    // TODO: Re-enable password update when API endpoint is confirmed.
-    // this.elements.changePasswordButton.addEventListener('click', () => this.handlePasswordUpdate());
-  }
+    renderProfile(profile) {
+        const createdAt = profile.created_at ? profile.created_at.replace(/^"|"$/g, '') : null;
+        
+        this.container.innerHTML = `
+            <h2 class="page-title">Profile Settings</h2>
+            <div class="meta-row">
+                <span>Member since: ${createdAt ? new Date(createdAt).toLocaleDateString() : 'Unknown'}</span>
+            </div>
+            
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Edit Profile</h3>
+                        <form id="profileForm">
+                            <div class="form-row">
+                                <div class="form-row-flex">
+                                    <label for="profilePictureUrl">Profile Picture URL</label>
+                                    <input type="text" id="profilePictureUrl" value="${profile.profile_picture_url || ''}" placeholder="https://example.com/avatar.jpg">
+                                    <small class="form-hint">Enter a URL to an image</small>
+                                </div>
+                                <div id="avatarPreview"></div>
+                            </div>
+                            
+                            <label for="publicName">Public Name</label>
+                            <input type="text" id="publicName" value="${profile.public_name || ''}" placeholder="Display name for posts">
+                            
+                            <label for="bio">Bio</label>
+                            <textarea id="bio" rows="4" placeholder="Tell us about yourself">${profile.bio || ''}</textarea>
+                            
+                            <button type="submit" class="btn">Update Profile</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Change Password</h3>
+                        <form id="passwordForm">
+                            <label for="newPassword">New Password</label>
+                            <input type="password" id="newPassword" required>
+                            
+                            <label for="confirmPassword">Confirm Password</label>
+                            <input type="password" id="confirmPassword" required>
+                            
+                            <button type="submit" class="btn">Change Password</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
 
-  setupTabs() {
-    const tabLinks = document.querySelectorAll('.tab-header .btn');
-    const tabPanes = document.querySelectorAll('.tab-pane');
+        document.getElementById('profileForm').addEventListener('submit', (e) => this.handleProfileUpdate(e));
+        document.getElementById('passwordForm').addEventListener('submit', (e) => this.handlePasswordChange(e));
+        
+        this.avatarPreview = new ImagePreview('avatarPreview', { className: 'avatar-preview' });
+        if (profile.profile_picture_url) {
+            this.avatarPreview.update(profile.profile_picture_url);
+        }
+        
+        const avatarInput = document.getElementById('profilePictureUrl');
+        if (avatarInput) {
+            avatarInput.addEventListener('input', (e) => this.avatarPreview.update(e.target.value));
+        }
+    }
 
-    tabLinks.forEach((link, idx) => {
-      link.addEventListener('click', (e) => {
+    async handleProfileUpdate(e) {
         e.preventDefault();
-        tabLinks.forEach(l => l.classList.remove('active'));
-        tabPanes.forEach(pane => pane.classList.remove('active'));
-        link.classList.add('active');
-        tabPanes[idx].classList.add('active');
-      });
-    });
-  }
+        const formData = {
+            public_name: document.getElementById('publicName').value,
+            bio: document.getElementById('bio').value,
+            profile_picture_url: document.getElementById('profilePictureUrl').value
+        };
 
-  async loadProfile() {
-    try {
-      const response = await ProfileAPI.get();
-      
-      if (!response.success) {
-        console.error('Error fetching profile:', response);
-        this.elements.messageDiv.textContent = response.message || 'Failed to load profile.';
-        return;
-      }
-
-      const profileData = response.data || {};
-      
-      this.elements.publicName.value = profileData.public_name || '';
-      this.elements.profilePictureUrl.value = profileData.profile_picture_url || '';
-      this.elements.bio.value = profileData.bio || '';
-      setImagePreview(this.elements.profilePicturePreview, this.elements.profilePictureUrl.value, 'Profile picture preview');
-      
-    } catch (error) {
-      console.error('Error loading profile:', error);
-      this.elements.messageDiv.textContent = 'An error occurred while loading your profile.';
-    }
-  }
-
-  async saveProfile() {
-    this.elements.messageDiv.textContent = 'Saving...';
-    try {
-      const profileData = {
-        public_name: this.elements.publicName.value.trim(),
-        profile_picture_url: this.elements.profilePictureUrl.value.trim(),
-        bio: this.elements.bio.value.trim()
-      };
-      
-      // The API documentation specifies PUT for self-update.
-      const response = await ProfileAPI.update({ profile: profileData });
-      
-      if (response.success) {
-        this.elements.messageDiv.textContent = 'Profile saved successfully!';
-        await this.loadProfile(); // Refresh data
-      } else {
-        this.elements.messageDiv.textContent = response.message || 'Failed to save profile.';
-        console.error('Failed to save profile:', response);
-      }
-    } catch (error) { 
-        console.error('Error saving profile:', error);
-        this.elements.messageDiv.textContent = 'An error occurred while saving your profile.';
-    } 
-  }
-
-  // --- Password Update (Currently Disabled) ---
-  /*
-  async handlePasswordUpdate() {
-    const newPassword = this.elements.newPassword.value;
-    const confirmPassword = this.elements.confirmPassword.value;
-
-    if (!this.validatePassword(newPassword, confirmPassword)) {
-      return;
+        try {
+            const response = await this.profileAPI.update(formData);
+            if (response.success) {
+                this.showSuccess('Profile updated successfully');
+            } else {
+                this.showError(response.message || 'Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            this.showError('Failed to connect to server');
+        }
     }
 
-    this.elements.passwordMessageDiv.textContent = 'Updating...';
-    try {
-      // TODO: This endpoint is not in the documentation. Confirm and re-enable.
-      const response = await ProfileAPI.updatePassword({
-        newPassword: newPassword
-      });
-      if (response.success) {
-        this.elements.passwordMessageDiv.textContent = 'Password updated successfully.';
-        this.clearPasswordForm();
-      } else {
-        this.elements.passwordMessageDiv.textContent = response.message || 'Failed to update password.';
-      }
-    } catch (error) {
-      console.error('Error changing password:', error);
-      this.elements.passwordMessageDiv.textContent = 'An error occurred.';
-    } 
-  }
+    async handlePasswordChange(e) {
+        e.preventDefault();
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
 
-  validatePassword(newPassword, confirmPassword) {
-    if (newPassword !== confirmPassword) {
-      this.elements.passwordMessageDiv.textContent = 'Passwords do not match.';
-      return false;
-    }
-    if (newPassword.length < 6) {
-      this.elements.passwordMessageDiv.textContent = 'Password must be at least 6 characters long.';
-      return false;
-    }
-    if (!newPassword.trim()) {
-      this.elements.passwordMessageDiv.textContent = 'Password cannot be empty.';
-      return false;
-    }
-    return true;
-  }
+        if (newPassword !== confirmPassword) {
+            this.showError('Passwords do not match');
+            return;
+        }
 
-  clearPasswordForm() {
-    this.elements.newPassword.value = '';
-    this.elements.confirmPassword.value = '';
-  }
-  */
+        try {
+            const response = await this.profileAPI.changePassword(newPassword);
+            if (response.success) {
+                this.showSuccess('Password changed successfully');
+                document.getElementById('passwordForm').reset();
+            } else {
+                this.showError(response.message || 'Failed to change password');
+            }
+        } catch (error) {
+            console.error('Error changing password:', error);
+            this.showError('Failed to connect to server');
+        }
+    }
+
+    showError(message) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger';
+        alert.textContent = message;
+        this.container.insertBefore(alert, this.container.firstChild);
+        setTimeout(() => alert.remove(), 5000);
+    }
+
+    showSuccess(message) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success';
+        alert.textContent = message;
+        this.container.insertBefore(alert, this.container.firstChild);
+        setTimeout(() => alert.remove(), 5000);
+    }
+
 }

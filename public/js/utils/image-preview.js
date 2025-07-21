@@ -1,8 +1,7 @@
-// Reusable image preview utility
 export function setImagePreview(imgElement, url, altText = '') {
   const wrapper = imgElement.parentElement;
   if (imgElement && wrapper) {
-    wrapper.style.display = 'none'; // Hide wrapper by default
+    wrapper.style.display = 'none';
     if (url) {
       imgElement.onload = () => {
         wrapper.style.display = '';

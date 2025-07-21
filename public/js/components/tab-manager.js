@@ -54,7 +54,6 @@ export class TabManager {
             return; 
         }
 
-        // Cleanup previous tab controller if exists
         if (this.activeTabId && this.loadedTabs.has(this.activeTabId)) {
             const prev = this.loadedTabs.get(this.activeTabId);
             if (prev && prev.controller && typeof prev.controller.destroy === 'function') {
@@ -64,17 +63,14 @@ export class TabManager {
 
         this.activeTabId = tabId;
 
-        // Update navigation button states
         this.container.querySelectorAll('[data-tab-id]').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tabId === tabId);
         });
 
-        // Lazy load controller if necessary
         if (!this.loadedTabs.has(tabId)) {
             const tabConfig = this.config.tabs.find(t => t.id === tabId);
             if (tabConfig && tabConfig.loader) {
                 try {
-                    // Create a panel for the content
                     const panel = document.createElement('div');
                     panel.className = 'tab-pane';
                     panel.dataset.tabPanel = tabId;
@@ -92,7 +88,6 @@ export class TabManager {
             }
         }
 
-        // Show the correct panel and hide others
         this.contentContainer.querySelectorAll('.tab-pane').forEach(panel => {
             panel.classList.toggle('active', panel.dataset.tabPanel === tabId);
         });

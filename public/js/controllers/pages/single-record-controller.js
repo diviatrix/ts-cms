@@ -1,24 +1,12 @@
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
-import { RecordsAPI, AuthAPI } from '../js/api-client.js';
-import { BasePageController } from '../js/shared-components.js';
-import { jwtDecode } from '../js/jwt-decode.js';
+import { RecordsAPI, AuthAPI } from '../../core/api-client.js';
+import { jwtDecode } from '../../utils/jwt-decode.js';
 import { DownloadUtils } from '../../utils/download-utils.js';
 import { setImagePreview } from '../../utils/image-preview.js';
 
-class RecordDisplayController extends BasePageController {
-  constructor() {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'mt-3';
-    const container = document.querySelector('.record-wrapper');
-    
-    if (container) {
-      container.insertBefore(messageDiv, container.firstChild);
-    } else {
-      document.body.appendChild(messageDiv);
-    }
-    
-    super({ messageDiv });
-    
+export default class RecordDisplayController {
+  constructor(app) {
+    this.app = app;
     this.elements = this.getRecordElements();
     this.recordsAPI = RecordsAPI;
     this.authAPI = AuthAPI;
@@ -78,7 +66,6 @@ class RecordDisplayController extends BasePageController {
     } else {
       this.showRecordError(response.message || 'An error occurred while loading the record.');
     }
-    this.message.showApiResponse(response);
   }
 
   displayRecord(record) {
@@ -88,130 +75,69 @@ class RecordDisplayController extends BasePageController {
     if (contentContainer) {
       contentContainer.classList.remove('hidden');
       contentContainer.style.display = '';
-      // Build a modern card layout for the record
       contentContainer.innerHTML = `
-        <div class="card record-card">
+        <div class="card">
           <div class="card-body">
-            <h1 class="card-title" id="recordTitle">${record.title}</h1>
-            <div class="mb-2 text-muted" id="recordDate">${record.created_at ? new Date(record.created_at).toLocaleDateString() : ''}</div>
-            ${record.image_url ? `<img id="recordImagePreview" class="card-image mb-3" src="${record.image_url}" alt="${record.title}" />` : ''}
-            <div class="mb-3" id="recordDescription">${record.description || ''}</div>
-            <div id="recordContent">${marked.parse(record.content || '')}</div>
-            <div class="mt-3">
-              ${record.tags && record.tags.length ? `<span class="me-2">Tags:</span>${record.tags.map(tag => `<span class='badge bg-secondary me-1'>${tag}</span>`).join('')}` : ''}
-              ${record.categories && record.categories.length ? `<span class="ms-3 me-2">Categories:</span>${record.categories.map(cat => `<span class='badge bg-primary me-1'>${cat}</span>`).join('')}` : ''}
+            <h1 class="card-title">${record.title}</h1>
+            <div class="meta-row">
+              <span>${record.created_at ? new Date(record.created_at).toLocaleDateString() : ''}</span>
+              ${record.public_name ? `<span>By ${record.public_name}</span>` : ''}
             </div>
-            <div class="mt-3" id="recordAuthor">${record.public_name ? `By ${record.public_name}` : ''}</div>
-            <div class="mt-4">
-              <a id="editRecordButton" class="btn d-none" href="#">Edit</a>
-              <a id="downloadRecordButton" class="btn d-none" href="#">Download</a>
+            <img class="record-image" src="${record.image_url || '/img/placeholder-square.png'}" alt="${record.title}" onerror="this.src='/img/placeholder-square.png'" />
+            ${record.description ? `<div class="card-subtitle">${record.description}</div>` : ''}
+            <div class="card-text">${marked.parse(record.content || '')}</div>
+            <div class="meta-row">
+              <a id="editRecordButton" class="btn hidden" href="#">Edit</a>
+              <a id="downloadRecordButton" class="btn hidden" href="#">Download</a>
             </div>
           </div>
         </div>
       `;
     }
-    console.log('[Record] Displaying record:', record);
-    // Re-acquire element references after innerHTML update
     this.elements = this.getRecordElements();
     if (this.elements.imagePreview) {
       setImagePreview(this.elements.imagePreview, record.image_url, record.title);
     }
-    // Setup download feature for authenticated users
     this.setupDownloadFeature(record);
-    // Setup admin features if user is admin
     this.setupAdminFeatures(record);
   }
 
   setupAdminFeatures(record) {
-    if (!this.isUserAdmin()) {
-      return;
-    }
-
-    this.elements.editButton.classList.remove('d-none');
-    this.elements.editButton.addEventListener('click', () => {
-      this.handleEditRecord(record.id);
+    if (!this.isUserAdmin()) return;
+    
+    this.elements.editButton.classList.remove('hidden');
+    this.elements.editButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = `/pages/records-manage-page.html?edit=${record.id}`;
     });
   }
 
   setupDownloadFeature(record) {
-    if (!this.authAPI.isAuthenticated()) {
-      return;
-    }
-
-    if (this.elements.downloadButton) {
-      this.elements.downloadButton.classList.remove('d-none');
-      this.elements.downloadButton.addEventListener('click', () => {
-        this.handleRecordDownload(record);
-      });
-    }
-  }
-
-  handleRecordDownload(record) {
-    DownloadUtils.downloadAsMarkdown(record.title, record.content);
+    if (!this.app.user.isAuthenticated) return;
+    
+    this.elements.downloadButton.classList.remove('hidden');
+    this.elements.downloadButton.addEventListener('click', () => {
+      DownloadUtils.downloadAsMarkdown(record.title, record.content);
+    });
   }
 
   isUserAdmin() {
-    if (!this.authAPI.isAuthenticated()) {
-      return false;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      const decodedToken = jwtDecode(token);
-      return decodedToken?.roles?.includes('admin') || false;
-    } catch (error) {
-      console.error('Error decoding token for admin check:', error);
-      return false;
-    }
-  }
-
-  handleEditRecord(recordId) {
-    window.location.href = `/admin#records?editRecordId=${recordId}`;
+    return this.app.user.roles.includes('admin');
   }
 
   showRecordNotFound(description) {
-    const loadingContainer = document.getElementById('loadingContainer');
-    if (loadingContainer) loadingContainer.style.display = 'none';
-    const contentContainer = document.getElementById('contentContainer');
-    if (contentContainer) {
-      contentContainer.classList.remove('hidden');
-      contentContainer.style.display = '';
-      contentContainer.innerHTML = `
-        <div class="alert alert-warning">
-          <h4>Record Not Found</h4>
-          <p>${description}</p>
-          <a href="/frontpage/" class="btn btn-primary">Go to Homepage</a>
-        </div>
-      `;
-    }
-    console.warn('[Record] Not found:', description);
+    this.showMessage('Record Not Found', description, 'alert-warning');
   }
 
-  /**
-   * Show record error message
-   */
   showRecordError(description) {
-    const loadingContainer = document.getElementById('loadingContainer');
-    if (loadingContainer) loadingContainer.style.display = 'none';
-    const contentContainer = document.getElementById('contentContainer');
-    if (contentContainer) {
-      contentContainer.classList.remove('hidden');
-      contentContainer.style.display = '';
-      contentContainer.innerHTML = `
-        <div class="alert alert-danger">
-          <h4>Error Loading Record</h4>
-          <p>${description}</p>
-          <a href="/frontpage/" class="btn btn-primary">Go to Homepage</a>
-        </div>
-      `;
-    }
-    console.error('[Record] Error:', description);
+    this.showMessage('Error Loading Record', description, 'alert-danger');
   }
 
-  /**
-   * Show network error message
-   */
   showNetworkError() {
+    this.showMessage('Network Error', 'Unable to connect to the server. Please check your internet connection and try again.', 'alert-danger');
+  }
+
+  showMessage(title, description, alertClass) {
     const loadingContainer = document.getElementById('loadingContainer');
     if (loadingContainer) loadingContainer.style.display = 'none';
     const contentContainer = document.getElementById('contentContainer');
@@ -219,21 +145,12 @@ class RecordDisplayController extends BasePageController {
       contentContainer.classList.remove('hidden');
       contentContainer.style.display = '';
       contentContainer.innerHTML = `
-        <div class="alert alert-danger">
-          <h4>Network Error</h4>
-          <p>Unable to connect to the server. Please check your internet connection and try again.</p>
-          <a href="/frontpage/" class="btn btn-primary">Go to Homepage</a>
+        <div class="alert ${alertClass}">
+          <h4>${title}</h4>
+          <p>${description}</p>
+          <a href="/" class="btn">Go to Homepage</a>
         </div>
       `;
     }
-    console.error('[Record] Network error');
   }
 }
-
-
-
-// If there is a controller or main logic, wrap in:
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('[Record] RecordDisplayController initializing');
-  new RecordDisplayController();
-});

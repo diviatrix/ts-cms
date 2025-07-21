@@ -6,35 +6,15 @@
   </head>
   <body>
     <div class="main-content">
-      <div class="record-wrapper">
-        <nav class="navbar">
-          <a class="navbar-brand" href="/">
-            <span class="logo">1337+</span>
-          </a>
-          <button class="navmenu-toggle" id="navbarToggle" aria-label="Toggle navigation">☰</button>
-          <ul class="navmenu-list" id="navbarNav">
-            <li class="hidden"><a class="btn" href="/login" id="loginLink">Login/Register</a></li>
-            <li class="hidden"><a class="btn" href="/profile" id="profileLink">Profile</a></li>
-            <li class="hidden"><a class="btn" href="/admin" id="adminLink">Admin</a></li>
-            <li class="hidden"><a id="signOutButton" class="btn" href="#">Sign Out</a></li>
-          </ul>
-        </nav>
-        <div id="loadingContainer">Loading...</div>
-        <div id="contentContainer" class="hidden">
-          <h1 id="recordTitle"></h1>
-          <div id="recordDescription"></div>
-          <div id="recordContent"></div>
-          <div id="recordAuthor"></div>
-          <div id="recordDate"></div>
-          <img id="recordImagePreview" class="card-image" alt="Record image preview" />
-          <a id="editRecordButton" class="btn d-none" href="#">Edit</a>
-          <a id="downloadRecordButton" class="btn d-none" href="#">Download</a>
-        </div>
+      <div id="loadingContainer" class="box">
+        <p>Loading...</p>
       </div>
+      <div id="contentContainer" class="hidden"></div>
     </div>
-    <script src="/nav/script.js" type="module"></script>
-    <script src="/js/utils/cms-integration.js" type="module"></script>
-    <script src="/record/script.js" type="module"></script>
-    <script type="module">import { applyThemeFromAPI } from '../js/utils/theme-system.js'; applyThemeFromAPI();</script>
+    <footer class="footer" data-theme-footer="true">
+      <p class="footer-text">&copy; 2025 TypeScript CMS. All rights reserved.</p>
+      <div data-theme-footer-links class="footer-links"></div>
+    </footer>
+    <script src="/js/core/app.js" type="module"></script>
   </body>
 </html>

@@ -3,14 +3,27 @@ import { AuthAPI } from '../../core/api-client.js';
 export class NavBar {
     constructor(app) {
         this.app = app;
-        // init() is now called externally by app.js
     }
 
     async init() {
+        await this.injectNavbar();
         await this.injectDropdown();
-        // Now that the dropdown is injected, we can safely set up listeners and update the UI.
         this.setupEventListeners();
         this.updateNavMenu(this.app.user);
+    }
+
+    async injectNavbar() {
+        try {
+            const existingNav = document.querySelector('.navbar');
+            if (!existingNav) {
+                const response = await fetch('/partials/navbar.html');
+                if (!response.ok) throw new Error('Failed to load navbar partial.');
+                const html = await response.text();
+                document.body.insertAdjacentHTML('afterbegin', html);
+            }
+        } catch (error) {
+            console.error('Error injecting navbar:', error);
+        }
     }
 
     async injectDropdown() {
@@ -31,19 +44,14 @@ export class NavBar {
     }
 
     setupEventListeners() {
-        // Listen for auth state changes from the main app
         document.addEventListener('navShouldUpdate', (e) => {
             this.updateNavMenu(e.detail);
         });
 
-        // The rest of the listeners depend on the dropdown being injected.
-        // We use event delegation on a parent element to handle events for
-        // elements that may not exist when this code first runs.
         const navbar = document.querySelector('.navbar');
         if (!navbar) return;
 
         navbar.addEventListener('click', (e) => {
-            // Toggle Dropdown
             if (e.target.matches('#loginDropdownToggle')) {
                 e.preventDefault();
                 const loginDropdownMenu = document.getElementById('loginDropdownMenu');
@@ -52,13 +60,11 @@ export class NavBar {
                 }
             }
 
-            // Sign Out
             if (e.target.matches('#signOutButton')) {
                 e.preventDefault();
                 this.app.logout();
             }
 
-            // Tab Switching
             const loginTabBtn = document.getElementById('loginTabBtn');
             const registerTabBtn = document.getElementById('registerTabBtn');
             const loginForm = document.getElementById('loginForm');
@@ -81,7 +87,6 @@ export class NavBar {
             }
         });
 
-        // Handle form submissions
         const loginForm = document.getElementById('loginForm');
         if (loginForm) {
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
@@ -92,7 +97,6 @@ export class NavBar {
             registerForm.addEventListener('submit', (e) => this.handleRegister(e));
         }
         
-        // Hide dropdown if clicked outside
         document.addEventListener('click', (e) => {
             const loginDropdownMenu = document.getElementById('loginDropdownMenu');
             const loginDropdownToggle = document.getElementById('loginDropdownToggle');
@@ -115,7 +119,7 @@ export class NavBar {
         const response = await AuthAPI.login(login, password);
         if (response.success && response.data.token) {
             loginDropdownMessage.textContent = 'Login successful!';
-            this.app.login(response.data.token); // Update app state
+            this.app.login(response.data.token);
         } else {
             loginDropdownMessage.textContent = response.message || 'Login failed.';
         }
@@ -143,7 +147,6 @@ export class NavBar {
 
     updateNavMenu(user) {
         const { isAuthenticated, roles } = user;
-        console.log('Updating nav menu with user state:', user);
 
         const loginDropdownToggle = document.getElementById('loginDropdownToggle');
         const profileLink = document.getElementById('profileLink');

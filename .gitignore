@@ -160,3 +160,6 @@ Thumbs.db
 *~
 *.bak
 /.cursor
+.claude/settings.local.json
+CLAUDE.md
+RULES.md

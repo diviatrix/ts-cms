@@ -1,7 +1,5 @@
-// Unified API client for all frontend-to-backend communication.
 import { jwtDecode } from '../utils/jwt-decode.js';
 
-// --- Authentication Token Management ---
 
 export function getAuthToken() {
     return localStorage.getItem('token');
@@ -13,11 +11,9 @@ export function setAuthToken(token) {
     } else {
         localStorage.removeItem('token');
     }
-    // Notify other parts of the application that authentication state has changed.
     document.dispatchEvent(new CustomEvent('authChange'));
 }
 
-// --- Core API Fetch Function ---
 
 export async function apiFetch(url, { method = 'GET', data, auth = true } = {}) {
     const headers = { 'Content-Type': 'application/json' };
@@ -25,9 +21,6 @@ export async function apiFetch(url, { method = 'GET', data, auth = true } = {}) 
         const token = getAuthToken();
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
-        } else {
-            // If auth is required and there's no token, fail early.
-            return { success: false, message: 'Authentication required.', errors: ['401'] };
         }
     }
 
@@ -48,7 +41,7 @@ export async function apiFetch(url, { method = 'GET', data, auth = true } = {}) 
     }
 
     if (res.status === 401) {
-        setAuthToken(null); // Clear expired/invalid token
+        setAuthToken(null);
         return { success: false, message: 'Session expired or invalid. Please log in again.', errors: ['401'] };
     }
 
@@ -56,14 +49,12 @@ export async function apiFetch(url, { method = 'GET', data, auth = true } = {}) 
     try {
         json = await res.json();
     } catch {
-        // Handle cases where the response is not JSON (e.g., 204 No Content)
         json = { success: res.ok, data: null, message: res.statusText };
     }
 
     return { ...json, success: res.ok };
 }
 
-// --- Authentication Helpers ---
 
 export function isAuthenticated() {
     const token = getAuthToken();
@@ -73,7 +64,7 @@ export function isAuthenticated() {
         return payload.exp * 1000 > Date.now();
     } catch (error) {
         console.error('Token validation error:', error);
-        setAuthToken(null); // Clear corrupted token
+        setAuthToken(null);
         return false;
     }
 }
@@ -95,7 +86,6 @@ export function logout() {
 }
 
 
-// --- API Endpoints ---
 
 export const AuthAPI = {
     login: (login, password) => apiFetch('/api/login', { method: 'POST', data: { login, password }, auth: false }),
@@ -106,8 +96,8 @@ export const AuthAPI = {
 };
 
 export const RecordsAPI = {
-    getAll: (params = {}) => apiFetch('/api/records' + (Object.keys(params).length ? `?${new URLSearchParams(params)}` : '')),
-    getById: (id) => apiFetch(`/api/records/${id}`),
+    getAll: (params = {}) => apiFetch('/api/records' + (Object.keys(params).length ? `?${new URLSearchParams(params)}` : ''), { auth: false }),
+    getById: (id) => apiFetch(`/api/records/${id}`, { auth: false }),
     create: (data) => apiFetch('/api/records', { method: 'POST', data }),
     update: (id, data) => apiFetch(`/api/records/${id}`, { method: 'PUT', data }),
     delete: (id) => apiFetch(`/api/records/${id}`, { method: 'DELETE' })
@@ -116,8 +106,8 @@ export const RecordsAPI = {
 export const ProfileAPI = {
     get: () => apiFetch('/api/profile'),
     update: (profileData) => apiFetch('/api/profile', { method: 'PUT', data: profileData }),
-    // Admin-only update for another user's profile
-    adminUpdate: (userId, data) => apiFetch('/api/profile', { method: 'POST', data: { user_id: userId, ...data } })
+    adminUpdate: (userId, data) => apiFetch('/api/profile', { method: 'POST', data: { user_id: userId, ...data } }),
+    changePassword: (newPassword) => apiFetch('/api/profile/password/set', { method: 'POST', data: { newPassword } })
 };
 
 export const AdminAPI = {
@@ -126,10 +116,10 @@ export const AdminAPI = {
 };
 
 export const ThemesAPI = {
-    getAll: () => apiFetch('/api/themes'),
-    getById: (id) => apiFetch(`/api/themes/${id}`),
-    getActive: () => apiFetch('/api/themes/active'),
-    getSettings: (id) => apiFetch(`/api/themes/${id}/settings`),
+    getAll: () => apiFetch('/api/themes', { auth: false }),
+    getById: (id) => apiFetch(`/api/themes/${id}`, { auth: false }),
+    getActive: () => apiFetch('/api/themes/active', { auth: false }),
+    getSettings: (id) => apiFetch(`/api/themes/${id}/settings`, { auth: false }),
     create: (data) => apiFetch('/api/themes', { method: 'POST', data }),
     update: (id, data) => apiFetch(`/api/themes/${id}`, { method: 'PUT', data }),
     delete: (id) => apiFetch(`/api/themes/${id}`, { method: 'DELETE' }),

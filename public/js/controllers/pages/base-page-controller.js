@@ -5,31 +5,26 @@ class BasePageController {
     }
 
     setupCommonHandlers() {
-        // Use centralized static redirect if needed
-        // AuthPageController.handleAuthRedirect(this.authAPI, this.requiredRole, this.requiredRoles);
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
         });
     }
 
-    handleAuthRedirect() {   // Deprecated: use AuthPageController.handleAuthRedirect
+    handleAuthRedirect() {
     }
 
     setMultipleLoading(elements, isLoading, loadingText = 'Loading...') {
         elements.forEach(element => {
-            // todo: Implement loading state call
         });
     }
 
     handleApiResponse(response, successCallback = null, errorCallback = null) {
         if (response.success) {
-            console.log(response.message || 'Operation completed successfully');
             if (successCallback) {
                 successCallback(response.data);
             }
         } else {
             if (response.status === 401) {
-                console.warn('Your session has expired. Please log in again.');
             } else if (response.errors && response.errors.length > 0) {
                 console.error(response.errors.join(', '));
             } else {
@@ -83,11 +78,9 @@ class BasePageController {
     }
 
     handleSuccess(response) {
-        console.log(response.message || 'Operation completed successfully');
     }
 
     handleSessionExpired() {
-        console.warn('Your session has expired. Please log in again.');
     }
 
     handleValidationErrors(response) {
@@ -106,10 +99,8 @@ class BasePageController {
         console.error(error.message || 'Network error occurred. Please try again.');
     }
 
-    // Simple hash/query parser for all frontend and admin use
     static parseHashQuery() {
         const hash = window.location.hash || '';
-        // Example: #records?editRecordId=123
         const [tab, query] = hash.replace(/^#/, '').split('?');
         const params = new URLSearchParams(query || '');
         return { tab, params };
