@@ -100,24 +100,53 @@ p:last-child {
   display: flex;
   flex-direction: column;
   gap: var(--spacing);
+  flex: 1 1 300px;
+  min-width: 0;
+  container-type: inline-size;
 }
 
-.card-horizontal {
-  flex-direction: row;
-  align-items: flex-start;
+/* Adaptive card layout based on available space */
+@container (min-width: 400px) {
+  .card {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  
+  .card-image-container {
+    flex-shrink: 0;
+    width: 200px;
+    aspect-ratio: 1;
+    margin-right: var(--spacing);
+    margin-bottom: 0;
+  }
+  
+  /* When no image, body takes full width */
+  .card:not(:has(.card-image-container)) .card-body {
+    width: 100%;
+  }
+}
+
+.card-image-container {
+  overflow: hidden;
+  border-radius: var(--radius);
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-bottom: var(--spacing);
 }
 
 .card-image {
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
   object-fit: cover;
   width: 100%;
-  height: auto;
+  height: 100%;
+  display: block;
 }
 
 .card-body {
   padding: var(--spacing);
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-title {
@@ -137,6 +166,7 @@ p:last-child {
 .card-text {
   color: var(--text);
   line-height: 1.5;
+  flex: 1;
 }
 /* Forms */
 label {
@@ -484,6 +514,7 @@ textarea:focus {
   align-items: center;
   gap: var(--spacing);
   justify-content: space-between;
+  margin-top: auto;
 }
 
 /* Theme grid */

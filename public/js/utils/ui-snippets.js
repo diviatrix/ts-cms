@@ -17,7 +17,9 @@ export function renderFrontpageCard(record, isAdmin = false) {
 
 export function renderCard(record, template, options = {}) {
   const { isAdmin = false, showEdit = true, showRead = true } = options;
-  const truncatedContent = record.content ? record.content.substring(0, 500) : '';
+  // Truncate content based on whether image exists
+  const maxLength = record.image_url ? 500 : 1500;
+  const truncatedContent = record.content ? record.content.substring(0, maxLength) : '';
   const formattedDate = record.created_at ? new Date(record.created_at).toLocaleDateString() : '';
   
   if (template) {
@@ -27,8 +29,12 @@ export function renderCard(record, template, options = {}) {
     
     const imgContainer = card.querySelector('[data-card-image]');
     if (imgContainer) {
-      const imageUrl = record.image_url || '/img/placeholder-square.png';
-      imgContainer.innerHTML = `<img src="${escapeHtml(imageUrl)}" class="card-image" alt="${escapeHtml(record.title)}" onerror="this.src='/img/placeholder-square.png'">`;
+      if (record.image_url) {
+        imgContainer.innerHTML = `<img src="${escapeHtml(record.image_url)}" class="card-image" alt="${escapeHtml(record.title)}" onerror="this.src='/img/placeholder-square.png'">`;
+      } else {
+        // Remove image container if no image
+        imgContainer.remove();
+      }
     }
     
     const title = card.querySelector('[data-card-title]');
@@ -40,9 +46,9 @@ export function renderCard(record, template, options = {}) {
     const text = card.querySelector('[data-card-text]');
     if (text) {
       if (window.marked) {
-        text.innerHTML = marked.parse(truncatedContent) + (record.content?.length > 500 ? '...' : '');
+        text.innerHTML = marked.parse(truncatedContent) + (record.content?.length > maxLength ? '...' : '');
       } else {
-        text.textContent = truncatedContent + (record.content?.length > 500 ? '...' : '');
+        text.textContent = truncatedContent + (record.content?.length > maxLength ? '...' : '');
       }
     }
     
