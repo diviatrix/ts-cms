@@ -83,7 +83,7 @@ export default class RecordDisplayController {
               <span>${record.created_at ? new Date(record.created_at).toLocaleDateString() : ''}</span>
               ${record.public_name ? `<span>By ${record.public_name}</span>` : ''}
             </div>
-            <img class="record-image" src="${record.image_url || '/img/placeholder-square.png'}" alt="${record.title}" onerror="this.src='/img/placeholder-square.png'" />
+            ${record.image_url ? `<img class="record-image" src="${record.image_url}" alt="${record.title}" />` : ''}
             ${record.description ? `<div class="card-subtitle">${record.description}</div>` : ''}
             <div class="card-text">${marked.parse(record.content || '')}</div>
             <div class="meta-row">

@@ -344,6 +344,8 @@ textarea:focus {
 
 .record-image {
   box-shadow: var(--shadow);
+  max-height: 50vh;
+  object-fit: contain;
 }
 
 /* Forms */
