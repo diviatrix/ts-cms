@@ -1,12 +1,10 @@
 import { RecordsAPI } from './core/api-client.js';
-import { renderCard } from './utils/ui-snippets.js';
 
 export default class FrontPageController {
   constructor(app) {
     this.app = app;
-    this.postsGrid = document.getElementById('postsGrid');
+    this.container = document.getElementById('records-container');
     this.recordsAPI = RecordsAPI;
-    this.cardTemplate = null;
     this.init();
   }
 
@@ -28,29 +26,53 @@ export default class FrontPageController {
   }
 
   async renderRecords(records) {
-    this.postsGrid.className = 'card-grid';
-    this.postsGrid.innerHTML = '';
+    if (!this.container) return;
+    
+    this.container.innerHTML = '';
     if (records.length === 0) {
-      this.postsGrid.innerHTML = '<p>No posts available yet.</p>';
+      this.container.innerHTML = '<div class="card"><div class="card-body"><p>No posts available yet.</p></div></div>';
       return;
     }
+    
     const isAdmin = this.app.user.roles.includes('admin');
-    try {
-      if (!this.cardTemplate) {
-        const res = await fetch('/partials/front-card-skeleton.html');
-        this.cardTemplate = await res.text();
-      }
-      records.forEach((record) => {
-        const card = renderCard(record, this.cardTemplate, { isAdmin });
-        this.postsGrid.appendChild(card);
-      });
-    } catch (e) {
-      console.error('Failed to load card template:', e);
-      this.showError();
-    }
+    const cardGrid = document.createElement('div');
+    cardGrid.className = 'card-grid';
+    
+    records.forEach((record) => {
+      const cardElement = this.createRecordCard(record, isAdmin);
+      cardGrid.appendChild(cardElement);
+    });
+    
+    this.container.appendChild(cardGrid);
   }
 
+  createRecordCard(record, isAdmin) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    
+    const createdAt = record.created_at ? new Date(record.created_at).toLocaleDateString() : '';
+    
+    card.innerHTML = `
+      <div class="card-body">
+        ${record.image_url ? `<img class="card-image" src="${record.image_url}" alt="${record.title}" />` : ''}
+        <h3 class="card-title">${record.title}</h3>
+        ${record.description ? `<p class="card-subtitle">${record.description}</p>` : ''}
+        <div class="meta-row">
+          <span>${createdAt}</span>
+          ${record.public_name ? `<span>By ${record.public_name}</span>` : ''}
+        </div>
+        <div class="meta-row">
+          <a href="/record?id=${record.id}" class="btn">Read More</a>
+          ${isAdmin ? `<a href="/record-editor?id=${record.id}" class="btn btn-secondary">Edit</a>` : ''}
+        </div>
+      </div>
+    `;
+    
+    return card;
+  }
+  
   showError() {
-    this.postsGrid.innerHTML = '<p class="text-muted">Unable to load posts at this time.</p>';
+    if (!this.container) return;
+    this.container.innerHTML = '<div class="card"><div class="card-body"><p class="text-muted">Unable to load posts at this time.</p></div></div>';
   }
 }

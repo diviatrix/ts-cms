@@ -249,6 +249,10 @@ Delete a record (requires admin role).
 
 ### Themes
 
+The theme system has two main concepts:
+- **`is_active`**: Whether a theme is available for selection and writing to frontend (can be multiple)
+- **`active_theme_id`** (in CMS settings): Which theme is currently set as the website's theme (legacy, optional)
+
 #### GET /api/themes
 Get all available themes.
 
@@ -269,6 +273,8 @@ Get all available themes.
   ]
 }
 ```
+
+**Note:** `is_active` determines if a theme appears in the available themes list. Multiple themes can have `is_active: true`.
 
 #### GET /api/themes/:id
 Get a specific theme by ID.
@@ -418,6 +424,43 @@ Get all users (requires admin role).
 
 #### GET /api/profile/:id
 Get a specific user's profile (requires admin role).
+
+#### PUT /api/admin/theme/write-config
+Write theme configuration to frontend (requires admin role).
+
+**Request Body (optional):**
+```json
+{
+  "theme_id": "theme_uuid"
+}
+```
+
+If `theme_id` is not provided, the currently active theme (from CMS settings) will be used.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "primary": "#3cff7a",
+    "secondary": "#444444",
+    "background": "#222222",
+    "surface": "#2a2a2a",
+    "text": "#e0e0e0",
+    "border": "#444444",
+    "muted": "#aaa",
+    "error": "#ff3c3c",
+    "success": "#3cff7a",
+    "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    "font-size": "1rem",
+    "radius": "1rem",
+    "spacing": "0.5rem",
+    "shadow": "0 4px 24px rgba(0,0,0,0.10)",
+    "custom_css": ""
+  },
+  "message": "Theme \"Theme Name\" config written successfully"
+}
+```
 
 ## Error Responses
 

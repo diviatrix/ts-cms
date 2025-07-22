@@ -7,6 +7,8 @@ import { validateParams, ParameterSchemas } from '../middleware/validation.middl
 import { asyncHandler, Errors } from '../middleware/error.middleware';
 import logger from '../utils/logger';
 import { getActiveTheme, getThemeSettings } from '../functions/themes';
+import { getActiveWebsiteTheme } from '../functions/cms-settings';
+import database from '../db';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -39,13 +41,30 @@ router.get('/profile/:id', requireAuthAndAdmin, validateParams(ParameterSchemas.
 router.put('/admin/theme/write-config', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
     logger.apiRequest('PUT', '/api/admin/theme/write-config', req.user?.id);
     
-    // Get active theme and its settings
-    const activeThemeResult = await getActiveTheme();
-    if (!activeThemeResult.success || !activeThemeResult.data) {
-        throw Errors.notFound('No active theme found');
+    // Get theme_id from request body or fall back to active theme
+    const { theme_id } = req.body;
+    let themeId: string;
+    let themeName: string;
+    
+    if (theme_id) {
+        // Use provided theme_id
+        themeId = theme_id;
+        const themeResult = await database.getThemeById(theme_id);
+        if (!themeResult.success || !themeResult.data) {
+            throw Errors.notFound('Theme not found');
+        }
+        themeName = themeResult.data.name;
+    } else {
+        // Fall back to active theme for backward compatibility
+        const activeThemeResult = await getActiveWebsiteTheme();
+        if (!activeThemeResult.success || !activeThemeResult.data) {
+            throw Errors.notFound('No theme is currently applied to the website. Please apply a theme first.');
+        }
+        themeId = activeThemeResult.data.id;
+        themeName = activeThemeResult.data.name;
     }
     
-    const settingsResult = await getThemeSettings(activeThemeResult.data.id);
+    const settingsResult = await getThemeSettings(themeId);
     if (!settingsResult.success) {
         throw Errors.database('Failed to retrieve theme settings');
     }
@@ -90,11 +109,12 @@ router.put('/admin/theme/write-config', requireAuthAndAdmin, asyncHandler(async 
     await fs.writeFile(configPath, JSON.stringify(configObject, null, 2), 'utf-8');
     
     logger.info('Theme config written to frontend', { 
-        themeId: activeThemeResult.data.id,
+        themeId: themeId,
+        themeName: themeName,
         adminId: req.user?.id 
     });
     
-    ResponseUtils.success(res, configObject, 'Theme config written successfully');
+    ResponseUtils.success(res, configObject, `Theme "${themeName}" config written successfully`);
 }));
 
 export default router;

@@ -462,8 +462,8 @@ class Database {
             }
         }
         
-        // Fallback to active theme from themes table
-        return await this.getActiveTheme();
+        // No fallback - if no theme is set in CMS settings, return null
+        return prep.response(false, 'No theme is applied to the website', null);
     }
 
     public async setActiveWebsiteTheme(themeId: string, updatedBy: string): Promise<IResolve<boolean>> {

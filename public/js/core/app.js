@@ -1,6 +1,8 @@
-import { isAuthenticated, getUserRoles, setAuthToken } from './api-client.js';
+import { isAuthenticated, getUserRoles } from './api-client.js';
 import { Router } from './router.js';
 import { NavBar } from '../controllers/components/nav-bar.js';
+import { AuthDropdown } from '../components/auth-dropdown.js';
+import { AuthManager } from '../services/auth-manager.js';
 import { applyThemeFromConfig } from '../modules/theme-system.js';
 
 class App {
@@ -11,37 +13,43 @@ class App {
         };
         this.router = new Router(this);
         this.navBar = null;
+        this.authDropdown = null;
+        this.authManager = new AuthManager(this);
     }
 
     async init() {
+        // Make app globally available for Layout
+        window.app = this;
+        
         const [themeResult] = await Promise.allSettled([
             applyThemeFromConfig(),
-            this.initNavBar()
+            this.initComponents()
         ]);
         
         this.updateAuthState();
-        document.addEventListener('authChange', () => this.updateAuthState());
+        this.setupEventListeners();
+        
+        await this.router.init();
         this.router.route();
     }
 
-    async initNavBar() {
+    async initComponents() {
         this.navBar = new NavBar(this);
         await this.navBar.init();
+        
+        this.authDropdown = new AuthDropdown();
+        await this.authDropdown.init();
+    }
+
+    setupEventListeners() {
+        document.addEventListener('authChange', () => this.updateAuthState());
+        document.addEventListener('authSuccess', (e) => this.authManager.handleAuthSuccess(e));
     }
 
     updateAuthState() {
         this.user.isAuthenticated = isAuthenticated();
         this.user.roles = getUserRoles();
         document.dispatchEvent(new CustomEvent('navShouldUpdate', { detail: this.user }));
-    }
-
-    login(token) {
-        setAuthToken(token);
-    }
-
-    logout() {
-        setAuthToken(null);
-        window.location.href = '/';
     }
 }
 

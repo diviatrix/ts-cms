@@ -7,7 +7,7 @@ export default class ThemeEditorController extends BasePageController {
     constructor(app) {
         super();
         this.app = app;
-        this.container = document.getElementById('themeEditorContent');
+        this.container = document.getElementById('theme-editor-container');
         this.themeId = null;
         this.theme = null;
         this.settings = null;
@@ -74,7 +74,7 @@ export default class ThemeEditorController extends BasePageController {
                 errorCallback: () => {
                     notifications.error('Failed to load theme');
                     setTimeout(() => {
-                        window.location.href = '/pages/themes-manage-page.html';
+                        window.location.href = '/themes-manage';
                     }, 2000);
                 }
             }
@@ -228,7 +228,7 @@ export default class ThemeEditorController extends BasePageController {
                     <button type="submit" class="btn">${isNew ? 'Create Theme' : 'Save Changes'}</button>
                     <button type="button" class="btn btn-secondary" onclick="window.themeEditor.previewChanges()">Preview</button>
                     <button type="button" class="btn btn-secondary" onclick="window.themeEditor.resetChanges()">Reset</button>
-                    <a href="/pages/themes-manage-page.html" class="btn btn-secondary">Cancel</a>
+                    <a href="/themes-manage" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
         `;
@@ -467,7 +467,7 @@ export default class ThemeEditorController extends BasePageController {
                     } else {
                         notifications.success('Theme created successfully!');
                         // Update the URL to include the new theme ID
-                        const newUrl = `/pages/theme-editor-page.html?id=${newThemeId}`;
+                        const newUrl = `/theme-editor?id=${newThemeId}`;
                         window.history.replaceState({}, '', newUrl);
                         this.themeId = newThemeId;
                         // Update original settings to reflect saved state

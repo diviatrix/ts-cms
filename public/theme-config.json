@@ -1,24 +1,16 @@
 {
   "background": "#222222",
-  "border": "#398439",
-  "custom_css": "",
+  "border": "#397b84",
   "error": "#ff3c3c",
-  "favicon_url": "",
   "font-family": "'Share Tech Mono', monospace",
   "font-size": "1rem",
-  "footer_links": "[]",
-  "footer_text": "© 2025 TypeScript CMS. Built with modern web technologies.",
-  "logo_url": "",
-  "menu_links": "[]",
   "muted": "#000000",
-  "primary": "#76e576",
+  "primary": "#86d0b3",
   "radius": "1rem",
   "secondary": "#787878",
   "shadow": "0 4px 24px rgba(0,0,0,0.10)",
   "spacing": "0.5rem",
   "success": "#3cff7a",
   "surface": "#404040",
-  "text": "#cacbbe",
-  "text_muted": "#a0a0a0",
-  "text_secondary": "#c0c0c0"
+  "text": "#cacbbe"
 }

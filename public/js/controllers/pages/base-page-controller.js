@@ -13,9 +13,13 @@ class BasePageController {
     handleAuthRedirect() {
     }
 
-    setMultipleLoading(elements, isLoading, loadingText = 'Loading...') {
-        elements.forEach(element => {
-        });
+    async setMultipleLoading(elements, isLoading, loadingText = 'Loading...') {
+        const { LoadingState } = await import('../../components/loading-state.js');
+        if (isLoading) {
+            LoadingState.showMultiple(elements, loadingText);
+        } else {
+            LoadingState.hideMultiple(elements);
+        }
     }
 
     handleApiResponse(response, successCallback = null, errorCallback = null) {
@@ -45,7 +49,7 @@ class BasePageController {
         } = options;
 
         try {
-            this.setMultipleLoading(loadingElements, true, loadingText);
+            await this.setMultipleLoading(loadingElements, true, loadingText);
 
             const response = await apiCall();
 
@@ -69,7 +73,7 @@ class BasePageController {
             };
 
         } finally {
-            this.setMultipleLoading(loadingElements, false);
+            await this.setMultipleLoading(loadingElements, false);
         }
     }
 

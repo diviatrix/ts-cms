@@ -7,7 +7,7 @@ export default class ThemesManageController extends BasePageController {
     constructor(app) {
         super();
         this.app = app;
-        this.container = document.getElementById('themesContent');
+        this.container = document.getElementById('themes-manage-container');
         this.themes = [];
         this.appliedThemeId = null; // The theme ID from cms settings
         this.previewTimer = null;
@@ -64,7 +64,7 @@ export default class ThemesManageController extends BasePageController {
             <div class="theme-management">
                 <div class="theme-actions mb-2">
                     <button class="btn" onclick="window.themesManager.createNewTheme()">Create New Theme</button>
-                    <a href="/pages/admin-page.html" class="btn btn-secondary">Back to Admin</a>
+                    <a href="/admin" class="btn btn-secondary">Back to Admin</a>
                 </div>
                 
                 <div id="preview-indicator" class="alert alert-info hidden">
@@ -278,11 +278,11 @@ export default class ThemesManageController extends BasePageController {
     }
 
     editTheme(themeId) {
-        window.location.href = `/pages/theme-editor-page.html?id=${themeId}`;
+        window.location.href = `/theme-editor?id=${themeId}`;
     }
 
     createNewTheme() {
-        window.location.href = '/pages/theme-editor-page.html';
+        window.location.href = '/theme-editor';
     }
 
     async deleteTheme(themeId) {

@@ -1,5 +1,3 @@
-import { AuthAPI } from '../../core/api-client.js';
-
 export class NavBar {
     constructor(app) {
         this.app = app;
@@ -7,7 +5,6 @@ export class NavBar {
 
     async init() {
         await this.injectNavbar();
-        await this.injectDropdown();
         this.setupEventListeners();
         this.updateNavMenu(this.app.user);
     }
@@ -26,122 +23,17 @@ export class NavBar {
         }
     }
 
-    async injectDropdown() {
-        try {
-            const response = await fetch('/partials/login-dropdown.html');
-            if (!response.ok) throw new Error('Failed to load login dropdown partial.');
-            const html = await response.text();
-            const loginDropdownToggle = document.getElementById('loginDropdownToggle');
-            if (loginDropdownToggle) {
-                const li = loginDropdownToggle.closest('li');
-                if (li) {
-                    li.insertAdjacentHTML('beforeend', html);
-                }
-            }
-        } catch (error) {
-            console.error('Error injecting dropdown:', error);
-        }
-    }
-
     setupEventListeners() {
         document.addEventListener('navShouldUpdate', (e) => {
             this.updateNavMenu(e.detail);
         });
 
-        const navbar = document.querySelector('.navbar');
-        if (!navbar) return;
-
-        navbar.addEventListener('click', (e) => {
-            if (e.target.matches('#loginDropdownToggle')) {
+        const signOutButton = document.getElementById('signOutButton');
+        if (signOutButton) {
+            signOutButton.addEventListener('click', (e) => {
                 e.preventDefault();
-                const loginDropdownMenu = document.getElementById('loginDropdownMenu');
-                if (loginDropdownMenu) {
-                    loginDropdownMenu.style.display = loginDropdownMenu.style.display === 'block' ? 'none' : 'block';
-                }
-            }
-
-            if (e.target.matches('#signOutButton')) {
-                e.preventDefault();
-                this.app.logout();
-            }
-
-            const loginTabBtn = document.getElementById('loginTabBtn');
-            const registerTabBtn = document.getElementById('registerTabBtn');
-            const loginForm = document.getElementById('loginForm');
-            const registerForm = document.getElementById('registerForm');
-
-            if (e.target.matches('#loginTabBtn')) {
-                e.preventDefault();
-                loginTabBtn.classList.add('active');
-                registerTabBtn.classList.remove('active');
-                loginForm.style.display = '';
-                registerForm.style.display = 'none';
-            }
-
-            if (e.target.matches('#registerTabBtn')) {
-                e.preventDefault();
-                loginTabBtn.classList.remove('active');
-                registerTabBtn.classList.add('active');
-                loginForm.style.display = 'none';
-                registerForm.style.display = '';
-            }
-        });
-
-        const loginForm = document.getElementById('loginForm');
-        if (loginForm) {
-            loginForm.addEventListener('submit', (e) => this.handleLogin(e));
-        }
-
-        const registerForm = document.getElementById('registerForm');
-        if (registerForm) {
-            registerForm.addEventListener('submit', (e) => this.handleRegister(e));
-        }
-        
-        document.addEventListener('click', (e) => {
-            const loginDropdownMenu = document.getElementById('loginDropdownMenu');
-            const loginDropdownToggle = document.getElementById('loginDropdownToggle');
-            if (loginDropdownMenu && !loginDropdownMenu.contains(e.target) && e.target !== loginDropdownToggle) {
-                loginDropdownMenu.style.display = 'none';
-            }
-        });
-    }
-
-    async handleLogin(e) {
-        e.preventDefault();
-        const loginDropdownMessage = document.getElementById('loginDropdownMessage');
-        const login = document.getElementById('loginInput').value.trim();
-        const password = document.getElementById('passwordInput').value;
-        if (!login || !password) {
-            loginDropdownMessage.textContent = 'Please enter login and password.';
-            return;
-        }
-        loginDropdownMessage.textContent = 'Logging in...';
-        const response = await AuthAPI.login(login, password);
-        if (response.success && response.data.token) {
-            loginDropdownMessage.textContent = 'Login successful!';
-            this.app.login(response.data.token);
-        } else {
-            loginDropdownMessage.textContent = response.message || 'Login failed.';
-        }
-    }
-
-    async handleRegister(e) {
-        e.preventDefault();
-        const loginDropdownMessage = document.getElementById('loginDropdownMessage');
-        const login = document.getElementById('registerLoginInput').value.trim();
-        const email = document.getElementById('registerEmailInput').value.trim();
-        const password = document.getElementById('registerPasswordInput').value;
-        if (!login || !email || !password) {
-            loginDropdownMessage.textContent = 'Please fill all fields.';
-            return;
-        }
-        loginDropdownMessage.textContent = 'Registering...';
-        const response = await AuthAPI.register(login, email, password);
-        if (response.success) {
-            loginDropdownMessage.textContent = 'Registration successful! You can now log in.';
-            document.getElementById('loginTabBtn').click();
-        } else {
-            loginDropdownMessage.textContent = response.message || 'Registration failed.';
+                this.app.authManager.logout();
+            });
         }
     }
 

@@ -1,15 +1,13 @@
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
 import { RecordsAPI, AuthAPI } from '../../core/api-client.js';
-import { jwtDecode } from '../../utils/jwt-decode.js';
 import { DownloadUtils } from '../../utils/download-utils.js';
-import { setImagePreview } from '../../utils/image-preview.js';
 import { BasePageController } from './base-page-controller.js';
 
 export default class RecordDisplayController extends BasePageController {
   constructor(app) {
     super();
     this.app = app;
-    this.elements = this.getRecordElements();
+    this.container = document.getElementById('record-container');
     this.recordsAPI = RecordsAPI;
     this.authAPI = AuthAPI;
     this.recordId = this.getRecordIdFromUrl();
@@ -19,14 +17,8 @@ export default class RecordDisplayController extends BasePageController {
 
   getRecordElements() {
     return {
-      title: document.getElementById('recordTitle'),
-      description: document.getElementById('recordDescription'),
-      content: document.getElementById('recordContent'),
-      author: document.getElementById('recordAuthor'),
-      date: document.getElementById('recordDate'),
       editButton: document.getElementById('editRecordButton'),
-      downloadButton: document.getElementById('downloadRecordButton'),
-      imagePreview: document.getElementById('recordImagePreview')
+      downloadButton: document.getElementById('downloadRecordButton')
     };
   }
 
@@ -68,35 +60,28 @@ export default class RecordDisplayController extends BasePageController {
   }
 
   displayRecord(record) {
-    const loadingContainer = document.getElementById('loadingContainer');
-    if (loadingContainer) loadingContainer.style.display = 'none';
-    const contentContainer = document.getElementById('contentContainer');
-    if (contentContainer) {
-      contentContainer.classList.remove('hidden');
-      contentContainer.style.display = '';
-      contentContainer.innerHTML = `
-        <div class="card">
-          <div class="card-body">
-            <h1 class="card-title">${record.title}</h1>
-            <div class="meta-row">
-              <span>${record.created_at ? new Date(record.created_at).toLocaleDateString() : ''}</span>
-              ${record.public_name ? `<span>By ${record.public_name}</span>` : ''}
-            </div>
-            ${record.image_url ? `<img class="record-image" src="${record.image_url}" alt="${record.title}" />` : ''}
-            ${record.description ? `<div class="card-subtitle">${record.description}</div>` : ''}
-            <div class="card-text">${marked.parse(record.content || '')}</div>
-            <div class="meta-row">
-              <a id="editRecordButton" class="btn hidden" href="#">Edit</a>
-              <a id="downloadRecordButton" class="btn hidden" href="#">Download</a>
-            </div>
+    if (!this.container) return;
+    
+    this.container.innerHTML = `
+      <div class="card">
+        <div class="card-body">
+          <h1 class="card-title">${record.title}</h1>
+          <div class="meta-row">
+            <span>${record.created_at ? new Date(record.created_at).toLocaleDateString() : ''}</span>
+            ${record.public_name ? `<span>By ${record.public_name}</span>` : ''}
+          </div>
+          ${record.image_url ? `<img class="record-image" src="${record.image_url}" alt="${record.title}" />` : ''}
+          ${record.description ? `<div class="card-subtitle">${record.description}</div>` : ''}
+          <div class="card-text">${marked.parse(record.content || '')}</div>
+          <div class="meta-row">
+            <a id="editRecordButton" class="btn hidden" href="#">Edit</a>
+            <a id="downloadRecordButton" class="btn hidden" href="#">Download</a>
           </div>
         </div>
-      `;
-    }
+      </div>
+    `;
+    
     this.elements = this.getRecordElements();
-    if (this.elements.imagePreview) {
-      setImagePreview(this.elements.imagePreview, record.image_url, record.title);
-    }
     this.setupDownloadFeature(record);
     this.setupAdminFeatures(record);
   }
@@ -107,7 +92,7 @@ export default class RecordDisplayController extends BasePageController {
     this.elements.editButton.classList.remove('hidden');
     this.elements.editButton.addEventListener('click', (e) => {
       e.preventDefault();
-      window.location.href = `/pages/records-manage-page.html?edit=${record.id}`;
+      window.location.href = `/record-editor?id=${record.id}`;
     });
   }
 
@@ -137,19 +122,14 @@ export default class RecordDisplayController extends BasePageController {
   }
 
   showMessage(title, description, alertClass) {
-    const loadingContainer = document.getElementById('loadingContainer');
-    if (loadingContainer) loadingContainer.style.display = 'none';
-    const contentContainer = document.getElementById('contentContainer');
-    if (contentContainer) {
-      contentContainer.classList.remove('hidden');
-      contentContainer.style.display = '';
-      contentContainer.innerHTML = `
-        <div class="alert ${alertClass}">
-          <h4>${title}</h4>
-          <p>${description}</p>
-          <a href="/" class="btn">Go to Homepage</a>
-        </div>
-      `;
-    }
+    if (!this.container) return;
+    
+    this.container.innerHTML = `
+      <div class="alert ${alertClass}">
+        <h4>${title}</h4>
+        <p>${description}</p>
+        <a href="/" class="btn">Go to Homepage</a>
+      </div>
+    `;
   }
 }

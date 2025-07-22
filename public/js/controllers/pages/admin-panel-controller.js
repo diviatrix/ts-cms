@@ -109,7 +109,7 @@ export default class AdminPanelController extends BasePageController {
         
         container.innerHTML = `
             <p>${records.length} records found</p>
-            <a href="/pages/records-manage-page.html" class="btn">Manage Records</a>
+            <a href="/records-manage" class="btn">Manage Records</a>
         `;
     }
 
@@ -165,7 +165,7 @@ export default class AdminPanelController extends BasePageController {
             <p class="text-muted">Manage themes to apply or write config</p>
             
             <div class="theme-actions">
-                <a href="/pages/themes-manage-page.html" class="btn">Manage Themes</a>
+                <a href="/themes-manage" class="btn">Manage Themes</a>
             </div>
         `;
         
@@ -204,7 +204,7 @@ export default class AdminPanelController extends BasePageController {
                 </div>
             `).join('')}
             <p>${settings.length} total settings</p>
-            <a href="/pages/settings-page.html" class="btn">Manage Settings</a>
+            <a href="/settings" class="btn">Manage Settings</a>
         `;
     }
 }

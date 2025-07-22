@@ -8,7 +8,7 @@ export default class ProfileController extends BasePageController {
         super();
         this.app = app;
         this.profileAPI = ProfileAPI;
-        this.container = document.getElementById('profileContent');
+        this.container = document.getElementById('profile-container');
         this.init();
     }
 

@@ -7,7 +7,7 @@ export default class RecordEditorController extends BasePageController {
     constructor(app) {
         super();
         this.app = app;
-        this.container = document.getElementById('recordEditorContent');
+        this.container = document.getElementById('record-editor-container');
         this.recordId = null;
         this.record = null;
         this.imagePreview = null;
@@ -43,7 +43,7 @@ export default class RecordEditorController extends BasePageController {
                 errorCallback: () => {
                     notifications.error('Failed to load record');
                     setTimeout(() => {
-                        window.location.href = '/pages/records-manage-page.html';
+                        window.location.href = '/records-manage';
                     }, 2000);
                 }
             }
@@ -124,7 +124,7 @@ export default class RecordEditorController extends BasePageController {
                 
                 <div class="theme-actions mt-2">
                     <button type="submit" class="btn">${isNew ? 'Create Record' : 'Save Changes'}</button>
-                    <a href="/pages/records-manage-page.html" class="btn btn-secondary">Cancel</a>
+                    <a href="/records-manage" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
         `;
@@ -218,7 +218,7 @@ export default class RecordEditorController extends BasePageController {
                     
                     if (!this.recordId && responseData && responseData.id) {
                         // Update URL for new record
-                        const newUrl = `/pages/record-editor-page.html?id=${responseData.id}`;
+                        const newUrl = `/record-editor?id=${responseData.id}`;
                         window.history.replaceState({}, '', newUrl);
                         this.recordId = responseData.id;
                         this.record = { ...this.record, ...responseData };

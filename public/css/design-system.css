@@ -389,6 +389,21 @@ textarea:focus {
   display: inline-block;
 }
 
+.badge-success {
+  background: var(--success);
+  color: var(--background);
+}
+
+.badge-primary {
+  background: var(--primary);
+  color: var(--background);
+}
+
+.badge-secondary {
+  background: var(--muted);
+  color: var(--background);
+}
+
 /* Theme components */
 .theme-card {
   transition: transform 0.2s;

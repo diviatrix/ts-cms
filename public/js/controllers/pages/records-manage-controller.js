@@ -26,7 +26,7 @@ export default class RecordsManageController extends BasePageController {
             
             <div class="form-actions mb-2">
                 <button class="btn" onclick="window.recordsManager.createNewRecord()">Create New Record</button>
-                <a href="/pages/admin-page.html" class="btn btn-secondary">Back to Admin</a>
+                <a href="/admin" class="btn btn-secondary">Back to Admin</a>
             </div>
             
             <div class="card">
@@ -66,7 +66,7 @@ export default class RecordsManageController extends BasePageController {
                     <span>${record.is_published ? 'Published' : 'Draft'}</span>
                 </div>
                 <div class="meta-row">
-                    <a href="/pages/record-editor-page.html?id=${record.id}" class="btn">Edit</a>
+                    <a href="/record-editor?id=${record.id}" class="btn">Edit</a>
                     <button class="btn btn-danger" onclick="window.recordsManager.deleteRecord('${record.id}')">Delete</button>
                 </div>
             </div>
@@ -74,7 +74,7 @@ export default class RecordsManageController extends BasePageController {
     }
 
     createNewRecord() {
-        window.location.href = '/pages/record-editor-page.html';
+        window.location.href = '/record-editor';
     }
 
     async deleteRecord(id) {

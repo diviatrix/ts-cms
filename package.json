@@ -7,8 +7,7 @@
     "lint": "eslint . --ext .ts",
     "start": "npx ts-node server.ts",
     "dev": "nodemon --exec npx ts-node server.ts",
-    "test": "mocha --require ts-node/register --project tsconfig.test.json tests/**/*.ts",
-    "build:frontend": "tsc -p front/tsconfig.frontend.json"
+    "test": "mocha --require ts-node/register --project tsconfig.test.json tests/**/*.ts"
   },
   "repository": {
     "type": "git",
