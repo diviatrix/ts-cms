@@ -3,9 +3,11 @@ import { RecordsAPI, AuthAPI } from '../../core/api-client.js';
 import { jwtDecode } from '../../utils/jwt-decode.js';
 import { DownloadUtils } from '../../utils/download-utils.js';
 import { setImagePreview } from '../../utils/image-preview.js';
+import { BasePageController } from './base-page-controller.js';
 
-export default class RecordDisplayController {
+export default class RecordDisplayController extends BasePageController {
   constructor(app) {
+    super();
     this.app = app;
     this.elements = this.getRecordElements();
     this.recordsAPI = RecordsAPI;
@@ -43,21 +45,18 @@ export default class RecordDisplayController {
   }
 
   async loadAndDisplayRecord() {
-    try {
-      const response = await this.recordsAPI.getById(this.recordId);
-      
-      if (!response.success) {
-        this.handleRecordLoadError(response);
-        return;
+    await this.safeApiCall(
+      () => this.recordsAPI.getById(this.recordId),
+      {
+        successCallback: (data) => {
+          this.displayRecord(data);
+          this.setupAdminFeatures(data);
+        },
+        errorCallback: (response) => {
+          this.handleRecordLoadError(response);
+        }
       }
-
-      this.displayRecord(response.data);
-      this.setupAdminFeatures(response.data);
-
-    } catch (error) {
-      console.error('Error fetching record:', error);
-      this.showNetworkError();
-    }
+    );
   }
 
   handleRecordLoadError(response) {

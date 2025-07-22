@@ -1,13 +1,16 @@
-import { ThemesAPI, CmsSettingsAPI } from '../../core/api-client.js';
+import { ThemesAPI, CmsSettingsAPI, apiFetch } from '../../core/api-client.js';
 import { applyThemeFromSettings } from '../../modules/theme-system.js';
 import { notifications } from '../../modules/notifications.js';
+import { BasePageController } from './base-page-controller.js';
 
-export default class ThemesManageController {
+export default class ThemesManageController extends BasePageController {
     constructor(app) {
+        super();
         this.app = app;
         this.container = document.getElementById('themesContent');
         this.themes = [];
-        this.activeThemeId = null;
+        this.appliedThemeId = null; // The theme ID from cms settings
+        this.previewTimer = null;
         this.init();
     }
 
@@ -18,22 +21,45 @@ export default class ThemesManageController {
         }
         
         await this.loadThemes();
+        await this.loadAppliedTheme();
         this.render();
     }
 
     async loadThemes() {
-        try {
-            const response = await ThemesAPI.getAll();
-            if (response.success) {
-                this.themes = response.data;
-                this.activeThemeId = this.themes.find(t => t.is_active)?.id;
+        await this.safeApiCall(
+            () => ThemesAPI.getAll(),
+            {
+                successCallback: (data) => {
+                    this.themes = data;
+                },
+                errorCallback: () => {
+                    console.error('Failed to load themes');
+                }
             }
-        } catch (error) {
-            console.error('Failed to load themes:', error);
-        }
+        );
+    }
+
+    async loadAppliedTheme() {
+        await this.safeApiCall(
+            () => CmsSettingsAPI.getAll(),
+            {
+                successCallback: (data) => {
+                    const activeThemeSetting = data.find(s => s.setting_key === 'active_theme_id');
+                    if (activeThemeSetting) {
+                        this.appliedThemeId = activeThemeSetting.setting_value;
+                    }
+                },
+                errorCallback: () => {
+                    console.error('Failed to load applied theme');
+                }
+            }
+        );
     }
 
     render() {
+        const availableThemes = this.themes.filter(t => t.is_active);
+        const inactiveThemes = this.themes.filter(t => !t.is_active);
+        
         this.container.innerHTML = `
             <div class="theme-management">
                 <div class="theme-actions mb-2">
@@ -41,8 +67,37 @@ export default class ThemesManageController {
                     <a href="/pages/admin-page.html" class="btn btn-secondary">Back to Admin</a>
                 </div>
                 
-                <div class="theme-grid">
-                    ${this.themes.map(theme => this.renderThemeCard(theme)).join('')}
+                <div id="preview-indicator" class="alert alert-info hidden">
+                    <span>Preview Mode Active</span>
+                    <button class="btn btn-sm ml-2" onclick="window.themesManager.applyPreview()">Apply Permanently</button>
+                    <button class="btn btn-sm ml-1" onclick="window.themesManager.cancelPreview()">Cancel Preview</button>
+                    <span class="ml-2" id="preview-timer"></span>
+                </div>
+                
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <h3 class="card-title">Available Themes</h3>
+                        <p class="text-muted">Themes that can be written to the frontend configuration.</p>
+                        <div class="theme-grid">
+                            ${availableThemes.length > 0 
+                                ? availableThemes.map(theme => this.renderThemeCard(theme, 'available')).join('')
+                                : '<p class="text-muted">No available themes. Activate a theme to make it available.</p>'
+                            }
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Inactive Themes</h3>
+                        <p class="text-muted">Themes that are not available for selection.</p>
+                        <div class="theme-grid">
+                            ${inactiveThemes.length > 0 
+                                ? inactiveThemes.map(theme => this.renderThemeCard(theme, 'inactive')).join('')
+                                : '<p class="text-muted">No inactive themes.</p>'
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -50,65 +105,176 @@ export default class ThemesManageController {
         window.themesManager = this;
     }
 
-    renderThemeCard(theme) {
-        const isActive = theme.id === this.activeThemeId;
+    renderThemeCard(theme, state) {
+        const isAvailable = theme.is_active;
+        
+        // Determine badge
+        let badge = '';
+        if (isAvailable) {
+            badge = '<span class="badge badge-primary">Available</span>';
+        } else {
+            badge = '<span class="badge badge-secondary">Inactive</span>';
+        }
         
         return `
-            <div class="card theme-card ${isActive ? 'active-theme' : ''}">
+            <div class="card theme-card">
                 <div class="card-body">
                     <h3 class="card-title">${theme.name}</h3>
                     <p class="card-text text-muted">${theme.description || 'No description'}</p>
                     
                     <div class="theme-info mb-1">
                         <small class="text-muted">Created: ${new Date(theme.created_at).toLocaleDateString()}</small>
-                        ${isActive ? '<span class="badge ml-1">Active</span>' : ''}
+                        ${badge}
                     </div>
                     
+                    ${this.renderThemePreviewColors(theme)}
+                    
                     <div class="theme-actions">
-                        <button class="btn btn-sm" onclick="window.themesManager.previewTheme('${theme.id}')">Preview</button>
+                        ${state === 'available' ? `
+                            <button class="btn btn-sm" onclick="window.themesManager.previewTheme('${theme.id}')">Preview</button>
+                            <button class="btn btn-sm btn-primary" onclick="window.themesManager.writeThemeConfig('${theme.id}')">Write to Frontend</button>
+                        ` : ''}
+                        
                         <button class="btn btn-sm" onclick="window.themesManager.editTheme('${theme.id}')">Edit</button>
-                        ${!isActive ? `<button class="btn btn-sm" onclick="window.themesManager.activateTheme('${theme.id}')">Activate</button>` : ''}
-                        ${!theme.is_default && !isActive ? `<button class="btn btn-sm btn-danger" onclick="window.themesManager.deleteTheme('${theme.id}')">Delete</button>` : ''}
+                        
+                        ${state === 'inactive' ? `
+                            <button class="btn btn-sm" onclick="window.themesManager.makeAvailable('${theme.id}')">Make Available</button>
+                        ` : ''}
+                        
+                        ${state === 'available' ? `
+                            <button class="btn btn-sm btn-secondary" onclick="window.themesManager.makeInactive('${theme.id}')">Make Inactive</button>
+                        ` : ''}
+                        
+                        ${!theme.is_default ? `
+                            <button class="btn btn-sm btn-danger" onclick="window.themesManager.deleteTheme('${theme.id}')">Delete</button>
+                        ` : ''}
                     </div>
                 </div>
             </div>
         `;
     }
-
-    async previewTheme(themeId) {
-        try {
-            const response = await ThemesAPI.getSettings(themeId);
-            if (response.success) {
-                applyThemeFromSettings(response.data);
-                
-                // Show preview notification with reset button
-                const notification = notifications.show('Previewing theme.', 'success', 0);
-                const resetBtn = document.createElement('button');
-                resetBtn.className = 'btn btn-sm ml-2';
-                resetBtn.textContent = 'Reset';
-                resetBtn.onclick = () => window.location.reload();
-                notification.appendChild(resetBtn);
-                
-                setTimeout(() => notification.remove(), 5000);
-            }
-        } catch (error) {
-            console.error('Failed to preview theme:', error);
-        }
+    
+    renderThemePreviewColors(theme) {
+        // This will be populated when we have theme settings
+        return '';
     }
 
-    async activateTheme(themeId) {
-        const confirmed = await notifications.confirm('Are you sure you want to activate this theme?');
+    async previewTheme(themeId) {
+        await this.safeApiCall(
+            () => ThemesAPI.getSettings(themeId),
+            {
+                successCallback: (data) => {
+                    // Store current theme for preview
+                    this.previewingThemeId = themeId;
+                    
+                    // Apply theme settings
+                    applyThemeFromSettings(data);
+                    
+                    // Show preview indicator
+                    const indicator = document.getElementById('preview-indicator');
+                    indicator.classList.remove('hidden');
+                    
+                    // Start 30 second timer
+                    let timeLeft = 30;
+                    const timerElement = document.getElementById('preview-timer');
+                    
+                    const updateTimer = () => {
+                        timerElement.textContent = `(${timeLeft}s remaining)`;
+                        timeLeft--;
+                        
+                        if (timeLeft < 0) {
+                            this.cancelPreview();
+                        }
+                    };
+                    
+                    updateTimer();
+                    this.previewTimer = setInterval(updateTimer, 1000);
+                },
+                errorCallback: () => {
+                    notifications.error('Failed to preview theme');
+                }
+            }
+        );
+    }
+    
+    async applyPreview() {
+        if (!this.previewingThemeId) return;
+        
+        // Clear timer
+        if (this.previewTimer) {
+            clearInterval(this.previewTimer);
+            this.previewTimer = null;
+        }
+        
+        // Apply the theme
+        await this.applyTheme(this.previewingThemeId);
+    }
+    
+    cancelPreview() {
+        // Clear timer
+        if (this.previewTimer) {
+            clearInterval(this.previewTimer);
+            this.previewTimer = null;
+        }
+        
+        // Hide indicator
+        const indicator = document.getElementById('preview-indicator');
+        indicator.classList.add('hidden');
+        
+        // Reload to restore original theme
+        window.location.reload();
+    }
+
+    
+    async makeAvailable(themeId) {
+        const theme = this.themes.find(t => t.id === themeId);
+        if (!theme) return;
+        
+        theme.is_active = true;
+        await this.safeApiCall(
+            () => ThemesAPI.update(themeId, { 
+                name: theme.name,
+                description: theme.description,
+                is_active: true 
+            }),
+            {
+                successCallback: async () => {
+                    notifications.success('Theme is now available for selection');
+                    await this.loadThemes();
+                    this.render();
+                },
+                errorCallback: () => {
+                    notifications.error('Failed to update theme');
+                }
+            }
+        );
+    }
+    
+    async makeInactive(themeId) {
+        const confirmed = await notifications.confirm('Make this theme inactive? It will no longer be available for selection.');
         if (!confirmed) return;
         
-        try {
-            const response = await CmsSettingsAPI.setActiveTheme(themeId);
-            if (response.success) {
-                window.location.reload();
+        const theme = this.themes.find(t => t.id === themeId);
+        if (!theme) return;
+        
+        theme.is_active = false;
+        await this.safeApiCall(
+            () => ThemesAPI.update(themeId, { 
+                name: theme.name,
+                description: theme.description,
+                is_active: false 
+            }),
+            {
+                successCallback: async () => {
+                    notifications.success('Theme is now inactive');
+                    await this.loadThemes();
+                    this.render();
+                },
+                errorCallback: () => {
+                    notifications.error('Failed to update theme');
+                }
             }
-        } catch (error) {
-            console.error('Failed to activate theme:', error);
-            notifications.error('Failed to activate theme');
-        }
+        );
     }
 
     editTheme(themeId) {
@@ -123,16 +289,47 @@ export default class ThemesManageController {
         const confirmed = await notifications.confirm('Are you sure you want to delete this theme? This action cannot be undone.');
         if (!confirmed) return;
         
-        try {
-            const response = await ThemesAPI.delete(themeId);
-            if (response.success) {
-                notifications.success('Theme deleted successfully');
-                await this.loadThemes();
-                this.render();
+        await this.safeApiCall(
+            () => ThemesAPI.delete(themeId),
+            {
+                successCallback: async () => {
+                    notifications.success('Theme deleted successfully');
+                    await this.loadThemes();
+                    this.render();
+                },
+                errorCallback: () => {
+                    notifications.error('Failed to delete theme');
+                }
             }
-        } catch (error) {
-            console.error('Failed to delete theme:', error);
-            notifications.error('Failed to delete theme');
+        );
+    }
+    
+    async writeThemeConfig(themeId) {
+        const theme = this.themes.find(t => t.id === themeId);
+        if (!theme) {
+            notifications.error('Theme not found');
+            return;
         }
+        
+        const themeName = theme.name;
+        
+        notifications.info(`Writing "${themeName}" theme to frontend...`);
+        
+        await this.safeApiCall(
+            () => apiFetch('/api/admin/theme/write-config', {
+                method: 'PUT',
+                data: { theme_id: themeId }
+            }),
+            {
+                successCallback: () => {
+                    notifications.success(`Theme "${themeName}" written to frontend successfully!`);
+                    // Reload to apply new theme
+                    setTimeout(() => window.location.reload(), 1500);
+                },
+                errorCallback: (response) => {
+                    notifications.error('Failed to write theme config: ' + response.message);
+                }
+            }
+        );
     }
 }

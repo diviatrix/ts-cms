@@ -1,8 +1,10 @@
 import { RecordsAPI } from '../../core/api-client.js';
 import { notifications } from '../../modules/notifications.js';
+import { BasePageController } from './base-page-controller.js';
 
-export default class RecordsManageController {
+export default class RecordsManageController extends BasePageController {
     constructor(app) {
+        super();
         this.app = app;
         this.container = document.getElementById('records-manage-container');
         this.init();
@@ -39,14 +41,15 @@ export default class RecordsManageController {
     }
 
     async loadRecords() {
-        try {
-            const response = await RecordsAPI.getAll();
-            if (response.success) {
-                this.renderRecordsList(response.data);
+        await this.safeApiCall(
+            () => RecordsAPI.getAll(),
+            {
+                successCallback: (data) => this.renderRecordsList(data),
+                errorCallback: () => {
+                    document.getElementById('recordsList').innerHTML = '<p class="alert alert-danger">Failed to load records</p>';
+                }
             }
-        } catch (error) {
-            document.getElementById('recordsList').innerHTML = '<p class="alert alert-danger">Failed to load records</p>';
-        }
+        );
     }
 
     renderRecordsList(records) {
@@ -78,14 +81,17 @@ export default class RecordsManageController {
         const confirmed = await notifications.confirm('Are you sure you want to delete this record?');
         if (!confirmed) return;
         
-        try {
-            const response = await RecordsAPI.delete(id);
-            if (response.success) {
-                notifications.success('Record deleted successfully');
-                await this.loadRecords();
+        await this.safeApiCall(
+            () => RecordsAPI.delete(id),
+            {
+                successCallback: async () => {
+                    notifications.success('Record deleted successfully');
+                    await this.loadRecords();
+                },
+                errorCallback: () => {
+                    notifications.error('Failed to delete record');
+                }
             }
-        } catch (error) {
-            notifications.error('Failed to delete record');
-        }
+        );
     }
 }

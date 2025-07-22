@@ -1,9 +1,11 @@
 import { ProfileAPI } from '../../core/api-client.js';
 import { ImagePreview } from '../../components/image-preview.js';
 import { notifications } from '../../modules/notifications.js';
+import { BasePageController } from './base-page-controller.js';
 
-export default class ProfileController {
+export default class ProfileController extends BasePageController {
     constructor(app) {
+        super();
         this.app = app;
         this.profileAPI = ProfileAPI;
         this.container = document.getElementById('profileContent');
@@ -19,17 +21,15 @@ export default class ProfileController {
     }
 
     async loadProfile() {
-        try {
-            const response = await this.profileAPI.get();
-            if (response.success) {
-                this.renderProfile(response.data);
-            } else {
-                notifications.error(response.message || 'Failed to load profile');
+        await this.safeApiCall(
+            () => this.profileAPI.get(),
+            {
+                successCallback: (data) => this.renderProfile(data),
+                errorCallback: (response) => {
+                    notifications.error(response.message || 'Failed to load profile');
+                }
             }
-        } catch (error) {
-            console.error('Error loading profile:', error);
-            notifications.error('Failed to connect to server');
-        }
+        );
     }
 
     renderProfile(profile) {
@@ -105,17 +105,17 @@ export default class ProfileController {
             profile_picture_url: document.getElementById('profilePictureUrl').value
         };
 
-        try {
-            const response = await this.profileAPI.update(formData);
-            if (response.success) {
-                notifications.success('Profile updated successfully');
-            } else {
-                notifications.error(response.message || 'Failed to update profile');
+        await this.safeApiCall(
+            () => this.profileAPI.update(formData),
+            {
+                successCallback: () => {
+                    notifications.success('Profile updated successfully');
+                },
+                errorCallback: (response) => {
+                    notifications.error(response.message || 'Failed to update profile');
+                }
             }
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            notifications.error('Failed to connect to server');
-        }
+        );
     }
 
     async handlePasswordChange(e) {
@@ -128,17 +128,17 @@ export default class ProfileController {
             return;
         }
 
-        try {
-            const response = await this.profileAPI.changePassword(newPassword);
-            if (response.success) {
-                notifications.success('Password changed successfully');
-                document.getElementById('passwordForm').reset();
-            } else {
-                notifications.error(response.message || 'Failed to change password');
+        await this.safeApiCall(
+            () => this.profileAPI.changePassword(newPassword),
+            {
+                successCallback: () => {
+                    notifications.success('Password changed successfully');
+                    document.getElementById('passwordForm').reset();
+                },
+                errorCallback: (response) => {
+                    notifications.error(response.message || 'Failed to change password');
+                }
             }
-        } catch (error) {
-            console.error('Error changing password:', error);
-            notifications.error('Failed to connect to server');
-        }
+        );
     }
 }

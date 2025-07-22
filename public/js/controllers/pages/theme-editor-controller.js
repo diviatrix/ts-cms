@@ -1,9 +1,11 @@
 import { ThemesAPI, apiFetch } from '../../core/api-client.js';
 import { applyThemeFromSettings, getCurrentTheme } from '../../modules/theme-system.js';
 import { notifications } from '../../modules/notifications.js';
+import { BasePageController } from './base-page-controller.js';
 
-export default class ThemeEditorController {
+export default class ThemeEditorController extends BasePageController {
     constructor(app) {
+        super();
         this.app = app;
         this.container = document.getElementById('themeEditorContent');
         this.themeId = null;
@@ -33,54 +35,57 @@ export default class ThemeEditorController {
     }
 
     async loadTheme() {
-        try {
-            const themeResponse = await ThemesAPI.getById(this.themeId);
-            if (themeResponse.success) {
-                this.theme = themeResponse.data.theme;
-                
-                // Transform settings array to object if needed
-                let settings = themeResponse.data.settings || {};
-                if (Array.isArray(settings)) {
-                    const transformed = {};
-                    settings.forEach(item => {
-                        transformed[item.setting_key] = item.setting_value;
-                    });
-                    settings = transformed;
+        await this.safeApiCall(
+            () => ThemesAPI.getById(this.themeId),
+            {
+                successCallback: (data) => {
+                    this.theme = data.theme;
+                    
+                    // Transform settings array to object if needed
+                    let settings = data.settings || {};
+                    if (Array.isArray(settings)) {
+                        const transformed = {};
+                        settings.forEach(item => {
+                            transformed[item.setting_key] = item.setting_value;
+                        });
+                        settings = transformed;
+                    }
+                    
+                    // Map old property names to new ones for the editor
+                    this.settings = {
+                        primary: settings.primary_color || settings.primary || '#3cff7a',
+                        secondary: settings.secondary_color || settings.secondary || '#444444',
+                        background: settings.background_color || settings.background || '#222222',
+                        surface: settings.surface_color || settings.surface || '#2a2a2a',
+                        text: settings.text_color || settings.text || '#e0e0e0',
+                        border: settings.border_color || settings.border || '#444444',
+                        muted: settings.muted_color || settings.muted || '#aaa',
+                        error: settings.error_color || settings.error || '#ff3c3c',
+                        success: settings.success_color || settings.success || '#3cff7a',
+                        font_family: settings.font_family || "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        font_size: settings.font_size || '1rem',
+                        radius: settings.radius || '1rem',
+                        spacing: settings.spacing || '0.5rem',
+                        shadow: settings.shadow || '0 4px 24px rgba(0,0,0,0.10)',
+                        custom_css: settings.custom_css || ''
+                    };
+                    this.originalSettings = { ...this.settings };
+                },
+                errorCallback: () => {
+                    notifications.error('Failed to load theme');
+                    setTimeout(() => {
+                        window.location.href = '/pages/themes-manage-page.html';
+                    }, 2000);
                 }
-                
-                // Map old property names to new ones for the editor
-                this.settings = {
-                    primary: settings.primary_color || settings.primary || '#3cff7a',
-                    secondary: settings.secondary_color || settings.secondary || '#444444',
-                    background: settings.background_color || settings.background || '#222222',
-                    surface: settings.surface_color || settings.surface || '#2a2a2a',
-                    text: settings.text_color || settings.text || '#e0e0e0',
-                    border: settings.border_color || settings.border || '#444444',
-                    muted: settings.muted_color || settings.muted || '#aaa',
-                    error: settings.error_color || settings.error || '#ff3c3c',
-                    success: settings.success_color || settings.success || '#3cff7a',
-                    font_family: settings.font_family || "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                    font_size: settings.font_size || '1rem',
-                    radius: settings.radius || '1rem',
-                    spacing: settings.spacing || '0.5rem',
-                    shadow: settings.shadow || '0 4px 24px rgba(0,0,0,0.10)',
-                    custom_css: settings.custom_css || ''
-                };
-                this.originalSettings = { ...this.settings };
             }
-        } catch (error) {
-            console.error('Failed to load theme:', error);
-            notifications.error('Failed to load theme');
-            setTimeout(() => {
-                window.location.href = '/pages/themes-manage-page.html';
-            }, 2000);
-        }
+        );
     }
 
     initNewTheme() {
         this.theme = {
             name: '',
-            description: ''
+            description: '',
+            is_active: false
         };
         
         // Get current theme as base - use computed styles to get actual values
@@ -129,6 +134,12 @@ export default class ThemeEditorController {
                             
                             <label for="themeDescription">Description</label>
                             <textarea id="themeDescription" rows="3" placeholder="A brief description of your theme">${this.theme.description || ''}</textarea>
+                            
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="themeActive" ${this.theme.is_active ? 'checked' : ''}>
+                                Make Available for Selection
+                            </label>
+                            <small class="form-hint">When checked, this theme will appear in the list of available themes that can be applied to the website</small>
                         </div>
                     </div>
                     
@@ -315,7 +326,8 @@ export default class ThemeEditorController {
         return {
             theme: {
                 name: document.getElementById('themeName').value,
-                description: document.getElementById('themeDescription').value
+                description: document.getElementById('themeDescription').value,
+                is_active: document.getElementById('themeActive').checked
             },
             settings: {
                 // Core colors - map to old names for backward compatibility
@@ -422,10 +434,7 @@ export default class ThemeEditorController {
                 }
             } else {
                 // Create new theme - for now just create with metadata
-                const response = await ThemesAPI.create({
-                    ...data.theme,
-                    is_active: false
-                });
+                const response = await ThemesAPI.create(data.theme);
                 
                 if (response.success && response.data) {
                     // Now update settings for the new theme

@@ -1,9 +1,11 @@
 import { RecordsAPI } from '../../core/api-client.js';
 import { ImagePreview } from '../../components/image-preview.js';
 import { notifications } from '../../modules/notifications.js';
+import { BasePageController } from './base-page-controller.js';
 
-export default class RecordEditorController {
+export default class RecordEditorController extends BasePageController {
     constructor(app) {
+        super();
         this.app = app;
         this.container = document.getElementById('recordEditorContent');
         this.recordId = null;
@@ -32,23 +34,20 @@ export default class RecordEditorController {
     }
 
     async loadRecord() {
-        try {
-            const response = await RecordsAPI.getById(this.recordId);
-            if (response.success) {
-                this.record = response.data;
-            } else {
-                notifications.error('Failed to load record');
-                setTimeout(() => {
-                    window.location.href = '/pages/records-manage-page.html';
-                }, 2000);
+        await this.safeApiCall(
+            () => RecordsAPI.getById(this.recordId),
+            {
+                successCallback: (data) => {
+                    this.record = data;
+                },
+                errorCallback: () => {
+                    notifications.error('Failed to load record');
+                    setTimeout(() => {
+                        window.location.href = '/pages/records-manage-page.html';
+                    }, 2000);
+                }
             }
-        } catch (error) {
-            console.error('Failed to load record:', error);
-            notifications.error('Failed to load record');
-            setTimeout(() => {
-                window.location.href = '/pages/records-manage-page.html';
-            }, 2000);
-        }
+        );
     }
 
     initNewRecord() {
@@ -207,30 +206,28 @@ export default class RecordEditorController {
         
         const data = this.collectFormData();
         
-        try {
-            let response;
-            if (this.recordId) {
-                response = await RecordsAPI.update(this.recordId, data);
-            } else {
-                response = await RecordsAPI.create(data);
-            }
-
-            if (response.success) {
-                notifications.success(this.recordId ? 'Record updated successfully!' : 'Record created successfully!');
-                
-                if (!this.recordId && response.data && response.data.id) {
-                    // Update URL for new record
-                    const newUrl = `/pages/record-editor-page.html?id=${response.data.id}`;
-                    window.history.replaceState({}, '', newUrl);
-                    this.recordId = response.data.id;
-                    this.record = { ...this.record, ...response.data };
+        const apiCall = this.recordId 
+            ? () => RecordsAPI.update(this.recordId, data)
+            : () => RecordsAPI.create(data);
+        
+        await this.safeApiCall(
+            apiCall,
+            {
+                successCallback: (responseData) => {
+                    notifications.success(this.recordId ? 'Record updated successfully!' : 'Record created successfully!');
+                    
+                    if (!this.recordId && responseData && responseData.id) {
+                        // Update URL for new record
+                        const newUrl = `/pages/record-editor-page.html?id=${responseData.id}`;
+                        window.history.replaceState({}, '', newUrl);
+                        this.recordId = responseData.id;
+                        this.record = { ...this.record, ...responseData };
+                    }
+                },
+                errorCallback: (response) => {
+                    notifications.error(response.message || 'Failed to save record');
                 }
-            } else {
-                notifications.error(response.message || 'Failed to save record');
             }
-        } catch (error) {
-            console.error('Failed to save record:', error);
-            notifications.error('Error saving record');
-        }
+        );
     }
 }

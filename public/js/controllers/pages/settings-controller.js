@@ -1,7 +1,9 @@
 import { CmsSettingsAPI } from '../../core/api-client.js';
+import { BasePageController } from './base-page-controller.js';
 
-export default class SettingsController {
+export default class SettingsController extends BasePageController {
     constructor(app) {
+        super();
         this.app = app;
         this.container = document.getElementById('settings-container');
         this.settings = [];
@@ -26,15 +28,18 @@ export default class SettingsController {
     }
 
     async loadSettings() {
-        try {
-            const response = await CmsSettingsAPI.getAll();
-            if (response.success) {
-                this.settings = response.data;
-                this.renderSettings();
+        await this.safeApiCall(
+            () => CmsSettingsAPI.getAll(),
+            {
+                successCallback: (data) => {
+                    this.settings = data;
+                    this.renderSettings();
+                },
+                errorCallback: () => {
+                    document.getElementById('settingsContent').innerHTML = '<p class="alert alert-danger">Failed to load settings</p>';
+                }
             }
-        } catch (error) {
-            document.getElementById('settingsContent').innerHTML = '<p class="alert alert-danger">Failed to load settings</p>';
-        }
+        );
     }
 
     renderSettings() {
@@ -101,22 +106,23 @@ export default class SettingsController {
             value = input.value;
         }
         
-        try {
-            const response = await CmsSettingsAPI.update(key, value, type);
-            if (response.success) {
-                button.textContent = 'Saved!';
-                setTimeout(() => button.textContent = 'Save', 2000);
-                
-                const setting = this.settings.find(s => s.setting_key === key);
-                if (setting) {
-                    setting.setting_value = value;
+        await this.safeApiCall(
+            () => CmsSettingsAPI.update(key, value, type),
+            {
+                successCallback: () => {
+                    button.textContent = 'Saved!';
+                    setTimeout(() => button.textContent = 'Save', 2000);
+                    
+                    const setting = this.settings.find(s => s.setting_key === key);
+                    if (setting) {
+                        setting.setting_value = value;
+                    }
+                },
+                errorCallback: () => {
+                    this.showMessage('Failed to save setting', 'error');
                 }
-            } else {
-                this.showMessage('Failed to save setting', 'error');
             }
-        } catch (error) {
-            this.showMessage('Failed to save setting', 'error');
-        }
+        );
     }
 
     showMessage(message, type) {

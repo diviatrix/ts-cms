@@ -1,8 +1,10 @@
 import { AdminAPI, RecordsAPI, ThemesAPI, CmsSettingsAPI, apiFetch } from '../../core/api-client.js';
 import { notifications } from '../../modules/notifications.js';
+import { BasePageController } from './base-page-controller.js';
 
-export default class AdminPanelController {
+export default class AdminPanelController extends BasePageController {
     constructor(app) {
+        super();
         this.app = app;
         this.container = document.getElementById('admin-panel-container');
         this.init();
@@ -58,14 +60,15 @@ export default class AdminPanelController {
     }
 
     async loadUsers() {
-        try {
-            const response = await AdminAPI.getUsers();
-            if (response.success) {
-                this.renderUsers(response.data);
+        await this.safeApiCall(
+            () => AdminAPI.getUsers(),
+            {
+                successCallback: (data) => this.renderUsers(data),
+                errorCallback: () => {
+                    document.getElementById('usersList').innerHTML = '<p class="alert alert-danger">Failed to load users</p>';
+                }
             }
-        } catch (error) {
-            document.getElementById('usersList').innerHTML = '<p class="alert alert-danger">Failed to load users</p>';
-        }
+        );
     }
 
     renderUsers(users) {
@@ -90,14 +93,15 @@ export default class AdminPanelController {
     }
 
     async loadRecords() {
-        try {
-            const response = await RecordsAPI.getAll();
-            if (response.success) {
-                this.renderRecords(response.data);
+        await this.safeApiCall(
+            () => RecordsAPI.getAll(),
+            {
+                successCallback: (data) => this.renderRecords(data),
+                errorCallback: () => {
+                    document.getElementById('recordsList').innerHTML = '<p class="alert alert-danger">Failed to load records</p>';
+                }
             }
-        } catch (error) {
-            document.getElementById('recordsList').innerHTML = '<p class="alert alert-danger">Failed to load records</p>';
-        }
+        );
     }
 
     renderRecords(records) {
@@ -110,111 +114,75 @@ export default class AdminPanelController {
     }
 
     async loadThemes() {
-        try {
-            const response = await ThemesAPI.getAll();
-            if (response.success) {
-                this.renderThemes(response.data);
+        let appliedThemeId = null;
+        
+        // Load CMS settings to get applied theme
+        await this.safeApiCall(
+            () => CmsSettingsAPI.getAll(),
+            {
+                successCallback: (data) => {
+                    const activeThemeSetting = data.find(s => s.setting_key === 'active_theme_id');
+                    if (activeThemeSetting) {
+                        appliedThemeId = activeThemeSetting.setting_value;
+                    }
+                }
             }
-        } catch (error) {
-            document.getElementById('themesList').innerHTML = '<p class="alert alert-danger">Failed to load themes</p>';
-        }
+        );
+        
+        // Load all themes
+        await this.safeApiCall(
+            () => ThemesAPI.getAll(),
+            {
+                successCallback: (data) => this.renderThemes(data, appliedThemeId),
+                errorCallback: () => {
+                    document.getElementById('themesList').innerHTML = '<p class="alert alert-danger">Failed to load themes</p>';
+                }
+            }
+        );
     }
 
-    renderThemes(themes) {
+    renderThemes(themes, appliedThemeId) {
         const container = document.getElementById('themesList');
         if (!themes.length) {
             container.innerHTML = '<p>No themes found</p>';
             return;
         }
         
-        const activeTheme = themes.find(t => t.is_active);
-        const inactiveThemes = themes.filter(t => !t.is_active);
+        const appliedTheme = themes.find(t => t.id === appliedThemeId);
+        const availableThemes = themes.filter(t => t.is_active && t.id !== appliedThemeId);
         
         container.innerHTML = `
-            ${activeTheme ? `
+            ${appliedTheme ? `
                 <div class="box active-theme">
                     <div class="meta-row">
-                        <span><strong>${activeTheme.name}</strong></span>
-                        <span class="badge">Active</span>
+                        <span><strong>${appliedTheme.name}</strong></span>
+                        <span class="badge badge-success">Applied</span>
                     </div>
-                    <p class="text-muted">${activeTheme.description || 'Currently active theme'}</p>
+                    <p class="text-muted">${appliedTheme.description || 'Currently applied to the website'}</p>
                 </div>
-            ` : ''}
+            ` : '<p class="alert alert-warning">No theme is currently applied</p>'}
             
-            ${inactiveThemes.length > 0 ? `
-                <label for="theme-select">Change Theme:</label>
-                <select id="theme-select" class="form-control">
-                    <option value="">Select a theme...</option>
-                    ${inactiveThemes.map(theme => `
-                        <option value="${theme.id}">${theme.name}</option>
-                    `).join('')}
-                </select>
-            ` : ''}
+            <p class="text-muted">Manage themes to apply or write config</p>
             
             <div class="theme-actions">
-                <button class="btn" onclick="window.adminPanel.applySelectedTheme()">Apply Theme</button>
-                <button class="btn btn-secondary" onclick="window.adminPanel.writeFrontConfig()">Write Front Config</button>
-                <a href="/pages/themes-manage-page.html" class="btn btn-secondary">Manage Themes</a>
+                <a href="/pages/themes-manage-page.html" class="btn">Manage Themes</a>
             </div>
         `;
         
         window.adminPanel = this;
     }
 
-    async activateTheme(themeId) {
-        try {
-            const response = await apiFetch('/api/cms/active-theme', {
-                method: 'PUT',
-                data: { theme_id: themeId }
-            });
-            if (response.success) {
-                this.loadThemes();
-                // Apply theme immediately
-                window.location.reload();
-            }
-        } catch (error) {
-            console.error('Failed to activate theme:', error);
-            notifications.error('Failed to activate theme');
-        }
-    }
-    
-    async applySelectedTheme() {
-        const select = document.getElementById('theme-select');
-        if (!select || !select.value) {
-            notifications.error('Please select a theme');
-            return;
-        }
-        await this.activateTheme(select.value);
-    }
-    
-    async writeFrontConfig() {
-        try {
-            const response = await apiFetch('/api/admin/theme/write-config', {
-                method: 'PUT'
-            });
-            
-            if (response.success) {
-                notifications.success('Theme config written to frontend successfully!');
-                // Reload to apply new config
-                setTimeout(() => window.location.reload(), 1500);
-            } else {
-                notifications.error('Failed to write theme config: ' + response.message);
-            }
-        } catch (error) {
-            console.error('Failed to write theme config:', error);
-            notifications.error('Error writing theme config');
-        }
-    }
 
     async loadSettings() {
-        try {
-            const response = await CmsSettingsAPI.getAll();
-            if (response.success) {
-                this.renderSettings(response.data);
+        await this.safeApiCall(
+            () => CmsSettingsAPI.getAll(),
+            {
+                successCallback: (data) => this.renderSettings(data),
+                errorCallback: () => {
+                    document.getElementById('settingsList').innerHTML = '<p class="alert alert-danger">Failed to load settings</p>';
+                }
             }
-        } catch (error) {
-            document.getElementById('settingsList').innerHTML = '<p class="alert alert-danger">Failed to load settings</p>';
-        }
+        );
     }
 
     renderSettings(settings) {
