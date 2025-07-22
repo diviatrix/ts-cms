@@ -81,28 +81,36 @@ export default class RecordDisplayController extends BasePageController {
       </div>
     `;
     
-    this.elements = this.getRecordElements();
-    this.setupDownloadFeature(record);
-    this.setupAdminFeatures(record);
+    // Setup features after DOM update
+    setTimeout(() => {
+      this.setupDownloadFeature(record);
+      this.setupAdminFeatures(record);
+    }, 0);
   }
 
   setupAdminFeatures(record) {
     if (!this.isUserAdmin()) return;
     
-    this.elements.editButton.classList.remove('hidden');
-    this.elements.editButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.location.href = `/record-editor?id=${record.id}`;
-    });
+    const editButton = document.getElementById('editRecordButton');
+    if (editButton) {
+      editButton.classList.remove('hidden');
+      editButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = `/record-editor?id=${record.id}`;
+      });
+    }
   }
 
   setupDownloadFeature(record) {
     if (!this.app.user.isAuthenticated) return;
     
-    this.elements.downloadButton.classList.remove('hidden');
-    this.elements.downloadButton.addEventListener('click', () => {
-      DownloadUtils.downloadAsMarkdown(record.title, record.content);
-    });
+    const downloadButton = document.getElementById('downloadRecordButton');
+    if (downloadButton) {
+      downloadButton.classList.remove('hidden');
+      downloadButton.addEventListener('click', () => {
+        DownloadUtils.downloadAsMarkdown(record.title, record.content);
+      });
+    }
   }
 
   isUserAdmin() {

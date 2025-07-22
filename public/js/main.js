@@ -52,11 +52,15 @@ export default class FrontPageController {
     
     const createdAt = record.created_at ? new Date(record.created_at).toLocaleDateString() : '';
     
+    const contentPreview = record.content ? record.content.substring(0, 200) + '...' : 
+                           (record.body ? record.body.substring(0, 200) + '...' : '');
+    
     card.innerHTML = `
       <div class="card-body">
         ${record.image_url ? `<img class="card-image" src="${record.image_url}" alt="${record.title}" />` : ''}
         <h3 class="card-title">${record.title}</h3>
         ${record.description ? `<p class="card-subtitle">${record.description}</p>` : ''}
+        ${contentPreview ? `<p class="card-content">${contentPreview}</p>` : ''}
         <div class="meta-row">
           <span>${createdAt}</span>
           ${record.public_name ? `<span>By ${record.public_name}</span>` : ''}

@@ -76,6 +76,9 @@ export class Layout {
     }
 
     getRouteInfo(path) {
+        // Handle paths with query parameters
+        const [pathname] = path.split('?');
+        
         const routes = {
             '/': {
                 title: 'Home',
@@ -124,7 +127,7 @@ export class Layout {
             }
         };
 
-        return routes[path] || null;
+        return routes[pathname] || null;
     }
 
     show404() {
