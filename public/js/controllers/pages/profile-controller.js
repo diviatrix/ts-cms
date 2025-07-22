@@ -1,5 +1,6 @@
 import { ProfileAPI } from '../../core/api-client.js';
 import { ImagePreview } from '../../components/image-preview.js';
+import { notifications } from '../../modules/notifications.js';
 
 export default class ProfileController {
     constructor(app) {
@@ -23,11 +24,11 @@ export default class ProfileController {
             if (response.success) {
                 this.renderProfile(response.data);
             } else {
-                this.showError(response.message || 'Failed to load profile');
+                notifications.error(response.message || 'Failed to load profile');
             }
         } catch (error) {
             console.error('Error loading profile:', error);
-            this.showError('Failed to connect to server');
+            notifications.error('Failed to connect to server');
         }
     }
 
@@ -107,13 +108,13 @@ export default class ProfileController {
         try {
             const response = await this.profileAPI.update(formData);
             if (response.success) {
-                this.showSuccess('Profile updated successfully');
+                notifications.success('Profile updated successfully');
             } else {
-                this.showError(response.message || 'Failed to update profile');
+                notifications.error(response.message || 'Failed to update profile');
             }
         } catch (error) {
             console.error('Error updating profile:', error);
-            this.showError('Failed to connect to server');
+            notifications.error('Failed to connect to server');
         }
     }
 
@@ -123,38 +124,21 @@ export default class ProfileController {
         const confirmPassword = document.getElementById('confirmPassword').value;
 
         if (newPassword !== confirmPassword) {
-            this.showError('Passwords do not match');
+            notifications.error('Passwords do not match');
             return;
         }
 
         try {
             const response = await this.profileAPI.changePassword(newPassword);
             if (response.success) {
-                this.showSuccess('Password changed successfully');
+                notifications.success('Password changed successfully');
                 document.getElementById('passwordForm').reset();
             } else {
-                this.showError(response.message || 'Failed to change password');
+                notifications.error(response.message || 'Failed to change password');
             }
         } catch (error) {
             console.error('Error changing password:', error);
-            this.showError('Failed to connect to server');
+            notifications.error('Failed to connect to server');
         }
     }
-
-    showError(message) {
-        const alert = document.createElement('div');
-        alert.className = 'alert alert-danger';
-        alert.textContent = message;
-        this.container.insertBefore(alert, this.container.firstChild);
-        setTimeout(() => alert.remove(), 5000);
-    }
-
-    showSuccess(message) {
-        const alert = document.createElement('div');
-        alert.className = 'alert alert-success';
-        alert.textContent = message;
-        this.container.insertBefore(alert, this.container.firstChild);
-        setTimeout(() => alert.remove(), 5000);
-    }
-
 }

@@ -1,7 +1,7 @@
 import { isAuthenticated, getUserRoles, setAuthToken } from './api-client.js';
 import { Router } from './router.js';
 import { NavBar } from '../controllers/components/nav-bar.js';
-import { applyThemeFromAPI } from '../modules/theme-system.js';
+import { applyThemeFromConfig } from '../modules/theme-system.js';
 
 class App {
     constructor() {
@@ -15,7 +15,7 @@ class App {
 
     async init() {
         const [themeResult] = await Promise.allSettled([
-            applyThemeFromAPI(),
+            applyThemeFromConfig(),
             this.initNavBar()
         ]);
         

@@ -1,4 +1,5 @@
-import { AdminAPI, RecordsAPI, ThemesAPI, CmsSettingsAPI } from '../../core/api-client.js';
+import { AdminAPI, RecordsAPI, ThemesAPI, CmsSettingsAPI, apiFetch } from '../../core/api-client.js';
+import { notifications } from '../../modules/notifications.js';
 
 export default class AdminPanelController {
     constructor(app) {
@@ -126,28 +127,82 @@ export default class AdminPanelController {
             return;
         }
         
-        container.innerHTML = themes.map(theme => `
-            <div class="box">
-                <div class="meta-row">
-                    <span><strong>${theme.name}</strong></span>
-                    <span>${theme.is_active ? 'Active' : ''}</span>
+        const activeTheme = themes.find(t => t.is_active);
+        const inactiveThemes = themes.filter(t => !t.is_active);
+        
+        container.innerHTML = `
+            ${activeTheme ? `
+                <div class="box active-theme">
+                    <div class="meta-row">
+                        <span><strong>${activeTheme.name}</strong></span>
+                        <span class="badge">Active</span>
+                    </div>
+                    <p class="text-muted">${activeTheme.description || 'Currently active theme'}</p>
                 </div>
-                <p>${theme.description || ''}</p>
-                ${!theme.is_active ? `<button class="btn" onclick="window.adminPanel.activateTheme('${theme.id}')">Activate</button>` : ''}
+            ` : ''}
+            
+            ${inactiveThemes.length > 0 ? `
+                <label for="theme-select">Change Theme:</label>
+                <select id="theme-select" class="form-control">
+                    <option value="">Select a theme...</option>
+                    ${inactiveThemes.map(theme => `
+                        <option value="${theme.id}">${theme.name}</option>
+                    `).join('')}
+                </select>
+            ` : ''}
+            
+            <div class="theme-actions">
+                <button class="btn" onclick="window.adminPanel.applySelectedTheme()">Apply Theme</button>
+                <button class="btn btn-secondary" onclick="window.adminPanel.writeFrontConfig()">Write Front Config</button>
+                <a href="/pages/themes-manage-page.html" class="btn btn-secondary">Manage Themes</a>
             </div>
-        `).join('');
+        `;
         
         window.adminPanel = this;
     }
 
     async activateTheme(themeId) {
         try {
-            const response = await ThemesAPI.setActive(themeId);
+            const response = await apiFetch('/api/cms/active-theme', {
+                method: 'PUT',
+                data: { theme_id: themeId }
+            });
             if (response.success) {
                 this.loadThemes();
+                // Apply theme immediately
+                window.location.reload();
             }
         } catch (error) {
             console.error('Failed to activate theme:', error);
+            notifications.error('Failed to activate theme');
+        }
+    }
+    
+    async applySelectedTheme() {
+        const select = document.getElementById('theme-select');
+        if (!select || !select.value) {
+            notifications.error('Please select a theme');
+            return;
+        }
+        await this.activateTheme(select.value);
+    }
+    
+    async writeFrontConfig() {
+        try {
+            const response = await apiFetch('/api/admin/theme/write-config', {
+                method: 'PUT'
+            });
+            
+            if (response.success) {
+                notifications.success('Theme config written to frontend successfully!');
+                // Reload to apply new config
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                notifications.error('Failed to write theme config: ' + response.message);
+            }
+        } catch (error) {
+            console.error('Failed to write theme config:', error);
+            notifications.error('Error writing theme config');
         }
     }
 
@@ -184,5 +239,4 @@ export default class AdminPanelController {
             <a href="/pages/settings-page.html" class="btn">Manage Settings</a>
         `;
     }
-
 }

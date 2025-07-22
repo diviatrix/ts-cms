@@ -9,6 +9,9 @@ export class Router {
             '/pages/record-page.html': () => import('../controllers/pages/single-record-controller.js').then(module => new module.default(this.app)),
             '/pages/records-manage-page.html': () => import('../controllers/pages/records-manage-controller.js').then(module => new module.default(this.app)),
             '/pages/settings-page.html': () => import('../controllers/pages/settings-controller.js').then(module => new module.default(this.app)),
+            '/pages/themes-manage-page.html': () => import('../controllers/pages/themes-manage-controller.js').then(module => new module.default(this.app)),
+            '/pages/theme-editor-page.html': () => import('../controllers/pages/theme-editor-controller.js').then(module => new module.default(this.app)),
+            '/pages/record-editor-page.html': () => import('../controllers/pages/record-editor-controller.js').then(module => new module.default(this.app)),
         };
     }
 

@@ -298,7 +298,7 @@ Get theme settings.
   "success": true,
   "data": {
     "primary_color": "#00FF00",
-    "secondary_color": "#FFD700",
+    "secondary_color": "#444444",
     "background_color": "#222222",
     "surface_color": "#444444",
     "text_color": "#E0E0E0",
@@ -536,7 +536,7 @@ Get the currently active website theme and its settings (public endpoint).
     },
     "settings": {
       "primary_color": "#00FF00",
-      "secondary_color": "#FFD700",
+      "secondary_color": "#808080ff",
       "background_color": "#222222",
       "surface_color": "#444444",
       "text_color": "#E0E0E0",

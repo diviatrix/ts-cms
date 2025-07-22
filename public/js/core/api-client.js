@@ -96,7 +96,14 @@ export const AuthAPI = {
 };
 
 export const RecordsAPI = {
-    getAll: (params = {}) => apiFetch('/api/records' + (Object.keys(params).length ? `?${new URLSearchParams(params)}` : ''), { auth: false }),
+    getAll: async (params = {}) => {
+        const response = await apiFetch('/api/records' + (Object.keys(params).length ? `?${new URLSearchParams(params)}` : ''), { auth: false });
+        // Reverse the order to show newest first
+        if (response.success && Array.isArray(response.data)) {
+            response.data.reverse();
+        }
+        return response;
+    },
     getById: (id) => apiFetch(`/api/records/${id}`, { auth: false }),
     create: (data) => apiFetch('/api/records', { method: 'POST', data }),
     update: (id, data) => apiFetch(`/api/records/${id}`, { method: 'PUT', data }),

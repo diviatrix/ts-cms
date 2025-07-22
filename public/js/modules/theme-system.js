@@ -1,75 +1,206 @@
+/**
+ * Theme System Module
+ * Handles dynamic theme loading and application
+ */
+
 let apiClient = null;
+
+// Default theme values that match our CSS defaults
 const DEFAULT_THEME = {
-        primary_color: '#00FF00',
-        secondary_color: '#FFD700',
-        background_color: '#222222',
-        surface_color: '#444444',
-        text_color: '#E0E0E0',
-        border_color: '#00FF00',
-        font_family: "'Share Tech Mono', monospace",
-        custom_css: ''
+    primary: '#3cff7a',
+    secondary: '#444444',
+    background: '#222222',
+    surface: '#2a2a2a',
+    text: '#e0e0e0',
+    border: '#444444',
+    muted: '#aaa',
+    error: '#ff3c3c',
+    success: '#3cff7a',
+    'font-family': "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    'font-size': '1rem',
+    radius: '1rem',
+    spacing: '0.5rem',
+    shadow: '0 4px 24px rgba(0,0,0,0.10)',
+    custom_css: ''
 };
 
+/**
+ * Load theme config from local file first, fallback to API
+ */
+async function loadThemeConfig() {
+    // Try to load local config first
+    try {
+        const response = await fetch('/theme-config.json');
+        if (response.ok) {
+            const config = await response.json();
+            console.log('[ThemeSystem] Loaded local theme config');
+            return config;
+        }
+    } catch (err) {
+        console.log('[ThemeSystem] No local config, falling back to defaults');
+    }
+    
+    // Return null to use defaults
+    return null;
+}
+
+/**
+ * Fetch active theme settings from API (for preview only)
+ */
 async function fetchThemeSettings() {
     if (!apiClient) {
         const module = await import('../core/api-client.js');
         apiClient = module.apiFetch;
     }
+    
     try {
         const result = await apiClient('/api/themes/active', { auth: false });
         if (result.success && result.data && result.data.settings) {
-            let settings = result.data.settings;
-            if (Array.isArray(settings)) {
-                const obj = {};
-                for (const s of settings) {
-                    obj[s.setting_key] = s.setting_value;
-                }
-                settings = obj;
-            }
-            return settings;
+            return normalizeSettings(result.data.settings);
         }
     } catch (err) {
-        console.error('[ThemeSystem] Error fetching theme settings:', err);
+        console.error('[ThemeSystem] Error fetching theme:', err);
     }
+    
     return null;
 }
 
-function buildThemeCSS(settings) {
-    let css = ':root {';
-    if (settings.primary_color) css += `--theme-primary-color: ${settings.primary_color};`;
-    if (settings.secondary_color) css += `--theme-secondary-color: ${settings.secondary_color};`;
-    if (settings.background_color) css += `--theme-background-color: ${settings.background_color};`;
-    if (settings.surface_color) css += `--theme-surface-color: ${settings.surface_color};`;
-    if (settings.text_color) css += `--theme-text-color: ${settings.text_color};`;
-    if (settings.border_color) css += `--theme-border-color: ${settings.border_color};`;
-    if (settings.font_family) css += `--theme-font-family: ${settings.font_family};`;
-    css += '}';
-    css += `\nbody { background-color: var(--theme-background-color); color: var(--theme-text-color); font-family: var(--theme-font-family); }\n.card, .card-body, .box { background-color: var(--theme-surface-color); border-color: var(--theme-border-color); color: var(--theme-text-color); }\n.navbar { background-color: var(--theme-surface-color); }\n.btn, .btn-primary { background-color: var(--theme-primary-color); border-color: var(--theme-primary-color); color: #181a1f; }\n.btn-secondary { background-color: var(--theme-secondary-color); border-color: var(--theme-secondary-color); color: #181a1f; }\n${settings.custom_css || ''}`;
+/**
+ * Normalize settings to handle both object and array formats
+ */
+function normalizeSettings(settings) {
+    if (Array.isArray(settings)) {
+        const normalized = {};
+        settings.forEach(s => {
+            normalized[s.setting_key] = s.setting_value;
+        });
+        return normalized;
+    }
+    return settings;
+}
+
+/**
+ * Map old theme property names to new ones
+ */
+function mapThemeProperties(settings) {
+    const mapped = {};
+    
+    // Map old names to new names
+    const propertyMap = {
+        'primary_color': 'primary',
+        'secondary_color': 'secondary',
+        'background_color': 'background',
+        'surface_color': 'surface',
+        'text_color': 'text',
+        'border_color': 'border',
+        'muted_color': 'muted',
+        'error_color': 'error',
+        'success_color': 'success',
+        'font_family': 'font-family',
+        'font_size': 'font-size',
+        'radius': 'radius',
+        'spacing': 'spacing',
+        'shadow': 'shadow'
+    };
+    
+    Object.entries(settings).forEach(([key, value]) => {
+        const newKey = propertyMap[key] || key;
+        mapped[newKey] = value;
+    });
+    
+    return mapped;
+}
+
+/**
+ * Generate CSS custom properties from theme settings
+ */
+function generateThemeCSS(settings) {
+    const mapped = mapThemeProperties(settings);
+    const merged = { ...DEFAULT_THEME, ...mapped };
+    
+    let css = ':root {\n';
+    
+    // Apply all theme properties
+    Object.entries(merged).forEach(([key, value]) => {
+        if (value && key !== 'custom_css') {
+            // Convert underscore to hyphen for CSS variables
+            const cssKey = key.replace(/_/g, '-');
+            css += `  --${cssKey}: ${value};\n`;
+        }
+    });
+    
+    css += '}\n';
+    
+    // Add any custom CSS
+    if (merged.custom_css) {
+        css += `\n${merged.custom_css}`;
+    }
+    
     return css;
 }
 
+/**
+ * Apply theme by injecting CSS into the document
+ */
 function applyTheme(settings) {
-    if (!settings) {
-        return;
+    if (!settings) return;
+    
+    const css = generateThemeCSS(settings);
+    
+    // Remove any existing theme styles
+    const existingStyle = document.getElementById('theme-style');
+    if (existingStyle) {
+        existingStyle.remove();
     }
-    const css = buildThemeCSS(settings);
-    const existingStyles = Array.from(document.querySelectorAll('#theme-style'));
-    if (existingStyles.length > 1) {
-    }
-    existingStyles.forEach(s => s.remove());
+    
+    // Create and inject new theme style
     const style = document.createElement('style');
     style.id = 'theme-style';
     style.textContent = css;
     document.head.appendChild(style);
-    const computedSecondary = getComputedStyle(document.documentElement).getPropertyValue('--theme-secondary-color');
-    const allStyles = Array.from(document.querySelectorAll('style,link[rel="stylesheet"]'));
-    allStyles.forEach((el, idx) => {
-        if (el !== style && el.textContent && el.textContent.includes('--theme-secondary-color')) {
-        }
-    });
 }
 
+/**
+ * Public API: Apply theme from local config or defaults
+ */
+export async function applyThemeFromConfig() {
+    const config = await loadThemeConfig();
+    if (config) {
+        // Config is already in the right format
+        applyTheme(config);
+    }
+    // If no config, CSS will use default values
+}
+
+/**
+ * Public API: Apply theme from API (for preview/admin only)
+ */
 export async function applyThemeFromAPI() {
     const settings = await fetchThemeSettings();
+    if (settings) {
+        applyTheme(settings);
+    }
+}
+
+/**
+ * Public API: Apply theme from settings object
+ */
+export function applyThemeFromSettings(settings) {
     applyTheme(settings);
+}
+
+/**
+ * Public API: Get current theme values
+ */
+export function getCurrentTheme() {
+    const computed = getComputedStyle(document.documentElement);
+    return {
+        primary: computed.getPropertyValue('--primary').trim(),
+        secondary: computed.getPropertyValue('--secondary').trim(),
+        background: computed.getPropertyValue('--background').trim(),
+        surface: computed.getPropertyValue('--surface').trim(),
+        text: computed.getPropertyValue('--text').trim(),
+        border: computed.getPropertyValue('--border').trim(),
+        font_family: computed.getPropertyValue('--font-family').trim()
+    };
 }
