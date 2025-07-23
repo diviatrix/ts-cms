@@ -1,4 +1,5 @@
 import { RecordsAPI } from './core/api-client.js';
+import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
 
 export default class FrontPageController {
   constructor(app) {
@@ -52,10 +53,11 @@ export default class FrontPageController {
     
     const createdAt = record.created_at ? new Date(record.created_at).toLocaleDateString() : '';
     
-    // Longer preview if no image to fill the space
+    // Format markdown content with length limit
     const previewLength = record.image_url ? 400 : 1400;
-    const contentPreview = record.content ? record.content.substring(0, previewLength) + '...' : 
-                           (record.body ? record.body.substring(0, previewLength) + '...' : '');
+    const rawContent = record.content || record.body || '';
+    const truncatedContent = rawContent.substring(0, previewLength) + (rawContent.length > previewLength ? '...' : '');
+    const contentPreview = truncatedContent ? marked.parse(truncatedContent) : '';
     
     card.innerHTML = `
       ${record.image_url ? `
