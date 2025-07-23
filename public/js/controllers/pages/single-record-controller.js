@@ -63,6 +63,10 @@ export default class RecordDisplayController extends BasePageController {
     if (!this.container) return;
     
     this.container.innerHTML = `
+      <div class="meta-row mb-2">
+        <a id="editRecordButton" class="btn hidden" href="#">Edit</a>
+        <a id="downloadRecordButton" class="btn hidden" href="#">Download</a>
+      </div>
       <div class="card">
         <div class="card-body">
           <h1 class="card-title">${record.title}</h1>
@@ -73,10 +77,6 @@ export default class RecordDisplayController extends BasePageController {
           ${record.image_url ? `<img class="record-image" src="${record.image_url}" alt="${record.title}" />` : ''}
           ${record.description ? `<div class="card-subtitle">${record.description}</div>` : ''}
           <div class="card-text">${marked.parse(record.content || '')}</div>
-          <div class="meta-row">
-            <a id="editRecordButton" class="btn hidden" href="#">Edit</a>
-            <a id="downloadRecordButton" class="btn hidden" href="#">Download</a>
-          </div>
         </div>
       </div>
     `;

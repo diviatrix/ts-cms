@@ -6,9 +6,11 @@ export function getAuthToken() {
 }
 
 export function setAuthToken(token) {
+    console.log('setAuthToken called with:', token ? 'token present' : 'null/empty');
     if (token) {
         localStorage.setItem('token', token);
     } else {
+        console.log('Removing token from localStorage');
         localStorage.removeItem('token');
     }
     document.dispatchEvent(new CustomEvent('authChange'));
@@ -57,11 +59,26 @@ export async function apiFetch(url, { method = 'GET', data, auth = true } = {}) 
 
 
 export function isAuthenticated() {
+    console.log('isAuthenticated() called');
     const token = getAuthToken();
+    console.log('Token exists:', !!token);
     if (!token) return false;
     try {
+        console.log('Attempting to decode token...');
         const payload = jwtDecode(token);
-        return payload.exp * 1000 > Date.now();
+        console.log('Token decoded successfully, payload:', payload);
+        // Check if payload has required fields
+        if (!payload || typeof payload.exp !== 'number') {
+            console.error('Invalid token payload structure');
+            setAuthToken(null);
+            return false;
+        }
+        const isValid = payload.exp * 1000 > Date.now();
+        if (!isValid) {
+            console.log('Token expired, removing from storage');
+            setAuthToken(null);
+        }
+        return isValid;
     } catch (error) {
         console.error('Token validation error:', error);
         setAuthToken(null);
@@ -76,6 +93,8 @@ export function getUserRoles() {
         const decoded = jwtDecode(token);
         return decoded.roles || decoded.groups || [];
     } catch (error) {
+        console.error('Token decode error in getUserRoles:', error);
+        setAuthToken(null);
         return [];
     }
 }
