@@ -11,6 +11,7 @@ export default class RecordEditorController extends BasePageController {
         this.recordId = null;
         this.record = null;
         this.imagePreview = null;
+        this.easyMDE = null;
         this.init();
     }
 
@@ -102,13 +103,29 @@ export default class RecordEditorController extends BasePageController {
                                 <input type="checkbox" id="recordPublished" ${this.record.is_published ? 'checked' : ''}>
                                 Published
                             </label>
+                            
+                            <div class="theme-actions mt-2">
+                                <button type="submit" class="btn">${isNew ? 'Create Record' : 'Save Changes'}</button>
+                                <a href="/records-manage" class="btn btn-secondary">Cancel</a>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="card">
                         <div class="card-body">
-                            <label for="recordContent">Content (Markdown)</label>
-                            <textarea id="recordContent" rows="30" required placeholder="Write your content in markdown...">${this.record.content || ''}</textarea>
+                            <h3 class="card-title">Content</h3>
+                            <div class="editor-tabs">
+                                <button type="button" class="editor-tab active" data-tab="raw">Raw Markdown</button>
+                                <button type="button" class="editor-tab" data-tab="editor">Visual Editor</button>
+                            </div>
+                            <div class="editor-content">
+                                <div id="rawTab" class="tab-pane active">
+                                    <textarea id="recordContent" rows="30" required placeholder="Write your content in markdown...">${this.record.content || ''}</textarea>
+                                </div>
+                                <div id="editorTab" class="tab-pane">
+                                    <textarea id="easyMdeTextarea">${this.record.content || ''}</textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -122,10 +139,6 @@ export default class RecordEditorController extends BasePageController {
                     </div>
                 </div>
                 
-                <div class="theme-actions mt-2">
-                    <button type="submit" class="btn">${isNew ? 'Create Record' : 'Save Changes'}</button>
-                    <a href="/records-manage" class="btn btn-secondary">Cancel</a>
-                </div>
             </form>
         `;
 
@@ -142,6 +155,9 @@ export default class RecordEditorController extends BasePageController {
         if (imageInput) {
             imageInput.addEventListener('input', (e) => this.imagePreview.update(e.target.value));
         }
+
+        // Set up editor tabs
+        this.setupEditorTabs();
 
         // Set up markdown preview
         const contentTextarea = document.getElementById('recordContent');
@@ -177,6 +193,66 @@ export default class RecordEditorController extends BasePageController {
             .replace(/\n/g, '<br>');
         
         preview.innerHTML = `<p>${html}</p>`;
+    }
+
+    setupEditorTabs() {
+        const tabs = document.querySelectorAll('.editor-tab');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Show corresponding pane
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('active');
+                });
+                
+                if (tabName === 'raw') {
+                    document.getElementById('rawTab').classList.add('active');
+                    // Sync content from EasyMDE to raw textarea if editor was used
+                    if (this.easyMDE) {
+                        document.getElementById('recordContent').value = this.easyMDE.value();
+                    }
+                } else if (tabName === 'editor') {
+                    document.getElementById('editorTab').classList.add('active');
+                    // Initialize EasyMDE if not already done
+                    if (!this.easyMDE && typeof EasyMDE !== 'undefined') {
+                        this.easyMDE = new EasyMDE({
+                            element: document.getElementById('easyMdeTextarea'),
+                            spellChecker: false,
+                            autosave: {
+                                enabled: false
+                            },
+                            toolbar: [
+                                'bold', 'italic', 'heading', '|',
+                                'quote', 'unordered-list', 'ordered-list', '|',
+                                'link', 'image', 'table', '|',
+                                'preview', 'side-by-side', 'fullscreen', '|',
+                                'guide'
+                            ],
+                            previewRender: (plainText) => {
+                                return marked.parse(plainText);
+                            }
+                        });
+                        
+                        // Sync content from raw textarea to EasyMDE
+                        this.easyMDE.value(document.getElementById('recordContent').value);
+                        
+                        // Update markdown preview when EasyMDE changes
+                        this.easyMDE.codemirror.on('change', () => {
+                            const content = this.easyMDE.value();
+                            // Update raw textarea
+                            document.getElementById('recordContent').value = content;
+                            // Update preview
+                            this.updateMarkdownPreview();
+                        });
+                    }
+                }
+            });
+        });
     }
 
     collectFormData() {

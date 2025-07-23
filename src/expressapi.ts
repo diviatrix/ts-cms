@@ -88,6 +88,22 @@ function createExpressApp(): express.Application {
     // Use CMS routes
     app.use('/api/cms', cmsRoutes);
 
+    // Serve index.html for all non-API routes (SPA support)
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        // Skip API routes
+        if (req.path.startsWith('/api/')) {
+            return next();
+        }
+        
+        // Skip static files with extensions
+        if (req.path.includes('.')) {
+            return next();
+        }
+        
+        // Serve index.html for SPA routes
+        res.sendFile(path.join(__dirname, '..', config.static_folder, 'index.html'));
+    });
+
     // Centralized error handling middleware (must be last)
     app.use(errorHandler);
 

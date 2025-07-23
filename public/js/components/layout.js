@@ -37,7 +37,7 @@ export class Layout {
         });
 
         window.addEventListener('popstate', (e) => {
-            const path = window.location.pathname;
+            const path = window.location.pathname + window.location.search;
             this.loadRoute(path);
         });
     }

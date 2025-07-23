@@ -12,7 +12,7 @@ export class Router {
 
     route() {
         if (this.layout) {
-            const path = this.getCleanPath();
+            const path = this.getCleanPath() + window.location.search;
             this.layout.loadRoute(path);
         }
     }
