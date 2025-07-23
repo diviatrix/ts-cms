@@ -26,7 +26,17 @@ export async function getAllBaseUsers(): Promise<IResolve<Array<{ base: IUser; p
     for (const user of users) {
       const profileResult = await getUserProfile(user.id);
       if (profileResult.success && profileResult.data) {
-        adminViewUsers.push({ base: user, profile: profileResult.data });
+        // Get user roles
+        const rolesResult = await database.getUserRoles(user.id);
+        const roles = rolesResult.success && rolesResult.data ? rolesResult.data : [];
+        
+        // Add roles to profile
+        const profileWithRoles = {
+          ...profileResult.data,
+          roles: roles
+        };
+        
+        adminViewUsers.push({ base: user, profile: profileWithRoles });
       } else {
         // Log the error but continue processing other users
         console.error(`Could not fetch profile for user ${user.id}: ${profileResult.message}`);

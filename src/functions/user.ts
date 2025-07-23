@@ -51,9 +51,19 @@ export async function getUser(userId: string): Promise<IResolve<{ base: IUser; p
         return prep.response(false, profileResult.message || messages.profile_fetch_error, null);
       }
   
+      // Get user roles
+      const rolesResult = await database.getUserRoles(userId);
+      const roles = rolesResult.success && rolesResult.data ? rolesResult.data : [];
+      
+      // Add roles to profile
+      const profileWithRoles = {
+        ...profileResult.data,
+        roles: roles
+      };
+      
       const fullUser = {
         base: userResult.data,
-        profile: profileResult.data,
+        profile: profileWithRoles,
       };
   
       return prep.response(true, messages.success, fullUser);

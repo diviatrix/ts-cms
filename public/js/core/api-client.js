@@ -138,7 +138,11 @@ export const ProfileAPI = {
 
 export const AdminAPI = {
     getUsers: () => apiFetch('/api/admin/users'),
-    getUserProfile: (userId) => apiFetch(`/api/profile/${userId}`)
+    getUserProfile: (userId) => apiFetch(`/api/profile/${userId}`),
+    updateUserStatus: (userId, isActive) => apiFetch(`/api/admin/users/${userId}/status`, { 
+        method: 'PUT', 
+        data: { is_active: isActive } 
+    })
 };
 
 export const ThemesAPI = {

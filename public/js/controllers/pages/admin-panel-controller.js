@@ -71,25 +71,26 @@ export default class AdminPanelController extends BasePageController {
         );
     }
 
-    renderUsers(users) {
+    renderUsers(response) {
         const container = document.getElementById('usersList');
-        if (!users.length) {
+        
+        // API returns nested structure: response.data.data contains the actual users array
+        let usersList = [];
+        if (response && response.data && Array.isArray(response.data)) {
+            usersList = response.data;
+        } else if (response && Array.isArray(response)) {
+            usersList = response;
+        }
+        
+        if (!usersList || usersList.length === 0) {
             container.innerHTML = '<p>No users found</p>';
             return;
         }
         
-        container.innerHTML = users.map(user => `
-            <div class="box">
-                <div class="meta-row">
-                    <span><strong>${user.login}</strong></span>
-                    <span>${user.email}</span>
-                </div>
-                <div class="meta-row">
-                    <span>Active: ${user.is_active ? 'Yes' : 'No'}</span>
-                    <span>Created: ${new Date(user.created_at).toLocaleDateString()}</span>
-                </div>
-            </div>
-        `).join('');
+        container.innerHTML = `
+            <p>${usersList.length} users found</p>
+            <a href="/users-manage" class="btn">Manage Users</a>
+        `;
     }
 
     async loadRecords() {

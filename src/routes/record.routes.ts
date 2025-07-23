@@ -66,4 +66,42 @@ router.get('/records', optionalAuth, async (req: Request, res: Response) => {
     }
 });
 
+// Get all unique tags and categories
+router.get('/records/meta/tags-categories', optionalAuth, async (req: Request, res: Response) => {
+    try {
+        const isAuthenticatedUserAdmin = req.user && req.user.roles.includes('admin');
+        const publishedOnly = !isAuthenticatedUserAdmin;
+        const records = await getAllRecords(publishedOnly);
+        
+        const categoryCounts: { [key: string]: number } = {};
+        const tagCounts: { [key: string]: number } = {};
+        
+        records.forEach(record => {
+            if (record.categories) {
+                record.categories.forEach(cat => {
+                    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+                });
+            }
+            if (record.tags) {
+                record.tags.forEach(tag => {
+                    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+                });
+            }
+        });
+        
+        const categories = Object.entries(categoryCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => ({ name, count }));
+            
+        const tags = Object.entries(tagCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => ({ name, count }));
+        
+        ResponseUtils.success(res, { categories, tags }, 'Tags and categories retrieved successfully');
+    } catch (error) {
+        console.error("Failed to fetch tags and categories:", error);
+        ResponseUtils.internalError(res, 'Failed to fetch tags and categories');
+    }
+});
+
 export default router;

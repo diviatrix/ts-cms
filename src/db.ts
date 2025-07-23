@@ -70,7 +70,12 @@ class Database {
         };
         const columns = Object.keys(defaultProfile).join(', ');
         const placeholders = Object.keys(defaultProfile).map(() => '?').join(', ');
-        const values = Object.values(defaultProfile).map(value => typeof value === 'object' ? JSON.stringify(value) : value); // Stringify roles array
+        const values = Object.values(defaultProfile).map(value => {
+            if (value instanceof Date) {
+                return value.toISOString();
+            }
+            return typeof value === 'object' ? JSON.stringify(value) : value;
+        });
         const query = `INSERT INTO user_profiles (${columns}) VALUES (${placeholders})`;
         const response = await this.db.executeQuery(query, values);
         if (response.success) {

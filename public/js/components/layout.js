@@ -124,6 +124,16 @@ export class Layout {
                 title: 'Record Editor',
                 template: '<div id="record-editor-container"></div>',
                 controllerLoader: () => import('../controllers/pages/record-editor-controller.js')
+            },
+            '/users-manage': {
+                title: 'Manage Users',
+                template: '<div id="users-manage-container"></div>',
+                controllerLoader: () => import('../controllers/pages/users-manage-controller.js')
+            },
+            '/user-editor': {
+                title: 'User Editor',
+                template: '<div id="user-editor-container"></div>',
+                controllerLoader: () => import('../controllers/pages/user-editor-controller.js')
             }
         };
 

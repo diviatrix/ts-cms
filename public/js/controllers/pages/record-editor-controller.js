@@ -59,7 +59,8 @@ export default class RecordEditorController extends BasePageController {
             image_url: '',
             tags: [],
             categories: [],
-            is_published: false
+            is_published: false,
+            user_id: this.app.user.id || ''
         };
     }
 
@@ -98,6 +99,17 @@ export default class RecordEditorController extends BasePageController {
                             
                             <label for="recordCategories">Categories (comma-separated)</label>
                             <input type="text" id="recordCategories" value="${(this.record.categories || []).join(', ')}" placeholder="category1, category2">
+                            
+                            <label for="recordUserId">Author User ID</label>
+                            <input type="text" id="recordUserId" value="${this.record.user_id || ''}" placeholder="User ID">
+                            
+                            ${!isNew ? `
+                                <label>Created At</label>
+                                <input type="text" value="${this.record.created_at ? new Date(this.record.created_at).toLocaleString() : ''}" disabled class="text-muted">
+                            ` : ''}
+                            
+                            <label for="recordUpdatedAt">Updated At</label>
+                            <input type="datetime-local" id="recordUpdatedAt" value="${this.record.updated_at ? new Date(this.record.updated_at).toISOString().slice(0, 16) : ''}">
                             
                             <label class="checkbox-label">
                                 <input type="checkbox" id="recordPublished" ${this.record.is_published ? 'checked' : ''}>
@@ -266,15 +278,24 @@ export default class RecordEditorController extends BasePageController {
             .map(cat => cat.trim())
             .filter(cat => cat.length > 0);
 
-        return {
+        const data = {
             title: document.getElementById('recordTitle').value,
             description: document.getElementById('recordDescription').value,
             content: document.getElementById('recordContent').value,
             image_url: document.getElementById('recordImageUrl').value,
             tags: tags,
             categories: categories,
-            is_published: document.getElementById('recordPublished').checked
+            is_published: document.getElementById('recordPublished').checked,
+            user_id: document.getElementById('recordUserId').value
         };
+        
+        // Add updated_at if it has value
+        const updatedAt = document.getElementById('recordUpdatedAt').value;
+        if (updatedAt) {
+            data.updated_at = new Date(updatedAt).toISOString();
+        }
+        
+        return data;
     }
 
     async handleSubmit(e) {
