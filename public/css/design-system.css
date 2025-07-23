@@ -1030,7 +1030,9 @@ textarea:focus {
 
 
 /* Responsive grid adjustments */
-@media (max-width: 480px) {
+/* Mobile detection - portrait orientation typically means mobile device */
+@media (max-width: 480px), 
+       (orientation: portrait) and (max-aspect-ratio: 4/3) {
   .card-grid {
     grid-template-columns: 1fr;
     gap: calc(var(--spacing) * 2);
