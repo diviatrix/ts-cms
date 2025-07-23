@@ -103,6 +103,22 @@ p:last-child {
   flex: 1 1 300px;
   min-width: 0;
   container-type: inline-size;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  border-color: var(--primary);
+}
+
+.card:hover .card-image {
+  transform: scale(1.02);
+}
+
+.card:hover .card-title {
+  color: var(--primary);
 }
 
 /* Adaptive card layout based on available space */
@@ -140,6 +156,7 @@ p:last-child {
   width: 100%;
   height: 100%;
   display: block;
+  transition: transform 0.3s ease;
 }
 
 .card-body {
@@ -154,6 +171,7 @@ p:last-child {
   font-weight: var(--font-bold);
   letter-spacing: var(--letter-spacing);
   margin-bottom: var(--spacing);
+  transition: color 0.2s ease;
 }
 
 .card-subtitle {
@@ -167,6 +185,51 @@ p:last-child {
   color: var(--text);
   line-height: 1.5;
   flex: 1;
+}
+
+.card-content-preview {
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 1.5);
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  
+  /* Gradient fade effect for long content */
+  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing);
+  padding-top: calc(var(--spacing) * 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.875rem;
+}
+
+.card-date, .card-author {
+  color: var(--muted);
+  font-weight: var(--font-medium);
+}
+
+.card-author {
+  font-style: italic;
+}
+
+.card-actions {
+  display: flex;
+  gap: calc(var(--spacing) * 0.5);
+  margin-top: auto;
+}
+
+.card-actions .btn {
+  flex: 1;
+  text-align: center;
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 0.75) var(--spacing);
 }
 /* Forms */
 label {
@@ -215,6 +278,26 @@ textarea:focus {
 
 .btn:hover {
   background: var(--hover);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #181a1f;
+}
+
+.btn-primary:hover {
+  background: var(--hover);
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+  border-color: var(--primary);
 }
 
 /* Navigation */

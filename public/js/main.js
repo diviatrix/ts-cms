@@ -58,17 +58,21 @@ export default class FrontPageController {
                            (record.body ? record.body.substring(0, previewLength) + '...' : '');
     
     card.innerHTML = `
+      ${record.image_url ? `
+        <div class="card-image-container">
+          <img class="card-image" src="${record.image_url}" alt="${record.title}" />
+        </div>
+      ` : ''}
       <div class="card-body">
-        ${record.image_url ? `<img class="card-image" src="${record.image_url}" alt="${record.title}" />` : ''}
         <h3 class="card-title">${record.title}</h3>
         ${record.description ? `<p class="card-subtitle">${record.description}</p>` : ''}
-        ${contentPreview ? `<p class="card-content">${contentPreview}</p>` : ''}
-        <div class="meta-row">
-          <span>${createdAt}</span>
-          ${record.public_name ? `<span>By ${record.public_name}</span>` : ''}
+        ${contentPreview ? `<div class="card-content-preview">${contentPreview}</div>` : ''}
+        <div class="card-meta">
+          <span class="card-date">${createdAt}</span>
+          ${record.public_name ? `<span class="card-author">By ${record.public_name}</span>` : ''}
         </div>
-        <div class="meta-row">
-          <a href="/record?id=${record.id}" class="btn">Read More</a>
+        <div class="card-actions">
+          <a href="/record?id=${record.id}" class="btn btn-primary">Read More</a>
           ${isAdmin ? `<a href="/record-editor?id=${record.id}" class="btn btn-secondary">Edit</a>` : ''}
         </div>
       </div>
