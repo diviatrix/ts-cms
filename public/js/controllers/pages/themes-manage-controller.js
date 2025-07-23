@@ -321,10 +321,24 @@ export default class ThemesManageController extends BasePageController {
                 data: { theme_id: themeId }
             }),
             {
-                successCallback: () => {
-                    notifications.success(`Theme "${themeName}" written to frontend successfully!`);
-                    // Reload to apply new theme
-                    setTimeout(() => window.location.reload(), 1500);
+                successCallback: async () => {
+                    // Also update active_theme_id in CMS settings
+                    await this.safeApiCall(
+                        () => CmsSettingsAPI.update('active_theme_id', {
+                            setting_value: themeId
+                        }),
+                        {
+                            successCallback: () => {
+                                notifications.success(`Theme "${themeName}" written to frontend and set as active!`);
+                                // Reload to apply new theme
+                                setTimeout(() => window.location.reload(), 1500);
+                            },
+                            errorCallback: () => {
+                                notifications.error('Theme written but failed to update CMS settings');
+                                setTimeout(() => window.location.reload(), 1500);
+                            }
+                        }
+                    );
                 },
                 errorCallback: (response) => {
                     notifications.error('Failed to write theme config: ' + response.message);

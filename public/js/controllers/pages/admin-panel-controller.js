@@ -32,6 +32,12 @@ export default class AdminPanelController extends BasePageController {
                 </div>
                 <div class="card">
                     <div class="card-body">
+                        <h3 class="card-title">Themes</h3>
+                        <div id="themesList">Loading...</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
                         <h3 class="card-title">Settings</h3>
                         <div id="settingsList">Loading...</div>
                     </div>
@@ -40,12 +46,6 @@ export default class AdminPanelController extends BasePageController {
                     <div class="card-body">
                         <h3 class="card-title">Records</h3>
                         <div id="recordsList">Loading...</div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <h3 class="card-title">Themes</h3>
-                        <div id="themesList">Loading...</div>
                     </div>
                 </div>
             </div>
@@ -122,10 +122,12 @@ export default class AdminPanelController extends BasePageController {
             () => CmsSettingsAPI.getAll(),
             {
                 successCallback: (data) => {
+                    console.log('CMS Settings:', data);
                     const activeThemeSetting = data.find(s => s.setting_key === 'active_theme_id');
                     if (activeThemeSetting) {
                         appliedThemeId = activeThemeSetting.setting_value;
                     }
+                    console.log('Applied theme ID:', appliedThemeId);
                 }
             }
         );
@@ -134,7 +136,10 @@ export default class AdminPanelController extends BasePageController {
         await this.safeApiCall(
             () => ThemesAPI.getAll(),
             {
-                successCallback: (data) => this.renderThemes(data, appliedThemeId),
+                successCallback: (data) => {
+                    console.log('Themes:', data);
+                    this.renderThemes(data, appliedThemeId);
+                },
                 errorCallback: () => {
                     document.getElementById('themesList').innerHTML = '<p class="alert alert-danger">Failed to load themes</p>';
                 }
@@ -144,30 +149,13 @@ export default class AdminPanelController extends BasePageController {
 
     renderThemes(themes, appliedThemeId) {
         const container = document.getElementById('themesList');
-        if (!themes.length) {
-            container.innerHTML = '<p>No themes found</p>';
-            return;
-        }
         
-        const appliedTheme = themes.find(t => t.id === appliedThemeId);
-        const availableThemes = themes.filter(t => t.is_active && t.id !== appliedThemeId);
+        const activeThemes = themes.filter(t => t.is_active);
         
         container.innerHTML = `
-            ${appliedTheme ? `
-                <div class="box active-theme">
-                    <div class="meta-row">
-                        <span><strong>${appliedTheme.name}</strong></span>
-                        <span class="badge badge-success">Applied</span>
-                    </div>
-                    <p class="text-muted">${appliedTheme.description || 'Currently applied to the website'}</p>
-                </div>
-            ` : '<p class="alert alert-warning">No theme is currently applied</p>'}
-            
-            <p class="text-muted">Manage themes to apply or write config</p>
-            
-            <div class="theme-actions">
-                <a href="/themes-manage" class="btn">Manage Themes</a>
-            </div>
+            <p>${themes.length} theme${themes.length !== 1 ? 's' : ''} total</p>
+            <p class="text-muted">${activeThemes.length} active theme${activeThemes.length !== 1 ? 's' : ''}</p>
+            <a href="/themes-manage" class="btn">Manage Themes</a>
         `;
         
         window.adminPanel = this;

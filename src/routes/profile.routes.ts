@@ -62,8 +62,8 @@ router.post('/profile', requireAuth, validateNestedBody(ValidationSchemas.profil
 
     const profileData = req.body.profile || {};
     const baseData = req.body.base || {};
-    const incomingRoles = profileData.roles;
-    delete profileData.roles;
+    const incomingRoles = req.body.roles; // Roles are at root level
+    delete profileData.roles; // Just in case
 
     // Update user profile
     await database.updateUserProfile(targetUserId, profileData);
@@ -76,7 +76,10 @@ router.post('/profile', requireAuth, validateNestedBody(ValidationSchemas.profil
         // Roles to add
         for (const role of incomingRoles) {
             if (!currentRoles.includes(role)) {
-                await database.addUserToGroup(targetUserId, role);
+                const result = await database.addUserToGroup(targetUserId, role);
+                if (!result.success) {
+                    console.error(`Failed to add role ${role} to user ${targetUserId}:`, result.message);
+                }
             }
         }
 

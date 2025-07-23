@@ -160,7 +160,8 @@ export default class UserEditorController extends BasePageController {
                 loadingElement: e.target.querySelector('button[type="submit"]'),
                 successCallback: () => {
                     notifications.success('User updated successfully');
-                    setTimeout(() => window.location.href = '/users-manage', 1000);
+                    // Reload user data to show updated information
+                    this.loadUser();
                 },
                 errorCallback: (response) => {
                     notifications.error(response.message || 'Failed to update user');
