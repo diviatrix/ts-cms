@@ -52,8 +52,10 @@ export default class FrontPageController {
     
     const createdAt = record.created_at ? new Date(record.created_at).toLocaleDateString() : '';
     
-    const contentPreview = record.content ? record.content.substring(0, 200) + '...' : 
-                           (record.body ? record.body.substring(0, 200) + '...' : '');
+    // Longer preview if no image to fill the space
+    const previewLength = record.image_url ? 400 : 1400;
+    const contentPreview = record.content ? record.content.substring(0, previewLength) + '...' : 
+                           (record.body ? record.body.substring(0, previewLength) + '...' : '');
     
     card.innerHTML = `
       <div class="card-body">
