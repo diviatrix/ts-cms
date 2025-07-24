@@ -359,109 +359,50 @@ textarea:focus {
   margin-bottom: var(--spacing);
 }
 
-.tab-pane {
-  display: none;
+
+
+/* Simple Markdown Editor */
+.markdown-editor {
+  width: 100%;
 }
 
-.tab-pane.active {
-  display: block;
-}
-
-/* Editor tabs */
-.editor-tabs {
+.markdown-toolbar {
   display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--border);
-  margin-bottom: calc(var(--spacing) * 2);
-}
-
-.editor-tab {
-  padding: var(--spacing) calc(var(--spacing) * 2);
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-}
-
-.editor-tab:hover {
-  color: var(--text);
-}
-
-.editor-tab.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-}
-
-/* EasyMDE Dark Theme Override */
-.EasyMDEContainer {
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: calc(var(--spacing) / 2);
   background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
-.EasyMDEContainer .CodeMirror {
+.md-btn {
+  padding: 8px 12px;
   background: var(--secondary);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.EasyMDEContainer .CodeMirror-cursor {
-  border-color: var(--primary);
-}
-
-.EasyMDEContainer .editor-toolbar {
-  background: var(--surface);
-  border-color: var(--border);
-}
-
-.EasyMDEContainer .editor-toolbar a {
-  color: var(--text) !important;
-}
-
-.EasyMDEContainer .editor-toolbar a:hover,
-.EasyMDEContainer .editor-toolbar a.active {
-  background: var(--secondary);
-  border-color: var(--border);
-}
-
-.EasyMDEContainer .CodeMirror-selected {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.EasyMDEContainer .cm-header {
-  color: var(--primary);
-}
-
-.EasyMDEContainer .cm-quote {
-  color: var(--muted);
-}
-
-.EasyMDEContainer .cm-link,
-.EasyMDEContainer .cm-url {
-  color: #4ecdc4;
-}
-
-.EasyMDEContainer .cm-strong {
-  color: var(--text);
+  border-radius: calc(var(--radius) / 2);
+  cursor: pointer;
   font-weight: bold;
+  transition: all 0.2s;
 }
 
-.EasyMDEContainer .cm-em {
-  color: var(--text);
-  font-style: italic;
+.md-btn:hover {
+  background: var(--primary);
+  color: var(--background);
+  transform: translateY(-1px);
 }
 
-.EasyMDEContainer .editor-preview {
-  background: var(--secondary);
-  color: var(--text);
+.markdown-toolbar .separator {
+  margin: 0 4px;
+  color: var(--muted);
+  align-self: center;
 }
 
-.EasyMDEContainer .editor-preview-side {
-  background: var(--secondary);
-  border-color: var(--border);
+#recordContent {
+  border-radius: 0 0 var(--radius) var(--radius);
+  border-top: none;
 }
 
 /* Alerts */

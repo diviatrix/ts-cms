@@ -11,7 +11,6 @@ export default class RecordEditorController extends BasePageController {
         this.recordId = null;
         this.record = null;
         this.imagePreview = null;
-        this.easyMDE = null;
         this.init();
     }
 
@@ -126,17 +125,22 @@ export default class RecordEditorController extends BasePageController {
                     <div class="card">
                         <div class="card-body">
                             <h3 class="card-title">Content</h3>
-                            <div class="editor-tabs">
-                                <button type="button" class="editor-tab active" data-tab="raw">Raw Markdown</button>
-                                <button type="button" class="editor-tab" data-tab="editor">Visual Editor</button>
-                            </div>
-                            <div class="editor-content">
-                                <div id="rawTab" class="tab-pane active">
-                                    <textarea id="recordContent" rows="30" required placeholder="Write your content in markdown...">${this.record.content || ''}</textarea>
+                            <div class="markdown-editor">
+                                <div class="markdown-toolbar">
+                                    <button type="button" class="md-btn" data-md="bold" title="Bold">B</button>
+                                    <button type="button" class="md-btn" data-md="italic" title="Italic">I</button>
+                                    <button type="button" class="md-btn" data-md="heading" title="Heading">H</button>
+                                    <span class="separator">|</span>
+                                    <button type="button" class="md-btn" data-md="link" title="Link">🔗</button>
+                                    <button type="button" class="md-btn" data-md="image" title="Image">🖼️</button>
+                                    <button type="button" class="md-btn" data-md="quote" title="Quote">❝</button>
+                                    <span class="separator">|</span>
+                                    <button type="button" class="md-btn" data-md="ul" title="Bullet List">•</button>
+                                    <button type="button" class="md-btn" data-md="ol" title="Numbered List">1.</button>
+                                    <button type="button" class="md-btn" data-md="code" title="Code">&lt;/&gt;</button>
+                                    <button type="button" class="md-btn" data-md="table" title="Table">⊞</button>
                                 </div>
-                                <div id="editorTab" class="tab-pane">
-                                    <textarea id="easyMdeTextarea">${this.record.content || ''}</textarea>
-                                </div>
+                                <textarea id="recordContent" rows="30" required placeholder="Write your content in markdown...">${this.record.content || ''}</textarea>
                             </div>
                         </div>
                     </div>
@@ -168,8 +172,8 @@ export default class RecordEditorController extends BasePageController {
             imageInput.addEventListener('input', (e) => this.imagePreview.update(e.target.value));
         }
 
-        // Set up editor tabs
-        this.setupEditorTabs();
+        // Set up markdown toolbar
+        this.setupMarkdownToolbar();
 
         // Set up markdown preview
         const contentTextarea = document.getElementById('recordContent');
@@ -207,64 +211,83 @@ export default class RecordEditorController extends BasePageController {
         preview.innerHTML = `<p>${html}</p>`;
     }
 
-    setupEditorTabs() {
-        const tabs = document.querySelectorAll('.editor-tab');
+    setupMarkdownToolbar() {
+        const buttons = document.querySelectorAll('.md-btn');
+        const textarea = document.getElementById('recordContent');
         
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                // Update active tab
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                // Show corresponding pane
-                const tabName = tab.dataset.tab;
-                document.querySelectorAll('.tab-pane').forEach(pane => {
-                    pane.classList.remove('active');
-                });
-                
-                if (tabName === 'raw') {
-                    document.getElementById('rawTab').classList.add('active');
-                    // Sync content from EasyMDE to raw textarea if editor was used
-                    if (this.easyMDE) {
-                        document.getElementById('recordContent').value = this.easyMDE.value();
-                    }
-                } else if (tabName === 'editor') {
-                    document.getElementById('editorTab').classList.add('active');
-                    // Initialize EasyMDE if not already done
-                    if (!this.easyMDE && typeof EasyMDE !== 'undefined') {
-                        this.easyMDE = new EasyMDE({
-                            element: document.getElementById('easyMdeTextarea'),
-                            spellChecker: false,
-                            autosave: {
-                                enabled: false
-                            },
-                            toolbar: [
-                                'bold', 'italic', 'heading', '|',
-                                'quote', 'unordered-list', 'ordered-list', '|',
-                                'link', 'image', 'table', '|',
-                                'preview', 'side-by-side', 'fullscreen', '|',
-                                'guide'
-                            ],
-                            previewRender: (plainText) => {
-                                return marked.parse(plainText);
-                            }
-                        });
-                        
-                        // Sync content from raw textarea to EasyMDE
-                        this.easyMDE.value(document.getElementById('recordContent').value);
-                        
-                        // Update markdown preview when EasyMDE changes
-                        this.easyMDE.codemirror.on('change', () => {
-                            const content = this.easyMDE.value();
-                            // Update raw textarea
-                            document.getElementById('recordContent').value = content;
-                            // Update preview
-                            this.updateMarkdownPreview();
-                        });
-                    }
-                }
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const action = btn.dataset.md;
+                this.applyMarkdown(textarea, action);
             });
         });
+    }
+    
+    applyMarkdown(textarea, action) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const selectedText = text.substring(start, end);
+        let replacement = '';
+        let cursorOffset = 0;
+        
+        switch(action) {
+            case 'bold':
+                replacement = `**${selectedText || 'bold text'}**`;
+                cursorOffset = selectedText ? replacement.length : 2;
+                break;
+            case 'italic':
+                replacement = `*${selectedText || 'italic text'}*`;
+                cursorOffset = selectedText ? replacement.length : 1;
+                break;
+            case 'heading':
+                replacement = `\n## ${selectedText || 'Heading'}\n`;
+                cursorOffset = 4;
+                break;
+            case 'link':
+                replacement = `[${selectedText || 'link text'}](url)`;
+                cursorOffset = selectedText ? replacement.length - 5 : 1;
+                break;
+            case 'image':
+                replacement = `![${selectedText || 'alt text'}](image-url)`;
+                cursorOffset = selectedText ? replacement.length - 11 : 2;
+                break;
+            case 'quote':
+                replacement = `\n> ${selectedText || 'quote'}\n`;
+                cursorOffset = 3;
+                break;
+            case 'ul':
+                replacement = `\n- ${selectedText || 'list item'}\n`;
+                cursorOffset = 3;
+                break;
+            case 'ol':
+                replacement = `\n1. ${selectedText || 'list item'}\n`;
+                cursorOffset = 4;
+                break;
+            case 'code':
+                if (selectedText.includes('\n')) {
+                    replacement = `\n\`\`\`\n${selectedText}\n\`\`\`\n`;
+                    cursorOffset = 5;
+                } else {
+                    replacement = `\`${selectedText || 'code'}\``;
+                    cursorOffset = selectedText ? replacement.length - 1 : 1;
+                }
+                break;
+            case 'table':
+                replacement = `\n| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |\n`;
+                cursorOffset = 3;
+                break;
+        }
+        
+        // Replace text
+        textarea.value = text.substring(0, start) + replacement + text.substring(end);
+        
+        // Update cursor position
+        textarea.focus();
+        textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
+        
+        // Trigger input event to sync with raw textarea
+        textarea.dispatchEvent(new Event('input'));
     }
 
     collectFormData() {
