@@ -30,8 +30,8 @@ const DEFAULT_CONFIG: RateLimitConfig = {
 };
 
 const AUTH_CONFIG: RateLimitConfig = {
-    windowMs: 1000,      // 1 second
-    maxRequests: 1,      // 1 request per second
+    windowMs: 10 * 1000,      // 10 seconds window
+    maxRequests: 5,           // 5 requests per 10 seconds (more reasonable)
     banDurationMs: 30 * 1000, // 30 seconds
     progressiveBan: true
 };
@@ -79,6 +79,7 @@ function cleanupExpiredEntries(): void {
 export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
     return (req: Request, res: Response, next: NextFunction) => {
         // Skip rate limiting for localhost/dev/test
+        // IMPORTANT: Rate limiting is ONLY active when NODE_ENV is explicitly set to 'production'
         if (
             process.env.NODE_ENV !== 'production' ||
             req.ip === '127.0.0.1' ||
