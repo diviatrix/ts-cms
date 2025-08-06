@@ -141,7 +141,9 @@ export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
             // Calculate ban duration
             let banDuration = config.banDurationMs;
             if (config.progressiveBan) {
-                banDuration = config.banDurationMs * Math.pow(30, entry.banCount);
+                // More reasonable progressive ban: 30s, 60s, 120s, 300s (5 min), 600s (10 min), max 1800s (30 min)
+                const multiplier = Math.min(Math.pow(2, entry.banCount), 60); // Max multiplier of 60 (30 min)
+                banDuration = config.banDurationMs * multiplier;
                 entry.banCount++;
             }
 
