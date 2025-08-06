@@ -298,7 +298,7 @@ export class DatabaseChecker {
             );
             
             const systemUserId = systemUserResult.success && systemUserResult.data && systemUserResult.data.length > 0
-                ? systemUserResult.data[0].id
+                ? (systemUserResult.data[0] as any).id
                 : 'system';
             
             // Check each default setting

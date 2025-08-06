@@ -1,6 +1,6 @@
 import IUser from '../types/IUser';
 import database from '../db';
-import bcrypt from 'bcryptjs';
+import { verifyPassword } from '../utils/crypto';
 import { generateToken } from '../utils/jwt';
 import { generateGuid } from '../utils/guid';
 import IResolve from '../types/IResolve';
@@ -24,7 +24,7 @@ export async function loginUser(login: string, password: string): Promise<IResol
       return prep.response(false, messages.not_found)
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    const passwordMatch = await verifyPassword(password, user.password_hash);
 
     if (passwordMatch) {
       // Exclude passwordHash from the returned user object for security
