@@ -6,40 +6,71 @@ interface RateLimitConfig {
     windowMs: number;        // Time window in milliseconds
     maxRequests: number;     // Max requests per window
     banDurationMs: number;   // Ban duration in milliseconds
-    progressiveBan: boolean; // Whether to use progressive ban duration
+    skipPublicGet?: boolean; // Skip rate limiting for public GET requests
 }
 
-// Rate limit entry for tracking
+// Rate limit entry for tracking with sliding window
 interface RateLimitEntry {
-    count: number;
-    resetTime: number;
-    banUntil?: number;
-    banCount: number;
-    lastActivity: number; // Track last activity for ban count reset
+    requests: number[];      // Array of request timestamps
+    banUntil?: number;      // Ban expiry timestamp
 }
 
 // In-memory store for rate limiting (in production, use Redis)
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Default configurations
-const DEFAULT_CONFIG: RateLimitConfig = {
-    windowMs: 60 * 1000, // 1 minute
-    maxRequests: 100,    // 100 requests per minute
-    banDurationMs: 30 * 1000, // 30 seconds
-    progressiveBan: false
-};
-
-const AUTH_CONFIG: RateLimitConfig = {
-    windowMs: 10 * 1000,      // 10 seconds window
-    maxRequests: 5,           // 5 requests per 10 seconds (more reasonable)
-    banDurationMs: 30 * 1000, // 30 seconds
-    progressiveBan: true
+// Configuration for different types of endpoints
+const CONFIGS = {
+    // Critical auth endpoints - strict limits
+    AUTH: {
+        windowMs: 60 * 1000,      // 1 minute
+        maxRequests: 10,          // 10 attempts per minute
+        banDurationMs: 30 * 1000  // 30 seconds ban
+    },
+    // Data modification endpoints
+    WRITE: {
+        windowMs: 60 * 1000,      // 1 minute  
+        maxRequests: 50,          // 50 requests per minute
+        banDurationMs: 30 * 1000  // 30 seconds ban
+    },
+    // Authenticated read endpoints
+    READ_AUTH: {
+        windowMs: 60 * 1000,      // 1 minute
+        maxRequests: 300,         // 300 requests per minute
+        banDurationMs: 30 * 1000  // 30 seconds ban
+    },
+    // Global fallback for other endpoints
+    GLOBAL: {
+        windowMs: 60 * 1000,      // 1 minute
+        maxRequests: 200,         // 200 requests per minute
+        banDurationMs: 30 * 1000, // 30 seconds ban
+        skipPublicGet: true       // Don't rate limit public GET requests
+    }
 };
 
 /**
- * Get client identifier (IP address)
+ * Get client identifier (IP address) with proxy support
  */
 function getClientId(req: Request): string {
+    // Check for proxy headers first
+    const forwardedFor = req.headers['x-forwarded-for'];
+    if (forwardedFor) {
+        // x-forwarded-for can contain multiple IPs, take the first one
+        return (forwardedFor as string).split(',')[0].trim();
+    }
+    
+    // Check other common proxy headers
+    const realIp = req.headers['x-real-ip'];
+    if (realIp) {
+        return realIp as string;
+    }
+    
+    // Cloudflare specific header
+    const cfConnectingIp = req.headers['cf-connecting-ip'];
+    if (cfConnectingIp) {
+        return cfConnectingIp as string;
+    }
+    
+    // Fall back to direct connection IP
     return req.ip || req.connection.remoteAddress || 'unknown';
 }
 
@@ -48,38 +79,52 @@ function getClientId(req: Request): string {
  */
 function cleanupExpiredEntries(): void {
     const now = Date.now();
-    const entriesToDelete: string[] = [];
+    const fiveMinutesAgo = now - 5 * 60 * 1000;
     
-    // First pass: identify entries to delete
     for (const [key, entry] of rateLimitStore.entries()) {
-        const isWindowExpired = entry.resetTime < now;
-        const isBanExpired = !entry.banUntil || entry.banUntil < now;
-        const isInactive = now - entry.lastActivity > 30 * 60 * 1000; // 30 minutes inactive
+        // Remove if no recent requests and no active ban
+        const hasRecentRequests = entry.requests.some(timestamp => timestamp > fiveMinutesAgo);
+        const hasActiveBan = entry.banUntil && entry.banUntil > now;
         
-        // Delete if: (window expired AND not banned) OR (ban expired) OR (inactive for 30+ minutes)
-        if ((isWindowExpired && isBanExpired) || isInactive) {
-            entriesToDelete.push(key);
+        if (!hasRecentRequests && !hasActiveBan) {
+            rateLimitStore.delete(key);
         }
-    }
-    
-    // Second pass: batch delete for better performance
-    for (const key of entriesToDelete) {
-        rateLimitStore.delete(key);
-    }
-    
-    // Log cleanup stats (only in development)
-    if (process.env.NODE_ENV !== 'production' && entriesToDelete.length > 0) {
-        console.log(`[RATELIMIT] Cleaned up ${entriesToDelete.length} expired entries. Store size: ${rateLimitStore.size}`);
     }
 }
 
 /**
- * Create rate limiting middleware
+ * Determine which config to use based on the request
  */
-export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
+function getConfigForRequest(req: Request): RateLimitConfig {
+    const path = req.path;
+    const method = req.method;
+    
+    // Auth endpoints - strictest limits
+    if (path.includes('/login') || path.includes('/register')) {
+        return CONFIGS.AUTH;
+    }
+    
+    // Write operations - moderate limits
+    if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
+        return CONFIGS.WRITE;
+    }
+    
+    // Authenticated read operations
+    const authHeader = req.headers['authorization'];
+    if (authHeader && method === 'GET') {
+        return CONFIGS.READ_AUTH;
+    }
+    
+    // Default global config
+    return CONFIGS.GLOBAL;
+}
+
+/**
+ * Create rate limiting middleware with sliding window
+ */
+export function createRateLimit() {
     return (req: Request, res: Response, next: NextFunction) => {
-        // Skip rate limiting for localhost/dev/test
-        // IMPORTANT: Rate limiting is ONLY active when NODE_ENV is explicitly set to 'production'
+        // Skip rate limiting for localhost in development
         if (
             process.env.NODE_ENV !== 'production' ||
             req.ip === '127.0.0.1' ||
@@ -89,11 +134,17 @@ export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
             return next();
         }
 
-        // Clean up expired entries based on time and memory pressure
-        const currentTime = Date.now();
-        const timeSinceLastCleanup = currentTime - (global as any).lastRateLimitCleanup || 0;
+        const config = getConfigForRequest(req);
         
-        // Clean up every 60 seconds OR if we have too many entries (>1000)
+        // Skip public GET requests if configured
+        if (config.skipPublicGet && req.method === 'GET' && !req.headers['authorization']) {
+            return next();
+        }
+
+        // Clean up expired entries periodically
+        const currentTime = Date.now();
+        const timeSinceLastCleanup = currentTime - (global as any).lastRateLimitCleanup || Infinity;
+        
         if (timeSinceLastCleanup > 60000 || rateLimitStore.size > 1000) {
             cleanupExpiredEntries();
             (global as any).lastRateLimitCleanup = currentTime;
@@ -106,10 +157,7 @@ export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
         let entry = rateLimitStore.get(clientId);
         if (!entry) {
             entry = {
-                count: 0,
-                resetTime: now + config.windowMs,
-                banCount: 0,
-                lastActivity: now
+                requests: []
             };
             rateLimitStore.set(clientId, entry);
         }
@@ -120,61 +168,35 @@ export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
             return ResponseUtils.tooManyRequests(res, `Rate limit exceeded. Try again in ${remainingBan} seconds.`);
         }
 
-        // Reset counter if window has passed
-        if (entry.resetTime < now) {
-            entry.count = 0;
-            entry.resetTime = now + config.windowMs;
-        }
+        // Clean old requests outside the window (sliding window)
+        const windowStart = now - config.windowMs;
+        entry.requests = entry.requests.filter(timestamp => timestamp > windowStart);
 
-        // Reset ban count if user has been good for a while (5 minutes)
-        if (entry.banCount > 0 && now - entry.lastActivity > 5 * 60 * 1000) {
-            entry.banCount = 0;
-        }
-
-        // Update last activity
-        entry.lastActivity = now;
-
-        // Increment request count
-        entry.count++;
-
-        // Check if rate limit exceeded
-        if (entry.count > config.maxRequests) {
-            // Calculate ban duration
-            let banDuration = config.banDurationMs;
-            if (config.progressiveBan) {
-                // More reasonable progressive ban: 30s, 60s, 120s, 300s (5 min), 600s (10 min), max 1800s (30 min)
-                const multiplier = Math.min(Math.pow(2, entry.banCount), 60); // Max multiplier of 60 (30 min)
-                banDuration = config.banDurationMs * multiplier;
-                entry.banCount++;
-            }
-
-            entry.banUntil = now + banDuration;
-            
-            const banSeconds = Math.ceil(banDuration / 1000);
+        // Check if rate limit would be exceeded
+        if (entry.requests.length >= config.maxRequests) {
+            // Apply ban
+            entry.banUntil = now + config.banDurationMs;
+            const banSeconds = Math.ceil(config.banDurationMs / 1000);
             return ResponseUtils.tooManyRequests(res, `Rate limit exceeded. Try again in ${banSeconds} seconds.`);
         }
 
+        // Add current request timestamp
+        entry.requests.push(now);
+
         // Add rate limit headers
         res.setHeader('X-RateLimit-Limit', config.maxRequests);
-        res.setHeader('X-RateLimit-Remaining', Math.max(0, config.maxRequests - entry.count));
-        res.setHeader('X-RateLimit-Reset', Math.ceil(entry.resetTime / 1000));
+        res.setHeader('X-RateLimit-Remaining', Math.max(0, config.maxRequests - entry.requests.length));
+        res.setHeader('X-RateLimit-Reset', Math.ceil((windowStart + config.windowMs) / 1000));
 
-        // Reset ban count on successful authentication attempts
-        if (req.path.includes('/login') || req.path.includes('/register')) {
-            // Store entry reference for successful response handling
-            res.locals.rateLimitEntry = entry;
-            
-            // Override res.end to detect successful responses
+        // Clear ban on successful auth
+        if ((req.path.includes('/login') || req.path.includes('/register'))) {
             const originalEnd = res.end;
             res.end = function(chunk?: any, encoding?: any): any {
-                // If response is successful (2xx status), reset ban count
+                // If response is successful (2xx status), clear any bans
                 if (res.statusCode >= 200 && res.statusCode < 300) {
-                    entry.banCount = 0;
-                    entry.lastActivity = Date.now();
-                    
-                    // Log successful auth and ban reset (only in development)
-                    if (process.env.NODE_ENV !== 'production') {
-                        console.log(`[RATELIMIT] Successful auth for ${clientId}. Ban count reset to 0.`);
+                    const entry = rateLimitStore.get(clientId);
+                    if (entry) {
+                        entry.banUntil = undefined;
                     }
                 }
                 return originalEnd.call(this, chunk, encoding);
@@ -186,23 +208,14 @@ export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
 }
 
 /**
- * Global rate limiting middleware (100 requests per minute)
+ * Global rate limiting middleware
  */
-export const globalRateLimit = createRateLimit(DEFAULT_CONFIG);
-
-/**
- * Authentication rate limiting middleware (1 request per second, progressive ban)
- */
-export const authRateLimit = createRateLimit(AUTH_CONFIG);
+export const globalRateLimit = createRateLimit();
 
 /**
  * Apply rate limiting to specific routes
  */
 export function applyRateLimits(app: any) {
-    // Global rate limiting for all API routes
+    // Apply global rate limiting for all API routes
     app.use('/api', globalRateLimit);
-    
-    // Specific rate limiting for auth endpoints
-    app.use('/api/register', authRateLimit);
-    app.use('/api/login', authRateLimit);
-} 
+}
