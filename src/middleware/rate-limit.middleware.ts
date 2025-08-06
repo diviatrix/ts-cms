@@ -15,6 +15,7 @@ interface RateLimitEntry {
     resetTime: number;
     banUntil?: number;
     banCount: number;
+    lastActivity: number; // Track last activity for ban count reset
 }
 
 // In-memory store for rate limiting (in production, use Redis)
@@ -47,10 +48,28 @@ function getClientId(req: Request): string {
  */
 function cleanupExpiredEntries(): void {
     const now = Date.now();
+    const entriesToDelete: string[] = [];
+    
+    // First pass: identify entries to delete
     for (const [key, entry] of rateLimitStore.entries()) {
-        if (entry.resetTime < now && (!entry.banUntil || entry.banUntil < now)) {
-            rateLimitStore.delete(key);
+        const isWindowExpired = entry.resetTime < now;
+        const isBanExpired = !entry.banUntil || entry.banUntil < now;
+        const isInactive = now - entry.lastActivity > 30 * 60 * 1000; // 30 minutes inactive
+        
+        // Delete if: (window expired AND not banned) OR (ban expired) OR (inactive for 30+ minutes)
+        if ((isWindowExpired && isBanExpired) || isInactive) {
+            entriesToDelete.push(key);
         }
+    }
+    
+    // Second pass: batch delete for better performance
+    for (const key of entriesToDelete) {
+        rateLimitStore.delete(key);
+    }
+    
+    // Log cleanup stats (only in development)
+    if (process.env.NODE_ENV !== 'production' && entriesToDelete.length > 0) {
+        console.log(`[RATELIMIT] Cleaned up ${entriesToDelete.length} expired entries. Store size: ${rateLimitStore.size}`);
     }
 }
 
@@ -69,9 +88,14 @@ export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
             return next();
         }
 
-        // Clean up expired entries periodically
-        if (Math.random() < 0.01) { // 1% chance to cleanup
+        // Clean up expired entries based on time and memory pressure
+        const currentTime = Date.now();
+        const timeSinceLastCleanup = currentTime - (global as any).lastRateLimitCleanup || 0;
+        
+        // Clean up every 60 seconds OR if we have too many entries (>1000)
+        if (timeSinceLastCleanup > 60000 || rateLimitStore.size > 1000) {
             cleanupExpiredEntries();
+            (global as any).lastRateLimitCleanup = currentTime;
         }
 
         const clientId = getClientId(req);
@@ -83,7 +107,8 @@ export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
             entry = {
                 count: 0,
                 resetTime: now + config.windowMs,
-                banCount: 0
+                banCount: 0,
+                lastActivity: now
             };
             rateLimitStore.set(clientId, entry);
         }
@@ -99,6 +124,14 @@ export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
             entry.count = 0;
             entry.resetTime = now + config.windowMs;
         }
+
+        // Reset ban count if user has been good for a while (5 minutes)
+        if (entry.banCount > 0 && now - entry.lastActivity > 5 * 60 * 1000) {
+            entry.banCount = 0;
+        }
+
+        // Update last activity
+        entry.lastActivity = now;
 
         // Increment request count
         entry.count++;
@@ -122,6 +155,28 @@ export function createRateLimit(config: RateLimitConfig = DEFAULT_CONFIG) {
         res.setHeader('X-RateLimit-Limit', config.maxRequests);
         res.setHeader('X-RateLimit-Remaining', Math.max(0, config.maxRequests - entry.count));
         res.setHeader('X-RateLimit-Reset', Math.ceil(entry.resetTime / 1000));
+
+        // Reset ban count on successful authentication attempts
+        if (req.path.includes('/login') || req.path.includes('/register')) {
+            // Store entry reference for successful response handling
+            res.locals.rateLimitEntry = entry;
+            
+            // Override res.end to detect successful responses
+            const originalEnd = res.end;
+            res.end = function(chunk?: any, encoding?: any): any {
+                // If response is successful (2xx status), reset ban count
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    entry.banCount = 0;
+                    entry.lastActivity = Date.now();
+                    
+                    // Log successful auth and ban reset (only in development)
+                    if (process.env.NODE_ENV !== 'production') {
+                        console.log(`[RATELIMIT] Successful auth for ${clientId}. Ban count reset to 0.`);
+                    }
+                }
+                return originalEnd.call(this, chunk, encoding);
+            };
+        }
 
         next();
     };

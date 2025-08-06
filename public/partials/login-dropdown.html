@@ -1,32 +1,135 @@
-<!-- Login/Register Dropdown Card Partial -->
-<div class="dropdown-menu-card" id="loginDropdownMenu" style="display:none; position:absolute; right:0; top:100%; min-width:320px; z-index:1100;">
-  <div class="card" style="margin:0;">
-    <div class="card-header" style="display:flex; gap:1rem;">
-      <a href="#" id="loginTabBtn" class="btn btn-sm active">Login</a>
-      <a href="#" id="registerTabBtn" class="btn btn-sm">Register</a>
+<!-- Premium Auth Dropdown with Modern Tab Switcher -->
+<div class="dropdown-menu-card" id="loginDropdownMenu" role="dialog" aria-labelledby="authModalTitle" aria-hidden="true">
+  <div class="card premium-auth-card">
+    <div class="tab-header">
+      <div class="tab-container" id="tabContainer" role="tablist" aria-label="Authentication options">
+        <div class="tab-indicator" aria-hidden="true"></div>
+        <button id="loginTabBtn" 
+                class="tab-button active" 
+                role="tab" 
+                aria-selected="true" 
+                aria-controls="loginTabPane"
+                tabindex="0">
+          <span class="tab-icon">🔑</span>
+          <span class="tab-text">Sign In</span>
+        </button>
+        <button id="registerTabBtn" 
+                class="tab-button" 
+                role="tab" 
+                aria-selected="false" 
+                aria-controls="registerTabPane"
+                tabindex="-1">
+          <span class="tab-icon">✨</span>
+          <span class="tab-text">Create Account</span>
+        </button>
+      </div>
     </div>
     <div class="card-body">
-      <form id="loginForm" autocomplete="on">
-        <div id="loginTabPane">
-          <label for="loginInput">Login</label>
-          <input type="text" id="loginInput" name="loginInput" required autocomplete="username">
-          <label for="passwordInput">Password</label>
-          <input type="password" id="passwordInput" name="passwordInput" required autocomplete="current-password">
-          <button type="submit" class="btn" style="width:100%;margin-top:1rem;">Login</button>
+      <form id="loginForm" autocomplete="on" novalidate>
+        <div id="loginTabPane" role="tabpanel" aria-labelledby="loginTabBtn">
+          <div class="form-group">
+            <label for="loginInput">Username</label>
+            <div class="input-container">
+              <input type="text" 
+                     id="loginInput" 
+                     name="loginInput" 
+                     required 
+                     autocomplete="username" 
+                     placeholder="Enter your username"
+                     aria-required="true"
+                     aria-describedby="loginError">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="passwordInput">Password</label>
+            <div class="input-container">
+              <input type="password" 
+                     id="passwordInput" 
+                     name="passwordInput" 
+                     required 
+                     autocomplete="current-password" 
+                     placeholder="Enter your password"
+                     aria-required="true"
+                     aria-describedby="loginError">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block premium-button" id="loginSubmitBtn">
+            <span class="btn-content">
+              <span class="btn-icon">🔑</span>
+              <span class="btn-text">Sign In</span>
+              <div class="btn-loading" aria-hidden="true">
+                <div class="spinner"></div>
+              </div>
+            </span>
+            <div class="btn-shine" aria-hidden="true"></div>
+          </button>
         </div>
       </form>
-      <form id="registerForm" autocomplete="on" style="display:none;">
-        <div id="registerTabPane">
-          <label for="registerLoginInput">Login</label>
-          <input type="text" id="registerLoginInput" name="registerLoginInput" required autocomplete="username">
-          <label for="registerEmailInput">Email</label>
-          <input type="email" id="registerEmailInput" name="registerEmailInput" required autocomplete="email">
-          <label for="registerPasswordInput">Password</label>
-          <input type="password" id="registerPasswordInput" name="registerPasswordInput" required autocomplete="new-password">
-          <button type="submit" class="btn" style="width:100%;margin-top:1rem;">Register</button>
+      <form id="registerForm" autocomplete="on" class="hidden" novalidate>
+        <div id="registerTabPane" role="tabpanel" aria-labelledby="registerTabBtn">
+          <div class="form-group">
+            <label for="registerLoginInput">Username</label>
+            <div class="input-container">
+              <input type="text" 
+                     id="registerLoginInput" 
+                     name="registerLoginInput" 
+                     required 
+                     autocomplete="username" 
+                     placeholder="Choose a username"
+                     aria-required="true"
+                     aria-describedby="registerError">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="registerEmailInput">Email Address</label>
+            <div class="input-container">
+              <input type="email" 
+                     id="registerEmailInput" 
+                     name="registerEmailInput" 
+                     required 
+                     autocomplete="email" 
+                     placeholder="your@email.com"
+                     aria-required="true"
+                     aria-describedby="registerError">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="registerPasswordInput">Password</label>
+            <div class="input-container">
+              <input type="password" 
+                     id="registerPasswordInput" 
+                     name="registerPasswordInput" 
+                     required 
+                     autocomplete="new-password" 
+                     placeholder="Create a strong password"
+                     aria-required="true"
+                     aria-describedby="registerError"
+                     minlength="8">
+            </div>
+          </div>
+          <div class="form-group" id="inviteCodeGroup" style="display: none;">
+            <label for="inviteCodeInput">Invite Code</label>
+            <div class="input-container">
+              <input type="text" 
+                     id="inviteCodeInput" 
+                     name="inviteCodeInput" 
+                     autocomplete="off" 
+                     placeholder="Enter your invite code"
+                     aria-describedby="registerError">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block premium-button" id="registerSubmitBtn">
+            <span class="btn-content">
+              <span class="btn-icon">✨</span>
+              <span class="btn-text">Create Account</span>
+              <div class="btn-loading" aria-hidden="true">
+                <div class="spinner"></div>
+              </div>
+            </span>
+            <div class="btn-shine" aria-hidden="true"></div>
+          </button>
         </div>
       </form>
-      <div id="loginDropdownMessage" style="margin-top:0.5rem;"></div>
     </div>
   </div>
 </div> 

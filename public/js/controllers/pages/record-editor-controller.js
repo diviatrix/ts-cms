@@ -78,42 +78,48 @@ export default class RecordEditorController extends BasePageController {
             ` : ''}
             
             <form id="recordForm">
-                <div class="card-grid">
-                    <div class="card">
+                <div>
+                    <div class="card-full-height mb-2">
                         <div class="card-body">
                             <h3 class="card-title">Record Details</h3>
                             
-                            <label for="recordTitle">Title</label>
-                            <input type="text" id="recordTitle" value="${this.record.title || ''}" required placeholder="Enter record title">
-                            
-                            <label for="recordDescription">Description</label>
-                            <input type="text" id="recordDescription" value="${this.record.description || ''}" required placeholder="Brief description">
-                            
-                            <label for="recordImageUrl">Image URL (optional)</label>
-                            <input type="text" id="recordImageUrl" value="${this.record.image_url || ''}" placeholder="/img/placeholder-square.png">
-                            <div id="recordImagePreview"></div>
-                            
-                            <label for="recordTags">Tags (comma-separated)</label>
-                            <input type="text" id="recordTags" value="${(this.record.tags || []).join(', ')}" placeholder="tag1, tag2, tag3">
-                            
-                            <label for="recordCategories">Categories (comma-separated)</label>
-                            <input type="text" id="recordCategories" value="${(this.record.categories || []).join(', ')}" placeholder="category1, category2">
-                            
-                            <label for="recordUserId">Author User ID</label>
-                            <input type="text" id="recordUserId" value="${this.record.user_id || ''}" placeholder="User ID">
-                            
-                            ${!isNew ? `
-                                <label>Created At</label>
-                                <input type="text" value="${this.record.created_at ? new Date(this.record.created_at).toLocaleString() : ''}" disabled class="text-muted">
-                            ` : ''}
-                            
-                            <label for="recordUpdatedAt">Updated At</label>
-                            <input type="datetime-local" id="recordUpdatedAt" value="${this.record.updated_at ? new Date(this.record.updated_at).toISOString().slice(0, 16) : ''}">
-                            
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="recordPublished" ${this.record.is_published ? 'checked' : ''}>
-                                Published
-                            </label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing);">
+                                <div>
+                                    <label for="recordTitle">Title</label>
+                                    <input type="text" id="recordTitle" value="${this.record.title || ''}" required placeholder="Enter record title">
+                                    
+                                    <label for="recordDescription">Description</label>
+                                    <input type="text" id="recordDescription" value="${this.record.description || ''}" required placeholder="Brief description">
+                                    
+                                    <label for="recordImageUrl">Image URL (optional)</label>
+                                    <input type="text" id="recordImageUrl" value="${this.record.image_url || ''}" placeholder="/img/placeholder-square.png">
+                                    <div id="recordImagePreview"></div>
+                                    
+                                    <label for="recordTags">Tags (comma-separated)</label>
+                                    <input type="text" id="recordTags" value="${(this.record.tags || []).join(', ')}" placeholder="tag1, tag2, tag3">
+                                </div>
+                                
+                                <div>
+                                    <label for="recordCategories">Categories (comma-separated)</label>
+                                    <input type="text" id="recordCategories" value="${(this.record.categories || []).join(', ')}" placeholder="category1, category2">
+                                    
+                                    <label for="recordUserId">Author User ID</label>
+                                    <input type="text" id="recordUserId" value="${this.record.user_id || ''}" placeholder="User ID">
+                                    
+                                    ${!isNew ? `
+                                        <label>Created At</label>
+                                        <input type="text" value="${this.record.created_at ? new Date(this.record.created_at).toLocaleString() : ''}" disabled class="text-muted">
+                                    ` : ''}
+                                    
+                                    <label for="recordUpdatedAt">Updated At</label>
+                                    <input type="datetime-local" id="recordUpdatedAt" value="${this.record.updated_at ? new Date(this.record.updated_at).toISOString().slice(0, 16) : ''}">
+                                    
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="recordPublished" ${this.record.is_published ? 'checked' : ''}>
+                                        Published
+                                    </label>
+                                </div>
+                            </div>
                             
                             <div class="theme-actions mt-2">
                                 <button type="submit" class="btn">${isNew ? 'Create Record' : 'Save Changes'}</button>
@@ -122,7 +128,7 @@ export default class RecordEditorController extends BasePageController {
                         </div>
                     </div>
                     
-                    <div class="card">
+                    <div class="card-full-height mb-2">
                         <div class="card-body">
                             <h3 class="card-title">Content</h3>
                             <div class="markdown-editor">
@@ -146,7 +152,7 @@ export default class RecordEditorController extends BasePageController {
                     </div>
                 </div>
                 
-                <div class="card mt-2">
+                <div class="card-full-height mt-2">
                     <div class="card-body">
                         <h3 class="card-title">Content Preview</h3>
                         <div class="markdown-preview" id="markdownPreview">
@@ -162,7 +168,7 @@ export default class RecordEditorController extends BasePageController {
         document.getElementById('recordForm').addEventListener('submit', (e) => this.handleSubmit(e));
 
         // Set up image preview
-        this.imagePreview = new ImagePreview('recordImagePreview', { className: 'record-image-preview' });
+        this.imagePreview = new ImagePreview('recordImagePreview', { className: 'record-image' });
         if (this.record.image_url) {
             this.imagePreview.update(this.record.image_url);
         }

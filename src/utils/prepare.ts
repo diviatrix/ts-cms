@@ -25,7 +25,13 @@ export default class prep {
 
     // Only log errors and important operations, not routine SQL success
     if (!result.success || (message && !message.includes('SQL query executed successfully'))) {
-      console.log(`${message || 'Operation'}${callerInfo ? ` <${callerInfo}>` : ''}:`, result);
+      if (!result.success) {
+        // For failed operations, use beautified JSON
+        console.log(`${message || 'Operation'}${callerInfo ? ` <${callerInfo}>` : ''}:`, result);
+      } else {
+        // For successful operations, use one-line JSON
+        console.log(`${message || 'Operation'}${callerInfo ? ` <${callerInfo}>` : ''}: ${JSON.stringify(result)}`);
+      }
     }
 
     return result;

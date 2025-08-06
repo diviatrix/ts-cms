@@ -29,36 +29,13 @@ export default class SQLiteAdapter {
         this.db = new sqlite3.Database(config.db_path, (err) => {
             if (err) {
                 console.error(messages.sql_connect_error, err);
-            } else {
-                console.log(messages.sql_connect_success + ': ' + config.db_path);
             }
+            // Removed console.log for cleaner startup - DatabaseChecker handles notifications
         });
     }
 
-    public async checkTables(): Promise<IResolve<string[]>> {
-        if (!this.db) {
-            console.error(messages.sql_connect_error);
-            return prep.response(false, messages.sql_connect_error);
-        }
-
-        const tablesResult = await this.getTables();
-        
-        if (!tablesResult.success || !Array.isArray(tablesResult.data)) {
-            console.error("Failed to get table list from database:", tablesResult.message);
-            return prep.response(false, "Failed to check tables due to a database error.");
-        }
-
-        const existingTables = tablesResult.data as string[]; // Cast the data to string[]
-        const missingTables = Object.keys(schemas).filter((table) => !existingTables.includes(table));
-
-        if (missingTables.length > 0) {
-            console.log(messages.sql_missing_tables, missingTables);
-            await this.createTables(missingTables);
-            return prep.response(true, `Tables created: ${missingTables.join(', ')}`);
-        } else {
-            return prep.response(true, messages.sql_all_tables_exist);
-        }
-    }
+    // Legacy checkTables method removed - now using DatabaseChecker in db.ts
+    // The DatabaseChecker class provides more comprehensive validation and auto-fix capabilities
 
     public async getTables(): Promise<IResolve<string[]>> {
         const query = "SELECT name FROM sqlite_master WHERE type='table'";
@@ -78,9 +55,7 @@ export default class SQLiteAdapter {
             const schema = schemas[table as keyof typeof schemas];
             if (schema) {
                 const response = await this.executeQuery(schema);
-                if (response.success) {
-                    console.log(messages.sql_create_table_success, table);
-                } else {
+                if (!response.success) {
                     console.error(messages.sql_create_table_error, table, response.message);
                 }                
             } else {

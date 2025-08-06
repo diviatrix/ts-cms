@@ -42,7 +42,6 @@
       📄 app.js
       📄 router.js
       📄 api-client.js
-      📄 api-core.js
     📁 utils/
       📄 admin-utils.js
       📄 dialogs.js
@@ -51,11 +50,16 @@
       📄 image-preview.js
       📄 jwt-decode.js
       📄 ui-snippets.js
+      📄 validation.js
+      📄 cache-manager.js
+      📄 lazy-loader.js
+      📄 request-batcher.js
     📁 modules/
       📄 cms-integration.js
       📄 theme-system.js
     📁 components/
       📄 tab-manager.js
+      📄 loading-state.js
     📁 controllers/
       📁 components/
         📄 auth-controller.js

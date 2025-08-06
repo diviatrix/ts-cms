@@ -1,7 +1,10 @@
+import { LoadingState } from './loading-state.js';
+
 export class Layout {
     constructor() {
         this.mainContainer = null;
         this.currentController = null;
+        this.isLoading = false;
     }
 
     init() {
@@ -48,11 +51,15 @@ export class Layout {
     }
 
     async loadRoute(path) {
+        // Show loading state immediately
+        if (this.mainContainer) {
+            LoadingState.show(this.mainContainer, 'Loading page...');
+        }
+        
+        // Clean up previous controller
         if (this.currentController && typeof this.currentController.destroy === 'function') {
             this.currentController.destroy();
         }
-
-        this.mainContainer.innerHTML = '<div class="loading-spinner">Loading page...</div>';
 
         try {
             const routeInfo = this.getRouteInfo(path);
@@ -64,6 +71,13 @@ export class Layout {
             // Update page title
             document.title = routeInfo.title;
             
+            // Show skeleton loading for better perceived performance
+            if (this.mainContainer) {
+                LoadingState.showSkeleton(this.mainContainer, 'card');
+            }
+            
+            // Load template immediately
+            
             this.mainContainer.innerHTML = routeInfo.template;
             
             const controllerModule = await routeInfo.controllerLoader();
@@ -72,6 +86,11 @@ export class Layout {
         } catch (error) {
             console.error('Failed to load route:', error);
             this.showError('Failed to load page. Please try again.');
+        } finally {
+            // Hide loading state
+            if (this.mainContainer) {
+                LoadingState.hide(this.mainContainer);
+            }
         }
     }
 
@@ -134,6 +153,11 @@ export class Layout {
                 title: 'User Editor',
                 template: '<div id="user-editor-container"></div>',
                 controllerLoader: () => import('../controllers/pages/user-editor-controller.js')
+            },
+            '/invites-manage': {
+                title: 'Manage Invites',
+                template: '<div id="invites-manage-container"></div>',
+                controllerLoader: () => import('../controllers/pages/invites-manage-controller.js')
             }
         };
 
@@ -163,6 +187,13 @@ export class Layout {
     setContent(html) {
         if (this.mainContainer) {
             this.mainContainer.innerHTML = html;
+        }
+    }
+    
+    // Show progress indicator
+    showProgress(progress, text = 'Loading...') {
+        if (this.mainContainer) {
+            LoadingState.showProgress(this.mainContainer, progress, text);
         }
     }
 }

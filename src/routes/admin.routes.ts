@@ -8,6 +8,7 @@ import { asyncHandler, Errors } from '../middleware/error.middleware';
 import logger from '../utils/logger';
 import { getActiveTheme, getThemeSettings } from '../functions/themes';
 import { getActiveWebsiteTheme } from '../functions/cms-settings';
+import { createInvite, getAllInvitesWithInfo, deleteInvite } from '../functions/invites';
 import database from '../db';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -115,6 +116,50 @@ router.put('/admin/theme/write-config', requireAuthAndAdmin, asyncHandler(async 
     });
     
     ResponseUtils.success(res, configObject, `Theme "${themeName}" config written successfully`);
+}));
+
+// Invite management endpoints
+router.post('/admin/invites', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
+    logger.apiRequest('POST', '/api/admin/invites', req.user?.id);
+    
+    const result = await createInvite(req.user!.id);
+    if (result.success && result.data) {
+        logger.info('Invite created successfully', { inviteId: result.data.id, adminId: req.user?.id });
+        ResponseUtils.created(res, result.data, 'Invite created successfully');
+    } else {
+        throw Errors.database(result.message || 'Failed to create invite');
+    }
+}));
+
+router.get('/admin/invites', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
+    logger.apiRequest('GET', '/api/admin/invites', req.user?.id);
+    
+    const result = await getAllInvitesWithInfo();
+    if (result.success) {
+        logger.info('Invites retrieved successfully', { count: result.data?.length, adminId: req.user?.id });
+        ResponseUtils.success(res, result.data, 'Invites retrieved successfully');
+    } else {
+        throw Errors.database(result.message || 'Failed to retrieve invites');
+    }
+}));
+
+router.delete('/admin/invites/:id', requireAuthAndAdmin, validateParams(ParameterSchemas.uuid), asyncHandler(async (req: Request, res: Response) => {
+    const inviteId = req.params.id;
+    logger.apiRequest('DELETE', `/api/admin/invites/${inviteId}`, req.user?.id);
+    
+    const result = await deleteInvite(inviteId);
+    if (result.success) {
+        logger.info('Invite deleted successfully', { inviteId, adminId: req.user?.id });
+        ResponseUtils.success(res, { deleted: true }, 'Invite deleted successfully');
+    } else {
+        if (result.message?.includes('not found')) {
+            throw Errors.notFound('Invite not found');
+        } else if (result.message?.includes('Cannot delete used invite')) {
+            throw Errors.validation('Cannot delete used invite');
+        } else {
+            throw Errors.database(result.message || 'Failed to delete invite');
+        }
+    }
 }));
 
 export default router;

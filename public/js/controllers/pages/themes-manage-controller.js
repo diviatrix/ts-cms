@@ -74,7 +74,7 @@ export default class ThemesManageController extends BasePageController {
                     <span class="ml-2" id="preview-timer"></span>
                 </div>
                 
-                <div class="card mb-2">
+                <div class="card card-full-height mb-2">
                     <div class="card-body">
                         <h3 class="card-title">Available Themes</h3>
                         <p class="text-muted">Themes that can be written to the frontend configuration.</p>
@@ -87,7 +87,7 @@ export default class ThemesManageController extends BasePageController {
                     </div>
                 </div>
                 
-                <div class="card">
+                <div class="card card-full-height">
                     <div class="card-body">
                         <h3 class="card-title">Inactive Themes</h3>
                         <p class="text-muted">Themes that are not available for selection.</p>

@@ -1,5 +1,5 @@
 import { jwtDecode } from '../utils/jwt-decode.js';
-
+import { requestBatcher } from '../utils/request-batcher.js';
 
 export function getAuthToken() {
     return localStorage.getItem('token');
@@ -16,8 +16,13 @@ export function setAuthToken(token) {
     document.dispatchEvent(new CustomEvent('authChange'));
 }
 
+export async function apiFetch(url, { method = 'GET', data, auth = true, batch = false } = {}) {
+    // If batching is enabled, use the request batcher
+    if (batch) {
+        const batchKey = `${method}:${url}:${JSON.stringify(data)}`;
+        return requestBatcher.add(batchKey, () => apiFetch(url, { method, data, auth, batch: false }));
+    }
 
-export async function apiFetch(url, { method = 'GET', data, auth = true } = {}) {
     const headers = { 'Content-Type': 'application/json' };
     if (auth) {
         const token = getAuthToken();
@@ -37,26 +42,58 @@ export async function apiFetch(url, { method = 'GET', data, auth = true } = {}) 
         console.error('Network Error:', error);
         return {
             success: false,
-            message: error.message || 'A network error occurred.',
-            errors: [error.message || 'Network error']
+            message: error.message || 'A network error occurred. Please check your connection and try again.',
+            errors: [error.message || 'Network error'],
+            status: 'network_error'
         };
     }
 
     if (res.status === 401) {
         setAuthToken(null);
-        return { success: false, message: 'Session expired or invalid. Please log in again.', errors: ['401'] };
+        return { 
+            success: false, 
+            message: 'Your session has expired. Please log in again.', 
+            errors: ['401'],
+            status: 401 
+        };
     }
 
     let json;
     try {
         json = await res.json();
     } catch {
-        json = { success: res.ok, data: null, message: res.statusText };
+        json = { 
+            success: res.ok, 
+            data: null, 
+            message: res.statusText || `Server returned status ${res.status}`
+        };
     }
 
-    return { ...json, success: res.ok };
-}
+    // Enhance error messages with more descriptive information
+    if (!res.ok) {
+        const errorMessages = {
+            400: 'Invalid request data. Please check your input and try again.',
+            403: 'You do not have permission to perform this action.',
+            404: 'The requested resource was not found.',
+            500: 'An internal server error occurred. Please try again later.',
+            502: 'Bad gateway. The server received an invalid response.',
+            503: 'Service unavailable. Please try again later.'
+        };
+        
+        const defaultMessage = json.message || `Server returned status ${res.status}`;
+        const message = errorMessages[res.status] || defaultMessage;
+        
+        return {
+            success: false,
+            message,
+            errors: json.errors || [message],
+            status: res.status,
+            data: json.data
+        };
+    }
 
+    return { ...json, success: res.ok, status: res.status };
+}
 
 export function isAuthenticated() {
     console.log('isAuthenticated() called');
@@ -104,52 +141,56 @@ export function logout() {
     window.location.href = '/';
 }
 
-
-
 export const AuthAPI = {
     login: (login, password) => apiFetch('/api/login', { method: 'POST', data: { login, password }, auth: false }),
-    register: (login, email, password) => apiFetch('/api/register', { method: 'POST', data: { login, email, password }, auth: false }),
+    register: (login, email, password, inviteCode) => apiFetch('/api/register', { method: 'POST', data: { login, email, password, inviteCode }, auth: false }),
+    getRegistrationMode: () => apiFetch('/api/cms/registration-mode', { auth: false }),
     logout,
     isAuthenticated,
     getUserRoles
 };
 
 export const RecordsAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiFetch('/api/records' + (Object.keys(params).length ? `?${new URLSearchParams(params)}` : ''), { auth: false });
+    getAll: async (params = {}, batch = false) => {
+        const response = await apiFetch('/api/records' + (Object.keys(params).length ? `?${new URLSearchParams(params)}` : ''), { auth: false, batch });
         // Reverse the order to show newest first
         if (response.success && Array.isArray(response.data)) {
             response.data.reverse();
         }
         return response;
     },
-    getById: (id) => apiFetch(`/api/records/${id}`, { auth: false }),
+    getById: (id, batch = false) => apiFetch(`/api/records/${id}`, { auth: false, batch }),
     create: (data) => apiFetch('/api/records', { method: 'POST', data }),
     update: (id, data) => apiFetch(`/api/records/${id}`, { method: 'PUT', data }),
     delete: (id) => apiFetch(`/api/records/${id}`, { method: 'DELETE' })
 };
 
 export const ProfileAPI = {
-    get: () => apiFetch('/api/profile'),
+    get: (batch = false) => apiFetch('/api/profile', { batch }),
     update: (profileData) => apiFetch('/api/profile', { method: 'PUT', data: profileData }),
     adminUpdate: (userId, data) => apiFetch('/api/profile', { method: 'POST', data: { user_id: userId, ...data } }),
     changePassword: (newPassword) => apiFetch('/api/profile/password/set', { method: 'POST', data: { newPassword } })
 };
 
 export const AdminAPI = {
-    getUsers: () => apiFetch('/api/admin/users'),
-    getUserProfile: (userId) => apiFetch(`/api/profile/${userId}`),
+    getUsers: (batch = false) => apiFetch('/api/admin/users', { batch }),
+    getUserProfile: (userId, batch = false) => apiFetch(`/api/profile/${userId}`, { batch }),
     updateUserStatus: (userId, isActive) => apiFetch(`/api/admin/users/${userId}/status`, { 
         method: 'PUT', 
         data: { is_active: isActive } 
-    })
+    }),
+    
+    // Invite management
+    createInvite: () => apiFetch('/api/admin/invites', { method: 'POST' }),
+    getInvites: (batch = false) => apiFetch('/api/admin/invites', { batch }),
+    deleteInvite: (inviteId) => apiFetch(`/api/admin/invites/${inviteId}`, { method: 'DELETE' })
 };
 
 export const ThemesAPI = {
-    getAll: () => apiFetch('/api/themes', { auth: false }),
-    getById: (id) => apiFetch(`/api/themes/${id}`, { auth: false }),
-    getActive: () => apiFetch('/api/themes/active', { auth: false }),
-    getSettings: (id) => apiFetch(`/api/themes/${id}/settings`, { auth: false }),
+    getAll: (batch = false) => apiFetch('/api/themes', { auth: false, batch }),
+    getById: (id, batch = false) => apiFetch(`/api/themes/${id}`, { auth: false, batch }),
+    getActive: (batch = false) => apiFetch('/api/themes/active', { auth: false, batch }),
+    getSettings: (id, batch = false) => apiFetch(`/api/themes/${id}/settings`, { auth: false, batch }),
     create: (data) => apiFetch('/api/themes', { method: 'POST', data }),
     update: (id, data) => apiFetch(`/api/themes/${id}`, { method: 'PUT', data }),
     delete: (id) => apiFetch(`/api/themes/${id}`, { method: 'DELETE' }),
@@ -157,7 +198,7 @@ export const ThemesAPI = {
 };
 
 export const CmsSettingsAPI = {
-    getAll: () => apiFetch('/api/cms/settings'),
-    getByKey: (key) => apiFetch(`/api/cms/settings/${key}`),
+    getAll: (batch = false) => apiFetch('/api/cms/settings', { batch }),
+    getByKey: (key, batch = false) => apiFetch(`/api/cms/settings/${key}`, { batch }),
     update: (key, value, type) => apiFetch(`/api/cms/settings/${key}`, { method: 'PUT', data: { value, type } })
 };

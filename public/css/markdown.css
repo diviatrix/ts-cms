@@ -1,0 +1,339 @@
+/* Markdown Content Styles */
+
+.card-content-preview {
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* Headings */
+.card-content-preview h1,
+.card-content-preview h2,
+.card-content-preview h3,
+.card-content-preview h4,
+.card-content-preview h5,
+.card-content-preview h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: var(--font-bold);
+  line-height: 1.3;
+}
+
+.card-content-preview h1 {
+  font-size: 2em;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0.3em;
+}
+
+.card-content-preview h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3em;
+}
+
+.card-content-preview h3 {
+  font-size: 1.25em;
+}
+
+.card-content-preview h4 {
+  font-size: 1em;
+}
+
+.card-content-preview h5 {
+  font-size: 0.875em;
+}
+
+.card-content-preview h6 {
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+/* Paragraphs */
+.card-content-preview p {
+  margin-bottom: 1em;
+}
+
+/* Links */
+.card-content-preview a {
+  color: var(--primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.card-content-preview a:hover {
+  border-bottom-color: var(--primary);
+}
+
+/* Lists */
+.card-content-preview ul,
+.card-content-preview ol {
+  margin-bottom: 1em;
+  padding-left: 2em;
+}
+
+.card-content-preview li {
+  margin-bottom: 0.25em;
+}
+
+.card-content-preview ul ul,
+.card-content-preview ol ol,
+.card-content-preview ul ol,
+.card-content-preview ol ul {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+/* Task Lists */
+.card-content-preview ul.task-list {
+  list-style: none;
+  padding-left: 1.5em;
+}
+
+.card-content-preview .task-list-item {
+  position: relative;
+}
+
+.card-content-preview .task-list-item input[type="checkbox"] {
+  position: absolute;
+  left: -1.5em;
+  top: 0.3em;
+}
+
+/* Blockquotes */
+.card-content-preview blockquote {
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid var(--primary);
+  background: rgba(255, 255, 255, 0.03);
+  font-style: italic;
+}
+
+.card-content-preview blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Code */
+.card-content-preview code {
+  background: var(--background);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+  color: var(--primary);
+}
+
+.card-content-preview pre {
+  background: var(--background);
+  border: 1px solid var(--border);
+  padding: 1em;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.card-content-preview pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: 0.875em;
+  line-height: 1.5;
+}
+
+/* Tables */
+.card-content-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  overflow: auto;
+}
+
+.card-content-preview table th,
+.card-content-preview table td {
+  padding: 0.5em 1em;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.card-content-preview table th {
+  background: var(--surface);
+  font-weight: var(--font-bold);
+}
+
+.card-content-preview table tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Images */
+.card-content-preview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  margin: 1em 0;
+  display: block;
+}
+
+/* Horizontal Rules */
+.card-content-preview hr {
+  border: none;
+  border-top: 2px solid var(--border);
+  margin: 2em 0;
+}
+
+/* Definition Lists */
+.card-content-preview dl {
+  margin: 1em 0;
+}
+
+.card-content-preview dt {
+  font-weight: var(--font-bold);
+  margin-top: 1em;
+}
+
+.card-content-preview dd {
+  margin-left: 2em;
+  margin-bottom: 0.5em;
+}
+
+/* Keyboard */
+.card-content-preview kbd {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.1em 0.4em;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+/* Mark/Highlight */
+.card-content-preview mark {
+  background: rgba(255, 235, 59, 0.3);
+  color: inherit;
+  padding: 0.2em;
+}
+
+/* Strikethrough */
+.card-content-preview del {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+/* Subscript/Superscript */
+.card-content-preview sub,
+.card-content-preview sup {
+  font-size: 0.75em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.card-content-preview sup {
+  top: -0.5em;
+}
+
+.card-content-preview sub {
+  bottom: -0.25em;
+}
+
+/* Footnotes */
+.card-content-preview .footnotes {
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 2px solid var(--border);
+  font-size: 0.9em;
+}
+
+.card-content-preview .footnotes ol {
+  padding-left: 1.5em;
+}
+
+/* Syntax Highlighting Overrides for Dark Theme */
+.card-content-preview .hljs {
+  background: var(--background);
+  color: var(--text);
+}
+
+/* GitHub Alerts/Admonitions */
+.card-content-preview .alert,
+.card-content-preview .warning,
+.card-content-preview .note,
+.card-content-preview .tip {
+  padding: 1em;
+  margin: 1em 0;
+  border-radius: var(--radius);
+  border-left: 4px solid;
+}
+
+.card-content-preview .note {
+  background: rgba(59, 130, 246, 0.1);
+  border-left-color: #3b82f6;
+}
+
+.card-content-preview .tip {
+  background: rgba(34, 197, 94, 0.1);
+  border-left-color: #22c55e;
+}
+
+.card-content-preview .warning {
+  background: rgba(251, 146, 60, 0.1);
+  border-left-color: #fb923c;
+}
+
+.card-content-preview .alert {
+  background: rgba(239, 68, 68, 0.1);
+  border-left-color: #ef4444;
+}
+
+/* Details/Summary */
+.card-content-preview details {
+  margin: 1em 0;
+  padding: 1em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.card-content-preview summary {
+  cursor: pointer;
+  font-weight: var(--font-bold);
+  user-select: none;
+}
+
+.card-content-preview details[open] summary {
+  margin-bottom: 0.5em;
+}
+
+/* Video embeds */
+.card-content-preview video {
+  max-width: 100%;
+  height: auto;
+  margin: 1em 0;
+  border-radius: var(--radius);
+}
+
+/* Emoji support */
+.card-content-preview .emoji {
+  font-family: apple color emoji, segoe ui emoji, noto color emoji, android emoji, emojisymbols, emojione mozilla, twemoji mozilla, segoe ui symbol;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .card-content-preview {
+    font-size: 0.95em;
+  }
+  
+  .card-content-preview h1 {
+    font-size: 1.75em;
+  }
+  
+  .card-content-preview h2 {
+    font-size: 1.35em;
+  }
+  
+  .card-content-preview pre {
+    padding: 0.75em;
+    font-size: 0.85em;
+  }
+  
+  .card-content-preview table {
+    font-size: 0.9em;
+  }
+}

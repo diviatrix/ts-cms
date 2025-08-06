@@ -9,7 +9,169 @@ import { asyncHandler, Errors } from '../middleware/error.middleware';
 
 const router = express.Router();
 
-// Record API Endpoints
+/**
+ * @swagger
+ * tags:
+ *   name: Records
+ *   description: Content management endpoints
+ */
+
+/**
+ * @swagger
+ * /api/records:
+ *   post:
+ *     summary: Create a new record
+ *     tags: [Records]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - content
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *                 description: Markdown content
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               categories:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               is_published:
+ *                 type: boolean
+ *     responses:
+ *       201:
+ *         description: Record created successfully
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin access required
+ */
+
+/**
+ * @swagger
+ * /api/records:
+ *   get:
+ *     summary: Get all records
+ *     tags: [Records]
+ *     description: Returns published records for non-admin users, all records for admins
+ *     security:
+ *       - bearerAuth: []
+ *       - {}
+ *     responses:
+ *       200:
+ *         description: Records retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Record'
+ */
+
+/**
+ * @swagger
+ * /api/records/{id}:
+ *   get:
+ *     summary: Get a specific record by ID
+ *     tags: [Records]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Record retrieved successfully
+ *       404:
+ *         description: Record not found
+ */
+
+/**
+ * @swagger
+ * /api/records/{id}:
+ *   put:
+ *     summary: Update an existing record
+ *     tags: [Records]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               categories:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               is_published:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Record updated successfully
+ *       404:
+ *         description: Record not found
+ */
+
+/**
+ * @swagger
+ * /api/records/{id}:
+ *   delete:
+ *     summary: Delete a record
+ *     tags: [Records]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       204:
+ *         description: Record deleted successfully
+ *       404:
+ *         description: Record not found
+ */
 router.post('/records', requireAuthAndAdmin, validateBody(ValidationSchemas.record), asyncHandler(async (req: Request, res: Response) => {
     const newRecord = await createRecord(req.body, req.user!.id);
     ResponseUtils.created(res, newRecord, 'Record created successfully');

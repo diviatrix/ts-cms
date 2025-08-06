@@ -2,6 +2,7 @@ import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
 import { RecordsAPI, AuthAPI } from '../../core/api-client.js';
 import { DownloadUtils } from '../../utils/download-utils.js';
 import { BasePageController } from './base-page-controller.js';
+import { highlightWrapper } from '../../utils/highlight-wrapper.js';
 
 export default class RecordDisplayController extends BasePageController {
   constructor(app) {
@@ -12,7 +13,23 @@ export default class RecordDisplayController extends BasePageController {
     this.authAPI = AuthAPI;
     this.recordId = this.getRecordIdFromUrl();
     
+    // Initialize markdown with highlight.js
+    this.initializeMarkdown();
+    
     this.init();
+  }
+
+  async initializeMarkdown() {
+    // Load highlight.js locally
+    await highlightWrapper.load();
+    
+    // Configure marked with highlight.js support
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+      headerIds: true,
+      highlight: (code, lang) => highlightWrapper.highlight(code, lang)
+    });
   }
 
   getRecordElements() {
@@ -67,16 +84,16 @@ export default class RecordDisplayController extends BasePageController {
         <a id="editRecordButton" class="btn hidden" href="#">Edit</a>
         <a id="downloadRecordButton" class="btn hidden" href="#">Download</a>
       </div>
-      <div class="card">
+      <div class="card-full-height">
         <div class="card-body">
           <h1 class="card-title">${record.title}</h1>
           <div class="meta-row">
             <span>${record.created_at ? new Date(record.created_at).toLocaleDateString() : ''}</span>
             ${record.public_name ? `<span>By ${record.public_name}</span>` : ''}
           </div>
-          ${record.image_url ? `<img class="record-image" src="${record.image_url}" alt="${record.title}" />` : ''}
+          ${record.image_url ? `<img class="record-image-full-height" src="${record.image_url}" alt="${record.title}" />` : ''}
           ${record.description ? `<div class="card-subtitle">${record.description}</div>` : ''}
-          <div class="card-text">${marked.parse(record.content || '')}</div>
+          <div class="card-text card-content-preview">${marked.parse(record.content || '')}</div>
         </div>
       </div>
     `;
@@ -85,6 +102,9 @@ export default class RecordDisplayController extends BasePageController {
     setTimeout(() => {
       this.setupDownloadFeature(record);
       this.setupAdminFeatures(record);
+      
+      // Apply syntax highlighting to rendered content
+      highlightWrapper.highlightAll(document.querySelector('.card-content-preview'));
     }, 0);
   }
 

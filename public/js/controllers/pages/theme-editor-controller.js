@@ -125,7 +125,7 @@ export default class ThemeEditorController extends BasePageController {
         this.container.innerHTML = `
             <form id="themeForm">
                 <div class="card-grid">
-                    <div class="card">
+                    <div class="card-full-height">
                         <div class="card-body">
                             <h3 class="card-title">Theme Information</h3>
                             
@@ -143,7 +143,7 @@ export default class ThemeEditorController extends BasePageController {
                         </div>
                     </div>
                     
-                    <div class="card">
+                    <div class="card-full-height">
                         <div class="card-body">
                             <h3 class="card-title">Core Colors</h3>
                             
@@ -158,7 +158,7 @@ export default class ThemeEditorController extends BasePageController {
                         </div>
                     </div>
                     
-                    <div class="card">
+                    <div class="card-full-height">
                         <div class="card-body">
                             <h3 class="card-title">Additional Colors</h3>
                             
@@ -169,58 +169,58 @@ export default class ThemeEditorController extends BasePageController {
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="card mt-2">
-                    <div class="card-body">
-                        <h3 class="card-title">Typography</h3>
-                        
-                        <label for="fontFamily">Font Family</label>
-                        <input type="text" id="fontFamily" value="${this.settings.font_family || ''}" 
-                               placeholder="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
-                        <small class="form-hint">Enter a CSS font-family value</small>
-                        
-                        <label for="fontSize">Base Font Size</label>
-                        <input type="text" id="fontSize" value="${this.settings.font_size || ''}" 
-                               placeholder="1rem">
-                        <small class="form-hint">Base font size (e.g., 16px, 1rem)</small>
+                    
+                    <div class="card-full-height">
+                        <div class="card-body">
+                            <h3 class="card-title">Typography</h3>
+                            
+                            <label for="fontFamily">Font Family</label>
+                            <input type="text" id="fontFamily" value="${this.settings.font_family || ''}" 
+                                   placeholder="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+                            <small class="form-hint">Enter a CSS font-family value</small>
+                            
+                            <label for="fontSize">Base Font Size</label>
+                            <input type="text" id="fontSize" value="${this.settings.font_size || ''}" 
+                                   placeholder="1rem">
+                            <small class="form-hint">Base font size (e.g., 16px, 1rem)</small>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="card mt-2">
-                    <div class="card-body">
-                        <h3 class="card-title">Layout</h3>
-                        
-                        <div class="form-row">
-                            <div>
-                                <label for="radius">Border Radius</label>
-                                <input type="text" id="radius" value="${this.settings.radius || ''}" 
-                                       placeholder="1rem">
-                                <small class="form-hint">Corner rounding (e.g., 0.5rem, 8px)</small>
+                    
+                    <div class="card-full-height">
+                        <div class="card-body">
+                            <h3 class="card-title">Layout</h3>
+                            
+                            <div class="form-row">
+                                <div>
+                                    <label for="radius">Border Radius</label>
+                                    <input type="text" id="radius" value="${this.settings.radius || ''}" 
+                                           placeholder="1rem">
+                                    <small class="form-hint">Corner rounding (e.g., 0.5rem, 8px)</small>
+                                </div>
+                                
+                                <div>
+                                    <label for="spacing">Base Spacing</label>
+                                    <input type="text" id="spacing" value="${this.settings.spacing || ''}" 
+                                           placeholder="0.5rem">
+                                    <small class="form-hint">Base spacing unit (e.g., 0.5rem, 8px)</small>
+                                </div>
                             </div>
                             
-                            <div>
-                                <label for="spacing">Base Spacing</label>
-                                <input type="text" id="spacing" value="${this.settings.spacing || ''}" 
-                                       placeholder="0.5rem">
-                                <small class="form-hint">Base spacing unit (e.g., 0.5rem, 8px)</small>
-                            </div>
+                            <label for="shadow">Box Shadow</label>
+                            <input type="text" id="shadow" value="${this.settings.shadow || ''}" 
+                                   placeholder="0 4px 24px rgba(0,0,0,0.10)">
+                            <small class="form-hint">CSS box-shadow value</small>
                         </div>
-                        
-                        <label for="shadow">Box Shadow</label>
-                        <input type="text" id="shadow" value="${this.settings.shadow || ''}" 
-                               placeholder="0 4px 24px rgba(0,0,0,0.10)">
-                        <small class="form-hint">CSS box-shadow value</small>
                     </div>
-                </div>
-                
-                <div class="card mt-2">
-                    <div class="card-body">
-                        <h3 class="card-title">Custom CSS</h3>
-                        
-                        <label for="customCSS">Additional CSS</label>
-                        <textarea id="customCSS" rows="10" placeholder="/* Add custom CSS here */">${this.settings.custom_css || ''}</textarea>
-                        <small class="form-hint">Add any additional CSS rules to customize the theme further</small>
+                    
+                    <div class="card-full-height">
+                        <div class="card-body">
+                            <h3 class="card-title">Custom CSS</h3>
+                            
+                            <label for="customCSS">Additional CSS</label>
+                            <textarea id="customCSS" rows="10" placeholder="/* Add custom CSS here */">${this.settings.custom_css || ''}</textarea>
+                            <small class="form-hint">Add any additional CSS rules to customize the theme further</small>
+                        </div>
                     </div>
                 </div>
                 

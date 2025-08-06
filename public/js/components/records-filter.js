@@ -5,6 +5,7 @@ export class RecordsFilter {
     this.activeTags = new Set();
     this.allRecords = [];
     this.categoryColors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#a29bfe'];
+    this.eventListeners = [];
   }
 
   init(records) {
@@ -96,37 +97,47 @@ export class RecordsFilter {
   setupEventListeners() {
     // Category filters
     document.querySelectorAll('.filter-category').forEach(el => {
-      el.addEventListener('click', () => this.toggleCategory(el.dataset.category));
+      const handler = () => this.toggleCategory(el.dataset.category);
+      el.addEventListener('click', handler);
+      this.eventListeners.push({ element: el, event: 'click', handler });
     });
 
     // Tag filters
     document.querySelectorAll('.filter-tag').forEach(el => {
-      el.addEventListener('click', () => this.toggleTag(el.dataset.tag));
+      const handler = () => this.toggleTag(el.dataset.tag);
+      el.addEventListener('click', handler);
+      this.eventListeners.push({ element: el, event: 'click', handler });
     });
 
     // Clear filters button
     const clearBtn = document.getElementById('clearFilters');
     if (clearBtn) {
-      clearBtn.addEventListener('click', () => this.clearAllFilters());
+      const handler = () => this.clearAllFilters();
+      clearBtn.addEventListener('click', handler);
+      this.eventListeners.push({ element: clearBtn, event: 'click', handler });
     }
 
     // Mobile toggle
     const toggleBtn = document.getElementById('filtersToggle');
     const panel = document.getElementById('filtersPanel');
     if (toggleBtn && panel) {
-      toggleBtn.addEventListener('click', () => {
+      const handler = () => {
         panel.classList.toggle('active');
-      });
+      };
+      toggleBtn.addEventListener('click', handler);
+      this.eventListeners.push({ element: toggleBtn, event: 'click', handler });
     }
 
     // Click on card categories/tags
-    document.addEventListener('click', (e) => {
+    const cardClickHandler = (e) => {
       if (e.target.matches('.category-badge')) {
         this.toggleCategory(e.target.dataset.category);
       } else if (e.target.matches('.tag-chip')) {
         this.toggleTag(e.target.dataset.tag);
       }
-    });
+    };
+    document.addEventListener('click', cardClickHandler);
+    this.eventListeners.push({ element: document, event: 'click', handler: cardClickHandler });
   }
 
   toggleCategory(category) {
@@ -203,5 +214,23 @@ export class RecordsFilter {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+  
+  // Component lifecycle management
+  destroy() {
+    // Remove all event listeners
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event, handler);
+    });
+    this.eventListeners = [];
+    
+    // Clear active filters
+    this.activeCategories.clear();
+    this.activeTags.clear();
+    
+    // Clear all records
+    this.allRecords = [];
+    this.categories = [];
+    this.tags = [];
   }
 }

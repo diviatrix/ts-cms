@@ -42,9 +42,15 @@ Register a new user account.
 {
   "login": "username",
   "email": "user@example.com",
-  "password": "password123"
+  "password": "password123",
+  "inviteCode": "ABC123XYZ" // Optional: Required when registration_mode is "INVITE_ONLY"
 }
 ```
+
+**Registration Modes:**
+- `OPEN`: Anyone can register without restrictions
+- `INVITE_ONLY`: Registration requires a valid invite code
+- `CLOSED`: Registration is disabled
 
 **Response (201):**
 ```json
@@ -65,6 +71,31 @@ Register a new user account.
   "success": false,
   "message": "Validation failed",
   "errors": ["Username must be at least 4 characters", "Email format is invalid"]
+}
+```
+
+**Registration Mode Errors:**
+- When registration is closed (403):
+```json
+{
+  "success": false,
+  "message": "Registration is currently closed."
+}
+```
+
+- When invite code is required but missing (422):
+```json
+{
+  "success": false,
+  "message": "An invite code is required to register."
+}
+```
+
+- When invite code is invalid (422):
+```json
+{
+  "success": false,
+  "message": "Invalid invite code"
 }
 ```
 
@@ -355,6 +386,15 @@ Get all CMS settings (requires admin role).
       "category": "general",
       "updated_at": "2024-01-01T00:00:00Z",
       "updated_by": "user_uuid"
+    },
+    {
+      "setting_key": "registration_mode",
+      "setting_value": "OPEN",
+      "setting_type": "string",
+      "description": "Registration mode: OPEN, CLOSED, or INVITE_ONLY",
+      "category": "security",
+      "updated_at": "2024-01-01T00:00:00Z",
+      "updated_by": "user_uuid"
     }
   ]
 }
@@ -401,6 +441,74 @@ Set the active website theme (requires admin role).
 ```
 
 ### Admin
+
+#### Invite Management
+
+##### POST /api/admin/invites
+Create a new invite code (requires admin role).
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "invite_uuid",
+    "code": "ABC123XYZ",
+    "created_by": "admin_uuid",
+    "created_at": "2024-01-01T00:00:00Z",
+    "used_by": null,
+    "used_at": null
+  },
+  "message": "Invite created successfully"
+}
+```
+
+##### GET /api/admin/invites
+Get all invite codes with creator and user information (requires admin role).
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "invite_uuid",
+      "code": "ABC123XYZ",
+      "created_by": "admin_uuid",
+      "created_at": "2024-01-01T00:00:00Z",
+      "used_by": "user_uuid",
+      "used_at": "2024-01-02T00:00:00Z",
+      "creator_login": "admin_user",
+      "creator_email": "admin@example.com",
+      "user_login": "new_user",
+      "user_email": "newuser@example.com"
+    }
+  ],
+  "message": "Invites retrieved successfully"
+}
+```
+
+##### DELETE /api/admin/invites/:id
+Delete an unused invite code (requires admin role).
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "deleted": true
+  },
+  "message": "Invite deleted successfully"
+}
+```
+
+**Error (422) - Cannot delete used invite:**
+```json
+{
+  "success": false,
+  "message": "Cannot delete used invite"
+}
+```
 
 #### GET /api/admin/users
 Get all users (requires admin role).
@@ -505,6 +613,14 @@ If `theme_id` is not provided, the currently active theme (from CMS settings) wi
 }
 ```
 
+### 429 Too Many Requests
+```json
+{
+  "success": false,
+  "message": "Rate limit exceeded. Try again in 30 seconds."
+}
+```
+
 ### 500 Internal Server Error
 ```json
 {
@@ -515,7 +631,49 @@ If `theme_id` is not provided, the currently active theme (from CMS settings) wi
 
 ## Rate Limiting
 
-Currently, no rate limiting is implemented. Consider implementing rate limiting for production use.
+The API implements rate limiting to protect against abuse:
+
+### Global Rate Limiting
+- **Limit**: 100 requests per minute for all `/api` endpoints
+- **Window**: 60 seconds
+- **Ban Duration**: 30 seconds when exceeded
+
+### Authentication Rate Limiting
+- **Endpoints**: `/api/register` and `/api/login`
+- **Limit**: 1 request per second
+- **Window**: 1 second
+- **Ban Duration**: Progressive (increases with repeated violations)
+  - First violation: 30 seconds
+  - Subsequent violations: Exponentially longer bans
+- **Ban Reset**: Successful authentication resets ban count
+
+### Rate Limit Headers
+All API responses include rate limit headers:
+
+```http
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1704067200
+```
+
+- `X-RateLimit-Limit`: Maximum requests allowed in window
+- `X-RateLimit-Remaining`: Requests remaining in current window
+- `X-RateLimit-Reset`: Unix timestamp when the window resets
+
+### Rate Limit Response
+When rate limit is exceeded (429):
+```json
+{
+  "success": false,
+  "message": "Rate limit exceeded. Try again in 30 seconds."
+}
+```
+
+### Notes
+- Rate limiting is disabled in development/localhost environments
+- Bans are tracked per IP address
+- Inactive entries are automatically cleaned up
+- Uses in-memory storage (consider Redis for production scaling)
 
 ## Security Notes
 
@@ -524,6 +682,89 @@ Currently, no rate limiting is implemented. Consider implementing rate limiting 
 - All user inputs are validated and sanitized
 - SQL injection is prevented through parameterized queries
 - CORS is configured to allow requests from the specified origin
+- Rate limiting protects against brute force attacks
+- Progressive ban system for authentication endpoints
+- Input sanitization middleware processes all requests
+- Security headers middleware adds protective HTTP headers
+- Invite-only registration mode for controlled access
+
+## Database Management
+
+### Database Consistency Check
+
+The CMS includes a CLI command for checking and maintaining database schema integrity:
+
+#### Check Database (Read-Only)
+```bash
+npx ts-node server.ts --checkdb
+```
+
+Performs a comprehensive check of the database schema without making any changes:
+- **Tables Check**: Verifies all required tables exist (users, records, themes, user_groups, cms_settings, invites, theme_settings)
+- **Columns Check**: Validates all required columns exist in each table
+- **Exit Codes**: 
+  - `0` - Database is consistent and complete
+  - `1` - Missing tables or columns found, or check failed
+
+**Example Output:**
+```
+Running database consistency check...
+
+==========================================
+Database Consistency Check Results:
+==========================================
+Tables OK: YES
+Columns OK: NO
+Missing Columns:
+  - users.used_invite_code
+  (Use --checkdb --fix to add missing columns automatically)
+==========================================
+```
+
+#### Auto-Fix Database Issues
+```bash
+npx ts-node server.ts --checkdb --fix
+```
+
+Automatically resolves database schema issues:
+- **Creates Missing Tables**: Automatically creates any missing tables with proper schema
+- **Adds Missing Columns**: Adds missing columns to existing tables
+- **Safe Operations**: Only adds missing components, never removes or modifies existing data
+- **Exit Codes**: 
+  - `0` - All issues resolved successfully
+  - `1` - Failed to resolve issues or check failed
+
+**Example Output:**
+```
+Running database consistency check...
+
+Creating missing tables: invites...
+Adding missing columns...
+  - Adding used_invite_code to users
+
+==========================================
+Database Consistency Check Results:
+==========================================
+Tables OK: YES
+Columns OK: YES
+Database consistency check passed - all required tables and columns exist
+==========================================
+```
+
+#### Use Cases
+- **After Updates**: Run after updating the application to ensure new schema changes are applied
+- **Development Setup**: Verify database is properly configured in development environment
+- **Troubleshooting**: Diagnose database-related issues
+- **Production Maintenance**: Validate database integrity in production (use read-only mode first)
+- **Migration Recovery**: Fix incomplete migrations or corrupted schema
+
+#### Schema Validation
+The command validates against the complete application schema defined in `src/db-adapter/sql-schemas.ts`, including:
+- User management tables (users, user_groups)
+- Content management (records)
+- Theme system (themes, theme_settings)  
+- CMS configuration (cms_settings)
+- Invitation system (invites)
 
 ## Testing
 
@@ -559,6 +800,9 @@ The following endpoints are implemented but **not currently covered by automated
 - GET /api/cms/settings/:key
 - PUT /api/cms/settings/:key
 - PUT /api/cms/active-theme
+- POST /api/admin/invites
+- GET /api/admin/invites
+- DELETE /api/admin/invites/:id
 
 ---
 
@@ -651,5 +895,22 @@ Delete a record (requires admin role).
 #### GET /api/cms/settings/:key
 #### PUT /api/cms/settings/:key
 #### PUT /api/cms/active-theme
+
+### Registration Mode Settings
+
+The `registration_mode` CMS setting controls user registration:
+
+- **OPEN**: Default mode, anyone can register
+- **INVITE_ONLY**: Registration requires valid invite codes created by admins
+- **CLOSED**: Registration is completely disabled
+
+To change the registration mode, update the `registration_mode` setting:
+
+```json
+{
+  "value": "INVITE_ONLY",
+  "type": "string"
+}
+```
 
 **Note:** These endpoints are implemented but not currently covered by automated tests. 

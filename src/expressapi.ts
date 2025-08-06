@@ -17,6 +17,9 @@ import logger from './utils/logger';
 import { ContextLogger } from './utils/context-logger';
 import { securityHeaders } from './middleware/security-headers.middleware';
 import { sanitizeInput } from './middleware/sanitization.middleware';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger.config';
+import { checkApiDocsEnabled } from './middleware/api-docs.middleware';
 
 function createExpressApp(): express.Application {
     // Create an Express application
@@ -42,6 +45,17 @@ function createExpressApp(): express.Application {
     // Apply rate limiting to API routes
     applyRateLimits(app);
 
+    // Swagger documentation - serve before other API routes
+    // Protected by middleware to check if enabled in CMS settings
+    app.use('/api-docs', 
+        checkApiDocsEnabled,
+        swaggerUi.serve, 
+        swaggerUi.setup(swaggerSpec, {
+            customCss: '.swagger-ui .topbar { display: none }',
+            customSiteTitle: 'TypeScript CMS API Docs'
+        })
+    );
+
     // Log all incoming requests to the API router
     app.use('/api', (req, res, next) => {
         const startTime = Date.now();
@@ -64,6 +78,9 @@ function createExpressApp(): express.Application {
 
     // Serve static files from the specified folder
     app.use(express.static(path.join(__dirname, '..', config.static_folder)));
+    
+    // Serve node_modules for client-side libraries (highlight.js)
+    app.use('/node_modules', express.static(path.join(__dirname, '..', 'node_modules')));
 
     // Define a simple API endpoint
     app.get('/api', (req: Request, res: Response) => {

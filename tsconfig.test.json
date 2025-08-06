@@ -8,15 +8,17 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": false
+    "allowImportingTsExtensions": false,
+    "allowJs": true,
+    "checkJs": false
   },
   "include": [
     "src/**/*",
-    "tests/**/*"
+    "tests/**/*",
+    "public/js/**/*"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "public"
+    "dist"
   ]
 }

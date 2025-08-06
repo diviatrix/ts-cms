@@ -4,8 +4,10 @@ import { hashPassword } from '../utils/password';
 import { generateGuid } from '../utils/guid';
 import { UserRoles } from '../data/groups';
 import { ContextLogger } from '../utils/context-logger';
+import { getCMSSetting } from './cms-settings';
+import { validateInviteForRegistration, useInvite } from './invites';
 
-export async function registerUser(user: IUser): Promise<{ success: boolean; message?: string; data?: IUser }> {
+export async function registerUser(user: IUser, inviteCode?: string): Promise<{ success: boolean; message?: string; data?: IUser }> {
   return new Promise(async (resolve, reject) => {
     const startTime = Date.now();
     
@@ -19,6 +21,33 @@ export async function registerUser(user: IUser): Promise<{ success: boolean; mes
       ContextLogger.operation('AUTH', 'Registration', user.login, 'ERROR', Date.now() - startTime, 'Password required');
       resolve({ success: false, message: 'Password is required.' });
       return;
+    }
+
+    // Check registration mode
+    const registrationModeSetting = await getCMSSetting('registration_mode');
+    const registrationMode = registrationModeSetting.success && registrationModeSetting.data 
+      ? registrationModeSetting.data.setting_value 
+      : 'OPEN';
+
+    if (registrationMode === 'CLOSED') {
+      ContextLogger.operation('AUTH', 'Registration', user.login, 'ERROR', Date.now() - startTime, 'Registration is closed');
+      resolve({ success: false, message: 'Registration is currently closed.' });
+      return;
+    }
+
+    if (registrationMode === 'INVITE_ONLY') {
+      if (!inviteCode) {
+        ContextLogger.operation('AUTH', 'Registration', user.login, 'ERROR', Date.now() - startTime, 'Invite code required');
+        resolve({ success: false, message: 'An invite code is required to register.' });
+        return;
+      }
+
+      const inviteValidation = await validateInviteForRegistration(inviteCode);
+      if (!inviteValidation.success) {
+        ContextLogger.operation('AUTH', 'Registration', user.login, 'ERROR', Date.now() - startTime, `Invalid invite: ${inviteValidation.message}`);
+        resolve({ success: false, message: inviteValidation.message });
+        return;
+      }
     }
 
     // Basic validation examples - add more as needed
@@ -59,6 +88,19 @@ export async function registerUser(user: IUser): Promise<{ success: boolean; mes
           console.warn('Failed to add first user to admin group:', adminResult.message);
         } else {
           ContextLogger.operation('AUTH', 'Admin assignment', user.login, 'SUCCESS', 0, 'First user granted admin role');
+        }
+      }
+
+      // If invite code was used, mark it as used and store in user record
+      if (inviteCode && registrationMode === 'INVITE_ONLY') {
+        const inviteUseResult = await useInvite(inviteCode, user.id);
+        const updateUserResult = await database.updateUserInviteCode(user.id, inviteCode);
+        
+        if (!inviteUseResult.success) {
+          console.warn('Failed to mark invite as used:', inviteUseResult.message);
+        }
+        if (!updateUserResult.success) {
+          console.warn('Failed to update user invite code:', updateUserResult.message);
         }
       }
       

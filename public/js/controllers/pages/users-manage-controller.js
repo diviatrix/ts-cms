@@ -64,7 +64,7 @@ export default class UsersManageController extends BasePageController {
 
 
         usersList.innerHTML = `
-            <div class="card">
+            <div class="card card-full-height">
                 <div class="card-body">
                     <table class="table">
                         <thead>

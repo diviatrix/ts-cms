@@ -121,6 +121,17 @@ export default {
             category TEXT NOT NULL DEFAULT 'general',
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_by TEXT NOT NULL
+        )`,
+    invites: `
+        CREATE TABLE IF NOT EXISTS invites (
+            id TEXT PRIMARY KEY NOT NULL,
+            code TEXT UNIQUE NOT NULL,
+            created_by TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            used_by TEXT,
+            used_at TEXT,
+            FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE CASCADE,
+            FOREIGN KEY (used_by) REFERENCES users (id) ON DELETE SET NULL
         )`
 };
 
@@ -162,5 +173,7 @@ export const defaultCMSSettings = [
     { key: 'active_theme_id', value: '', type: 'string', description: 'Currently active website theme', category: 'theme' },
     { key: 'maintenance_mode', value: 'false', type: 'boolean', description: 'Site maintenance mode', category: 'general' },
     { key: 'allow_registration', value: 'true', type: 'boolean', description: 'Allow new user registration', category: 'security' },
-    { key: 'default_user_role', value: 'user', type: 'string', description: 'Default role for new users', category: 'security' }
+    { key: 'registration_mode', value: 'OPEN', type: 'string', description: 'Registration mode: OPEN, CLOSED, or INVITE_ONLY', category: 'security' },
+    { key: 'default_user_role', value: 'user', type: 'string', description: 'Default role for new users', category: 'security' },
+    { key: 'api_docs_enabled', value: 'false', type: 'boolean', description: 'Enable API documentation at /api-docs', category: 'api' }
 ];

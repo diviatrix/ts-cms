@@ -29,7 +29,7 @@ export default class RecordsManageController extends BasePageController {
                 <a href="/admin" class="btn btn-secondary">Back to Admin</a>
             </div>
             
-            <div class="card">
+            <div class="card card-full-height">
                 <div class="card-body">
                     <h3 class="card-title">Records List</h3>
                     <div id="recordsList">Loading...</div>

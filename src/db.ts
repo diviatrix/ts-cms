@@ -6,6 +6,7 @@ import IUserProfile from './types/IUserProfile';
 import IResolve from './types/IResolve';
 import prep from './utils/prepare'
 import IRecord from './types/IRecord';
+import { DatabaseChecker } from './utils/database-checker';
 
 class Database {
     private static instance: Database;
@@ -24,7 +25,24 @@ class Database {
     }
 
     private async initialize() {
-        await this.db.checkTables();
+        // Use new DatabaseChecker with auto-fix enabled
+        const checker = new DatabaseChecker();
+        const result = await checker.checkDatabase(true);
+        
+        if (!result.success) {
+            console.error('❌ Database initialization failed:', result.message);
+            if (result.data) {
+                if (result.data.missingTables.length > 0) {
+                    console.error('   Missing tables:', result.data.missingTables.join(', '));
+                }
+                if (result.data.missingColumns.length > 0) {
+                    console.error('   Missing columns:', result.data.missingColumns.map(mc => `${mc.table}.${mc.column}`).join(', '));
+                }
+            }
+            process.exit(1);
+        } else {
+            console.log('✓ Database initialized');
+        }
     }
 
     public async registerUser(user: IUser): Promise<IResolve<IUser>> {
@@ -482,6 +500,64 @@ class Database {
         // The themes.is_active should be independent of website theme
         const cmsResult = await this.setCMSSetting('active_theme_id', themeId, 'string', updatedBy);
         return cmsResult;
+    }
+
+    // Invite management methods
+    public async createInvite(invite: any): Promise<IResolve<any>> {
+        const columns = Object.keys(invite).join(', ');
+        const placeholders = Object.keys(invite).map(() => '?').join(', ');
+        const values = Object.values(invite);
+        const query = `INSERT INTO invites (${columns}) VALUES (${placeholders})`;
+        const response = await this.db.executeQuery(query, values);
+        return prep.response(response.success, response.message, invite);
+    }
+
+    public async getInviteById(inviteId: string): Promise<IResolve<any>> {
+        const response = await this.db.executeQuery(`SELECT * FROM invites WHERE id = ?`, [inviteId]);
+        const data = response.data && response.data.length > 0 ? response.data[0] : undefined;
+        return prep.response(response.success, response.message, data);
+    }
+
+    public async getInviteByCode(code: string): Promise<IResolve<any>> {
+        const response = await this.db.executeQuery(`SELECT * FROM invites WHERE code = ?`, [code]);
+        const data = response.data && response.data.length > 0 ? response.data[0] : undefined;
+        return prep.response(response.success, response.message, data);
+    }
+
+    public async getAllInvitesWithInfo(): Promise<IResolve<any[]>> {
+        const query = `
+            SELECT 
+                i.*,
+                c.login as creator_login,
+                c.email as creator_email,
+                u.login as user_login,
+                u.email as user_email
+            FROM invites i
+            LEFT JOIN users c ON i.created_by = c.id
+            LEFT JOIN users u ON i.used_by = u.id
+            ORDER BY i.created_at DESC
+        `;
+        const response = await this.db.executeQuery(query, []);
+        const invites = Array.isArray(response.data) ? response.data : [];
+        return prep.response(response.success, response.message, invites);
+    }
+
+    public async markInviteAsUsed(inviteId: string, userId: string): Promise<IResolve<boolean>> {
+        const query = `UPDATE invites SET used_by = ?, used_at = CURRENT_TIMESTAMP WHERE id = ?`;
+        const response = await this.db.executeQuery(query, [userId, inviteId]);
+        return prep.response(response.success, response.message, response.success);
+    }
+
+    public async deleteInvite(inviteId: string): Promise<IResolve<boolean>> {
+        const query = `DELETE FROM invites WHERE id = ?`;
+        const response = await this.db.executeQuery(query, [inviteId]);
+        return prep.response(response.success, response.message, response.success);
+    }
+
+    public async updateUserInviteCode(userId: string, inviteCode: string): Promise<IResolve<boolean>> {
+        const query = `UPDATE users SET used_invite_code = ? WHERE id = ?`;
+        const response = await this.db.executeQuery(query, [inviteCode, userId]);
+        return prep.response(response.success, response.message, response.success);
     }
 }
 

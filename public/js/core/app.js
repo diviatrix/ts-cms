@@ -26,7 +26,8 @@ class App {
         
         const [themeResult] = await Promise.allSettled([
             applyThemeFromConfig(),
-            this.initComponents()
+            this.initComponents(),
+            this.loadCMSSettings()
         ]);
         
         this.updateAuthState();
@@ -34,6 +35,46 @@ class App {
         
         await this.router.init();
         this.router.route();
+    }
+    
+    async loadCMSSettings() {
+        try {
+            // Load both site_name and site_description in parallel from public endpoints
+            const [nameResponse, descResponse] = await Promise.all([
+                fetch('/api/cms/public/site-name'),
+                fetch('/api/cms/public/site-description')
+            ]);
+            
+            if (nameResponse.ok) {
+                const nameResult = await nameResponse.json();
+                if (nameResult.success && nameResult.data) {
+                    this.updateSiteName(nameResult.data.setting_value);
+                }
+            }
+            
+            if (descResponse.ok) {
+                const descResult = await descResponse.json();
+                if (descResult.success && descResult.data) {
+                    this.updateFooterText(descResult.data.setting_value);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load CMS settings:', error);
+        }
+    }
+    
+    updateSiteName(siteName) {
+        const navbarBrand = document.querySelector('.navbar-brand .logo');
+        if (navbarBrand && siteName) {
+            navbarBrand.textContent = siteName;
+        }
+    }
+    
+    updateFooterText(description) {
+        const footerText = document.querySelector('.footer-text');
+        if (footerText && description) {
+            footerText.textContent = description;
+        }
     }
     
     async validateTokenWithServer() {

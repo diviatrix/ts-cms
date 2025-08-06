@@ -107,4 +107,33 @@ router.put('/active-theme', requireAuth, requireAdmin, asyncHandler(async (req: 
     }
 }));
 
+// Get registration mode (public endpoint for registration form)
+router.get('/registration-mode', asyncHandler(async (req: Request, res: Response) => {
+    const result = await getCMSSetting('registration_mode');
+    const mode = result.success && result.data ? result.data.setting_value : 'OPEN';
+    
+    ResponseUtils.success(res, { registration_mode: mode }, 'Registration mode retrieved successfully');
+}));
+
+// Public endpoints for site info
+router.get('/public/site-name', asyncHandler(async (req: Request, res: Response) => {
+    const result = await getCMSSetting('site_name');
+    
+    if (result.success && result.data) {
+        ResponseUtils.success(res, result.data, 'Site name retrieved successfully');
+    } else {
+        ResponseUtils.success(res, { setting_value: 'TypeScript CMS' }, 'Using default site name');
+    }
+}));
+
+router.get('/public/site-description', asyncHandler(async (req: Request, res: Response) => {
+    const result = await getCMSSetting('site_description');
+    
+    if (result.success && result.data) {
+        ResponseUtils.success(res, result.data, 'Site description retrieved successfully');
+    } else {
+        ResponseUtils.success(res, { setting_value: '© 2025 TypeScript CMS. All rights reserved.' }, 'Using default site description');
+    }
+}));
+
 export default router;

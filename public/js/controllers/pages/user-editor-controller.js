@@ -55,7 +55,7 @@ export default class UserEditorController extends BasePageController {
             
             <form id="userForm">
                 <div class="card-grid">
-                    <div class="card">
+                    <div class="card-full-height">
                         <div class="card-body">
                             <h3 class="card-title">Base User Information</h3>
                             
@@ -76,7 +76,7 @@ export default class UserEditorController extends BasePageController {
                         </div>
                     </div>
                     
-                    <div class="card">
+                    <div class="card-full-height">
                         <div class="card-body">
                             <h3 class="card-title">Profile Information</h3>
                             
