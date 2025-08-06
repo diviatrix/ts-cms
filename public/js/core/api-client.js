@@ -49,13 +49,19 @@ export async function apiFetch(url, { method = 'GET', data, auth = true, batch =
     }
 
     if (res.status === 401) {
-        setAuthToken(null);
-        return { 
-            success: false, 
-            message: 'Your session has expired. Please log in again.', 
-            errors: ['401'],
-            status: 401 
-        };
+        // Only clear token and show session expired for authenticated requests
+        // For login/register endpoints, this is just invalid credentials
+        if (auth && !url.includes('/login') && !url.includes('/register')) {
+            setAuthToken(null);
+            return { 
+                success: false, 
+                message: 'Your session has expired. Please log in again.', 
+                errors: ['401'],
+                status: 401 
+            };
+        }
+        // For login/register, don't clear token or show session expired
+        // The actual error message will come from the server response
     }
 
     let json;
