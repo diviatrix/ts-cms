@@ -96,11 +96,21 @@ export class DatabaseChecker {
                 return prep.response(false, result.message, result);
             }
 
+            // Check CMS settings after structure is verified
+            if (result.tablesOk && result.columnsOk) {
+                // Check and optionally fix CMS settings
+                const settingsCheck = await this.checkCMSSettings(autoFix);
+                if (!settingsCheck.success) {
+                    result.message = settingsCheck.message || 'Failed to check CMS settings';
+                    return prep.response(false, result.message, result);
+                }
+            }
+
             // Build result message
             if (result.tablesOk && result.columnsOk) {
                 result.message = autoFix 
-                    ? 'Database consistency check passed - all required tables and columns exist'
-                    : 'Database consistency check passed - all tables and columns exist';
+                    ? 'Database consistency check passed - all required tables, columns and settings exist'
+                    : 'Database consistency check passed - all tables, columns and settings exist';
                 return prep.response(true, result.message, result);
             } else {
                 const issues = [];
@@ -270,6 +280,65 @@ export class DatabaseChecker {
             return prep.response(true, 'Successfully added all missing columns');
         } catch (error) {
             return prep.response(false, `Error adding columns: ${error}`);
+        }
+    }
+
+    /**
+     * Check and fix CMS settings
+     */
+    private async checkCMSSettings(autoFix: boolean = false): Promise<IResolve<void>> {
+        try {
+            // Get default CMS settings from schema
+            const { defaultCMSSettings } = await import('../db-adapter/sql-schemas');
+            
+            // Get system user ID for creating settings
+            const systemUserResult = await this.db.executeQuery(
+                "SELECT id FROM users WHERE login = 'system' LIMIT 1",
+                []
+            );
+            
+            const systemUserId = systemUserResult.success && systemUserResult.data && systemUserResult.data.length > 0
+                ? systemUserResult.data[0].id
+                : 'system';
+            
+            // Check each default setting
+            for (const setting of defaultCMSSettings) {
+                const checkResult = await this.db.executeQuery(
+                    'SELECT setting_key FROM cms_settings WHERE setting_key = ?',
+                    [setting.key]
+                );
+                
+                // If setting doesn't exist
+                if (checkResult.success && checkResult.data && checkResult.data.length === 0) {
+                    if (autoFix) {
+                        // Insert missing setting
+                        const insertResult = await this.db.executeQuery(
+                            `INSERT INTO cms_settings (setting_key, setting_value, setting_type, description, category, updated_by, updated_at) 
+                             VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+                            [
+                                setting.key,
+                                setting.value,
+                                setting.type || 'string',
+                                setting.description || '',
+                                setting.category || 'general',
+                                systemUserId
+                            ]
+                        );
+                        
+                        if (!insertResult.success) {
+                            console.error(`Failed to add CMS setting ${setting.key}: ${insertResult.message}`);
+                        } else {
+                            console.log(`✓ Added missing CMS setting: ${setting.key}`);
+                        }
+                    } else {
+                        console.log(`Missing CMS setting: ${setting.key}`);
+                    }
+                }
+            }
+            
+            return prep.response(true, 'CMS settings checked successfully');
+        } catch (error) {
+            return prep.response(false, `Error checking CMS settings: ${error}`);
         }
     }
 
