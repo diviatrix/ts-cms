@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ResponseUtils } from '../utils/response.utils';
 import { VALIDATION_CONSTANTS, AUTH_CONSTANTS, REGEX_PATTERNS } from '../utils/constants';
-import logger from '../utils/logger';
 
 // Validation result interface
 interface ValidationResult {
@@ -15,7 +14,7 @@ export class ValidationUtils {
     /**
      * Check if value is required and not empty
      */
-    static required(value: any, fieldName: string): string | null {
+    static required(value: unknown, fieldName: string): string | null {
         if (value === undefined || value === null || value === '') {
             return `${fieldName} is required`;
         }
@@ -52,7 +51,7 @@ export class ValidationUtils {
     /**
      * Check if value is a boolean
      */
-    static boolean(value: any, fieldName: string): string | null {
+    static boolean(value: unknown, fieldName: string): string | null {
         if (typeof value !== 'boolean') {
             return `${fieldName} must be a boolean value`;
         }
@@ -87,7 +86,7 @@ export class ValidationUtils {
     /**
      * Validate object against schema
      */
-    static validateObject(data: any, schema: ValidationSchema): ValidationResult {
+    static validateObject(data: Record<string, unknown>, schema: ValidationSchema): ValidationResult {
         const errors: string[] = [];
 
         for (const [fieldName, rules] of Object.entries(schema)) {
@@ -109,7 +108,7 @@ export class ValidationUtils {
 }
 
 // Validation schema type
-type ValidationRule = (value: any, fieldName: string) => string | null;
+type ValidationRule = (value: unknown, fieldName: string) => string | null;
 type ValidationSchema = Record<string, ValidationRule[]>;
 
 // Predefined validation schemas
@@ -178,7 +177,7 @@ export const ValidationSchemas = {
             (value: string) => value ? ValidationUtils.stringLength(value, 'excerpt', 0, 500) : null
         ],
         published: [
-            (value: any) => value !== undefined ? ValidationUtils.boolean(value, 'published') : null
+            (value: unknown) => value !== undefined ? ValidationUtils.boolean(value, 'published') : null
         ]
     } as ValidationSchema
 };
@@ -238,15 +237,15 @@ export const ParameterSchemas = {
 };
 
 // Helper function to flatten nested objects for validation
-function flattenObject(obj: any, prefix: string = ''): any {
-    const flattened: any = {};
+function flattenObject(obj: Record<string, unknown>, prefix: string = ''): Record<string, unknown> {
+    const flattened: Record<string, unknown> = {};
     
     for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
             const newKey = prefix ? `${prefix}.${key}` : key;
             
             if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-                Object.assign(flattened, flattenObject(obj[key], newKey));
+                Object.assign(flattened, flattenObject(obj[key] as Record<string, unknown>, newKey));
             } else {
                 flattened[newKey] = obj[key];
             }

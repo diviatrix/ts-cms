@@ -8,7 +8,7 @@ export class RoleCheck {
     }
 
     public static adminAuth(req: Request, res: Response, next: NextFunction): void {
-        const user = (req as any).user; // Assuming user is attached to req by authenticateToken middleware
+        const user = req.user; // User is now properly typed in Express Request interface
 
         if (!user || !user.roles || !RoleCheck.hasRole(user.roles, UserRoles.ADMIN)) {
             res.status(403).json({ status: 'error', message: messages.forbidden });

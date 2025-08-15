@@ -1,39 +1,40 @@
 import { Request, Response, NextFunction } from 'express';
 import { authenticateToken } from '../utils/jwt';
 
+// User type for authenticated requests
+export interface AuthenticatedUser {
+    id: string;
+    login: string;
+    roles: string[];
+}
+
 // Extend Express Request interface to include user property
 declare global {
+    // eslint-disable-next-line @typescript-eslint/no-namespace
     namespace Express {
         interface Request {
-            user?: {
-                id: string;
-                login: string;
-                roles: string[];
-            };
+            user?: AuthenticatedUser;
         }
     }
 }
 
 // Centralized authentication middleware
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-    authenticateToken(req, res, (error?: any) => {
-        if (error) {
-            return res.status(500).json({
-                success: false,
-                message: 'Authentication error',
-                data: null
-            });
-        }
-        
-        // Check if user was successfully authenticated
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({
+            status: 'error',
+            message: 'Authentication required - no token provided'
+        });
+    }
+    
+    authenticateToken(req, res, () => {
         if (!req.user) {
             return res.status(401).json({
-                success: false,
-                message: 'Authentication required. Please log in.',
-                data: null
+                status: 'error',
+                message: 'Authentication failed - invalid token'
             });
         }
-        
         next();
     });
 };

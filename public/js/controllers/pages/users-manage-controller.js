@@ -3,48 +3,48 @@ import { notifications } from '../../modules/notifications.js';
 import { BasePageController } from './base-page-controller.js';
 
 export default class UsersManageController extends BasePageController {
-    constructor(app) {
-        super();
-        this.app = app;
-        this.container = document.getElementById('users-manage-container');
-        this.users = [];
-        this.init();
-    }
+  constructor(app) {
+    super();
+    this.app = app;
+    this.container = document.getElementById('users-manage-container');
+    this.users = [];
+    this.init();
+  }
 
-    async init() {
-        if (!this.app.user.roles.includes('admin')) {
-            window.location.href = '/';
-            return;
-        }
+  async init() {
+    if (!this.app.user.roles.includes('admin')) {
+      window.location.href = '/';
+      return;
+    }
         
-        this.render();
-        await this.loadUsers();
-    }
+    this.render();
+    await this.loadUsers();
+  }
 
-    async loadUsers() {
-        await this.safeApiCall(
-            () => AdminAPI.getUsers(),
-            {
-                successCallback: (response) => {
-                    // API returns nested structure: response.data contains the actual users array
-                    if (response && response.data && Array.isArray(response.data)) {
-                        this.users = response.data;
-                    } else if (response && Array.isArray(response)) {
-                        this.users = response;
-                    } else {
-                        this.users = [];
-                    }
-                    this.renderUsers();
-                },
-                errorCallback: () => {
-                    notifications.error('Failed to load users');
-                }
-            }
-        );
-    }
+  async loadUsers() {
+    await this.safeApiCall(
+      () => AdminAPI.getUsers(),
+      {
+        successCallback: (response) => {
+          // API returns nested structure: response.data contains the actual users array
+          if (response && response.data && Array.isArray(response.data)) {
+            this.users = response.data;
+          } else if (response && Array.isArray(response)) {
+            this.users = response;
+          } else {
+            this.users = [];
+          }
+          this.renderUsers();
+        },
+        errorCallback: () => {
+          notifications.error('Failed to load users');
+        }
+      }
+    );
+  }
 
-    render() {
-        this.container.innerHTML = `
+  render() {
+    this.container.innerHTML = `
             <h2 class="page-title">Manage Users</h2>
             <div id="usersList">
                 <div class="text-center">
@@ -52,18 +52,18 @@ export default class UsersManageController extends BasePageController {
                 </div>
             </div>
         `;
+  }
+
+  renderUsers() {
+    const usersList = document.getElementById('usersList');
+        
+    if (!this.users.length) {
+      usersList.innerHTML = '<p class="text-center">No users found</p>';
+      return;
     }
 
-    renderUsers() {
-        const usersList = document.getElementById('usersList');
-        
-        if (!this.users.length) {
-            usersList.innerHTML = '<p class="text-center">No users found</p>';
-            return;
-        }
 
-
-        usersList.innerHTML = `
+    usersList.innerHTML = `
             <div class="card card-full-height">
                 <div class="card-body">
                     <table class="table">
@@ -106,33 +106,33 @@ export default class UsersManageController extends BasePageController {
             </div>
         `;
 
-        // Make controller available globally for onclick handlers
-        window.usersManageController = this;
-    }
+    // Make controller available globally for onclick handlers
+    window.usersManageController = this;
+  }
 
-    editUser(userId) {
-        window.location.href = `/user-editor?id=${userId}`;
-    }
+  editUser(userId) {
+    window.location.href = `/user-editor?id=${userId}`;
+  }
 
-    async toggleUserStatus(userId, newStatus) {
-        const confirmMsg = newStatus 
-            ? 'Are you sure you want to activate this user?' 
-            : 'Are you sure you want to deactivate this user?';
+  async toggleUserStatus(userId, newStatus) {
+    const confirmMsg = newStatus 
+      ? 'Are you sure you want to activate this user?' 
+      : 'Are you sure you want to deactivate this user?';
             
-        if (!confirm(confirmMsg)) return;
+    if (!confirm(confirmMsg)) return;
 
-        await this.safeApiCall(
-            () => AdminAPI.updateUserStatus(userId, newStatus),
-            {
-                loadingElement: document.querySelector(`[onclick*="${userId}"]`),
-                successCallback: () => {
-                    notifications.success(`User ${newStatus ? 'activated' : 'deactivated'} successfully`);
-                    this.loadUsers();
-                },
-                errorCallback: () => {
-                    notifications.error('Failed to update user status');
-                }
-            }
-        );
-    }
+    await this.safeApiCall(
+      () => AdminAPI.updateUserStatus(userId, newStatus),
+      {
+        loadingElement: document.querySelector(`[onclick*="${userId}"]`),
+        successCallback: () => {
+          notifications.success(`User ${newStatus ? 'activated' : 'deactivated'} successfully`);
+          this.loadUsers();
+        },
+        errorCallback: () => {
+          notifications.error('Failed to update user status');
+        }
+      }
+    );
+  }
 }

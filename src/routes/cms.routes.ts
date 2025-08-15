@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { requireAuth } from '../middleware/auth.middleware';
 import { RoleCheck } from '../functions/roleCheck';
 import { UserRoles } from '../data/groups';
@@ -17,14 +17,52 @@ import { ContextLogger } from '../utils/context-logger';
 const router = express.Router();
 
 // Middleware to require admin access
-const requireAdmin = (req: Request, res: Response, next: Function) => {
+const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.user?.roles || !RoleCheck.hasRole(req.user.roles, UserRoles.ADMIN)) {
         throw Errors.forbidden('Admin access required');
     }
     next();
 };
 
-// Get all CMS settings (admin only)
+/**
+ * @swagger
+ * /api/cms/settings:
+ *   get:
+ *     tags: [CMS]
+ *     summary: Получить все настройки CMS
+ *     description: Возвращает все настройки системы управления контентом (только для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Настройки CMS успешно получены
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/CMSSetting'
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Нет прав администратора
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get('/settings', requireAuth, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
     const result = await getCMSSettings();
     
@@ -35,7 +73,53 @@ router.get('/settings', requireAuth, requireAdmin, asyncHandler(async (req: Requ
     }
 }));
 
-// Get CMS settings by category (admin only)
+/**
+ * @swagger
+ * /api/cms/settings/category/{category}:
+ *   get:
+ *     tags: [CMS]
+ *     summary: Получить настройки CMS по категории
+ *     description: Возвращает настройки CMS для определенной категории (только для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: category
+ *         required: true
+ *         description: Категория настроек
+ *         schema:
+ *           type: string
+ *           enum: [general, theme, security, content]
+ *     responses:
+ *       200:
+ *         description: Настройки категории успешно получены
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/CMSSetting'
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Нет прав администратора
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get('/settings/category/:category', requireAuth, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
     const { category } = req.params;
     const result = await getCMSSettingsByCategory(category);
@@ -59,7 +143,54 @@ router.get('/settings/:key', requireAuth, requireAdmin, asyncHandler(async (req:
     }
 }));
 
-// Update CMS setting (admin only)
+/**
+ * @swagger
+ * /api/cms/settings/{key}:
+ *   put:
+ *     tags: [CMS]
+ *     summary: Обновить настройку CMS
+ *     description: Обновляет значение конкретной настройки CMS (только для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         description: Ключ настройки для обновления
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CMSSettingUpdate'
+ *     responses:
+ *       200:
+ *         description: Настройка успешно обновлена
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Ошибка валидации
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Нет прав администратора
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.put('/settings/:key', requireAuth, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
     const { key } = req.params;
     const { value, type = 'string' } = req.body;
@@ -78,7 +209,35 @@ router.put('/settings/:key', requireAuth, requireAdmin, asyncHandler(async (req:
     }
 }));
 
-// Get active website theme (public endpoint)
+/**
+ * @swagger
+ * /api/cms/active-theme:
+ *   get:
+ *     tags: [CMS]
+ *     summary: Получить активную тему сайта
+ *     description: Возвращает текущую активную тему веб-сайта (публичный эндпоинт)
+ *     responses:
+ *       200:
+ *         description: Активная тема успешно получена
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Theme'
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Активная тема не найдена
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get('/active-theme', asyncHandler(async (req: Request, res: Response) => {
     const result = await getActiveWebsiteTheme();
     
@@ -89,7 +248,53 @@ router.get('/active-theme', asyncHandler(async (req: Request, res: Response) => 
     }
 }));
 
-// Set active website theme (admin only)
+/**
+ * @swagger
+ * /api/cms/active-theme:
+ *   put:
+ *     tags: [CMS]
+ *     summary: Установить активную тему сайта
+ *     description: Устанавливает активную тему для веб-сайта (только для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [theme_id]
+ *             properties:
+ *               theme_id:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID темы для активации
+ *     responses:
+ *       200:
+ *         description: Тема сайта успешно обновлена
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Ошибка валидации
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Нет прав администратора
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.put('/active-theme', requireAuth, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
     const { theme_id } = req.body;
     
@@ -107,7 +312,29 @@ router.put('/active-theme', requireAuth, requireAdmin, asyncHandler(async (req: 
     }
 }));
 
-// Get registration mode (public endpoint for registration form)
+/**
+ * @swagger
+ * /api/cms/registration-mode:
+ *   get:
+ *     tags: [CMS]
+ *     summary: Получить режим регистрации
+ *     description: Возвращает текущий режим регистрации пользователей (публичный эндпоинт)
+ *     responses:
+ *       200:
+ *         description: Режим регистрации успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/RegistrationMode'
+ *                 message:
+ *                   type: string
+ */
 router.get('/registration-mode', asyncHandler(async (req: Request, res: Response) => {
     const result = await getCMSSetting('registration_mode');
     const mode = result.success && result.data ? result.data.setting_value : 'OPEN';
@@ -133,6 +360,28 @@ router.get('/public/site-description', asyncHandler(async (req: Request, res: Re
         ResponseUtils.success(res, result.data, 'Site description retrieved successfully');
     } else {
         ResponseUtils.success(res, { setting_value: '© 2025 TypeScript CMS. All rights reserved.' }, 'Using default site description');
+    }
+}));
+
+// Get default categories (public endpoint for homepage)
+router.get('/public/default-categories', asyncHandler(async (req: Request, res: Response) => {
+    const result = await getCMSSetting('default_categories');
+    
+    if (result.success && result.data) {
+        ResponseUtils.success(res, result.data, 'Default categories retrieved successfully');
+    } else {
+        ResponseUtils.success(res, { setting_value: 'news,about,ads' }, 'Using default categories');
+    }
+}));
+
+// Get enable_search setting (public endpoint for homepage)
+router.get('/public/enable-search', asyncHandler(async (req: Request, res: Response) => {
+    const result = await getCMSSetting('enable_search');
+    
+    if (result.success && result.data) {
+        ResponseUtils.success(res, result.data, 'Enable search setting retrieved successfully');
+    } else {
+        ResponseUtils.success(res, { setting_value: 'true' }, 'Using default enable search value');
     }
 }));
 

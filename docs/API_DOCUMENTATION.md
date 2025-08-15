@@ -30,6 +30,11 @@ Most endpoints require authentication via JWT token in the Authorization header:
 Authorization: Bearer <jwt_token>
 ```
 
+**Authentication Middleware:**
+- `requireAuth`: Requires valid JWT token
+- `requireAuthAndAdmin`: Requires valid JWT token AND admin role
+- `optionalAuth`: Works with or without authentication (public endpoints)
+
 ## Endpoints
 
 ### Authentication
@@ -46,6 +51,11 @@ Register a new user account.
   "inviteCode": "ABC123XYZ" // Optional: Required when registration_mode is "INVITE_ONLY"
 }
 ```
+
+**Validation Requirements:**
+- `login`: 4-50 characters, alphanumeric with underscores/hyphens only
+- `password`: 6-255 characters
+- `email`: Valid email format (optional but recommended)
 
 **Registration Modes:**
 - `OPEN`: Anyone can register without restrictions
@@ -175,9 +185,20 @@ Update current user's profile (requires authentication).
 ```
 
 #### POST /api/profile
-Admin endpoint to update any user's profile (requires admin role).
+Update user profile with enhanced capabilities (requires authentication).
 
-**Request Body:**
+**Self-Update Request Body:**
+```json
+{
+  "profile": {
+    "public_name": "New Name",
+    "bio": "New bio",
+    "profile_picture_url": "/img/avatar.png"
+  }
+}
+```
+
+**Admin Update Request Body (requires admin role):**
 ```json
 {
   "user_id": "target_user_uuid",
@@ -192,12 +213,42 @@ Admin endpoint to update any user's profile (requires admin role).
 }
 ```
 
+#### POST /api/profile/password/set
+Set user password (requires authentication).
+
+**Request Body:**
+```json
+{
+  "userId": "target_user_uuid", // Optional: Admin can change any user's password
+  "newPassword": "newpassword123"
+}
+```
+
+**Validation:**
+- `newPassword`: 6-255 characters required
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": null,
+  "message": "Password updated successfully"
+}
+```
+
 ### Records (Content Management)
 
 #### GET /api/records
-Get all records (published only for non-admin users).
+Get all records with optional pagination and filtering.
 
-**Response (200):**
+**Query Parameters:**
+- `page`: Page number (default: 1)
+- `size`: Records per page (default: 10, max: 50)
+- `categories`: Comma-separated categories filter
+- `tags`: Comma-separated tags filter
+- `search`: Search in title, description, content
+
+**Basic Response (200):**
 ```json
 {
   "success": true,
@@ -207,6 +258,7 @@ Get all records (published only for non-admin users).
       "title": "Record Title",
       "description": "Record description",
       "content": "Markdown content",
+      "image_url": "/img/records/image.png",
       "user_id": "author_uuid",
       "public_name": "Author Name",
       "tags": ["tag1", "tag2"],
@@ -220,8 +272,43 @@ Get all records (published only for non-admin users).
 }
 ```
 
+**Paginated Response (when using pagination parameters):**
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": "uuid",
+        "title": "Record Title",
+        "description": "Record description",
+        "content": "Markdown content",
+        "image_url": "/img/records/image.png",
+        "user_id": "author_uuid",
+        "tags": ["tag1", "tag2"],
+        "categories": ["category1"],
+        "is_published": true,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "size": 10,
+      "total": 25,
+      "pages": 3,
+      "hasNext": true,
+      "hasPrev": false
+    }
+  },
+  "message": "Records retrieved successfully"
+}
+```
+
+**Note:** Non-admin users see only published records. Admin users see all records.
+
 #### GET /api/records/:id
-Get a specific record by ID.
+Get a specific record by ID (optional authentication).
 
 **Response (200):**
 ```json
@@ -232,6 +319,7 @@ Get a specific record by ID.
     "title": "Record Title",
     "description": "Record description",
     "content": "Markdown content",
+    "image_url": "/img/records/image.png",
     "user_id": "author_uuid",
     "tags": ["tag1", "tag2"],
     "categories": ["category1"],
@@ -240,6 +328,27 @@ Get a specific record by ID.
     "updated_at": "2024-01-01T00:00:00Z"
   },
   "message": "Record retrieved successfully"
+}
+```
+
+#### GET /api/records/meta/tags-categories
+Get all unique tags and categories with counts (optional authentication).
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "categories": [
+      { "name": "news", "count": 15 },
+      { "name": "tutorials", "count": 8 }
+    ],
+    "tags": [
+      { "name": "javascript", "count": 12 },
+      { "name": "typescript", "count": 10 }
+    ]
+  },
+  "message": "Tags and categories retrieved successfully"
 }
 ```
 
@@ -257,6 +366,12 @@ Create a new record (requires admin role).
   "is_published": true
 }
 ```
+
+**Validation Requirements:**
+- `title`: 1-200 characters, required
+- `content`: 1-50,000 characters, required
+- `description`: Optional, max 500 characters
+- `is_published`: Boolean, optional
 
 #### PUT /api/records/:id
 Update an existing record (requires admin role).
@@ -280,12 +395,15 @@ Delete a record (requires admin role).
 
 ### Themes
 
-The theme system has two main concepts:
-- **`is_active`**: Whether a theme is available for selection and writing to frontend (can be multiple)
-- **`active_theme_id`** (in CMS settings): Which theme is currently set as the website's theme (legacy, optional)
+The theme system manages website appearance through themes and their settings.
+
+**Theme System Concepts:**
+- **`is_active`**: Whether a theme is available for use
+- **`is_default`**: Whether this is the default theme
+- **Active Theme**: The currently applied theme for the website
 
 #### GET /api/themes
-Get all available themes.
+Get all available themes (public endpoint).
 
 **Response (200):**
 ```json
@@ -299,35 +417,76 @@ Get all available themes.
       "is_active": true,
       "is_default": false,
       "created_by": "user_uuid",
-      "created_at": "2024-01-01T00:00:00Z"
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
     }
   ]
 }
 ```
 
-**Note:** `is_active` determines if a theme appears in the available themes list. Multiple themes can have `is_active: true`.
-
-#### GET /api/themes/:id
-Get a specific theme by ID.
+#### GET /api/themes/active
+Get the currently active website theme and its settings (public endpoint).
 
 **Response (200):**
 ```json
 {
   "success": true,
   "data": {
-    "id": "uuid",
-    "name": "Theme Name",
-    "description": "Theme description",
-    "is_active": true,
-    "is_default": false,
-    "created_by": "user_uuid",
-    "created_at": "2024-01-01T00:00:00Z"
+    "theme": {
+      "id": "uuid",
+      "name": "Active Theme",
+      "description": "Theme description",
+      "is_active": true,
+      "is_default": false,
+      "created_by": "user_uuid",
+      "created_at": "2024-01-01T00:00:00Z"
+    },
+    "settings": {
+      "primary_color": "#00FF00",
+      "secondary_color": "#808080ff",
+      "background_color": "#222222",
+      "surface_color": "#444444",
+      "text_color": "#E0E0E0",
+      "font_family": "'Share Tech Mono', monospace",
+      "custom_css": ""
+    }
+  },
+  "message": "Active theme retrieved successfully"
+}
+```
+
+#### GET /api/themes/:id
+Get a specific theme by ID with its settings (public endpoint).
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "theme": {
+      "id": "uuid",
+      "name": "Theme Name",
+      "description": "Theme description",
+      "is_active": true,
+      "is_default": false,
+      "created_by": "user_uuid",
+      "created_at": "2024-01-01T00:00:00Z"
+    },
+    "settings": {
+      "primary_color": "#00FF00",
+      "secondary_color": "#444444",
+      "background_color": "#222222",
+      "surface_color": "#444444",
+      "text_color": "#E0E0E0",
+      "font_family": "'Share Tech Mono', monospace",
+      "custom_css": ""
+    }
   }
 }
 ```
 
 #### GET /api/themes/:id/settings
-Get theme settings.
+Get theme settings as key-value object (public endpoint).
 
 **Response (200):**
 ```json
@@ -354,10 +513,23 @@ Create a new theme (requires admin role).
   "name": "New Theme",
   "description": "Theme description",
   "is_active": false,
-  "settings": {
-    "primary_color": "#FF0000",
-    "secondary_color": "#00FF00",
-    "background_color": "#000000"
+  "is_default": false
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "name": "New Theme",
+    "description": "Theme description",
+    "is_active": false,
+    "is_default": false,
+    "created_by": "admin_uuid",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
   }
 }
 ```
@@ -367,6 +539,55 @@ Update a theme (requires admin role).
 
 #### DELETE /api/themes/:id
 Delete a theme (requires admin role).
+
+#### POST /api/themes/:id/activate
+Set a theme as the active theme (requires admin role).
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Theme activated successfully"
+}
+```
+
+#### POST /api/themes/:id/settings
+Set theme setting (requires admin role).
+
+**Request Body:**
+```json
+{
+  "key": "primary_color",
+  "value": "#FF0000",
+  "type": "string"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Theme setting updated successfully"
+}
+```
+
+#### User Theme Preferences
+
+#### GET /api/themes/user/:userId/preference
+Get user theme preference (requires authentication, users can only access their own).
+
+#### POST /api/themes/user/:userId/preference
+Set user theme preference (requires authentication, users can only set their own).
+
+**Request Body:**
+```json
+{
+  "theme_id": "theme_uuid",
+  "custom_settings": {
+    "primary_color": "#FF0000"
+  }
+}
+```
 
 ### CMS Settings
 

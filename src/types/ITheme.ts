@@ -23,7 +23,7 @@ export interface IThemeSetting {
 export interface IUserThemePreference {
     user_id: string;
     theme_id: string;
-    custom_settings: Record<string, any>;
+    custom_settings: Record<string, unknown>;
     updated_at: string;
 }
 
@@ -71,7 +71,7 @@ export interface IThemeAPI {
     
     // User preferences
     getUserThemePreference(userId: string): Promise<IUserThemePreference | null>;
-    setUserThemePreference(userId: string, themeId: string, customSettings?: Record<string, any>): Promise<boolean>;
+    setUserThemePreference(userId: string, themeId: string, customSettings?: Record<string, unknown>): Promise<boolean>;
     
     // Active theme management
     getActiveTheme(): Promise<ITheme | null>;

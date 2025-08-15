@@ -17,31 +17,31 @@ class Logger {
         return levels.indexOf(level) <= levels.indexOf(this.level);
     }
 
-    private formatMessage(level: LogLevel, message: string, context?: any): string {
+    private formatMessage(level: LogLevel, message: string, context?: unknown): string {
         const timestamp = new Date().toISOString();
         const contextStr = context ? ` | Context: ${JSON.stringify(context)}` : '';
         return `[${timestamp}] ${level.toUpperCase()}: ${message}${contextStr}`;
     }
 
-    error(message: string, context?: any): void {
+    error(message: string, context?: unknown): void {
         if (this.shouldLog(LOG_LEVELS.ERROR)) {
             console.error(this.formatMessage(LOG_LEVELS.ERROR, message, context));
         }
     }
 
-    warn(message: string, context?: any): void {
+    warn(message: string, context?: unknown): void {
         if (this.shouldLog(LOG_LEVELS.WARN)) {
             console.warn(this.formatMessage(LOG_LEVELS.WARN, message, context));
         }
     }
 
-    info(message: string, context?: any): void {
+    info(message: string, context?: unknown): void {
         if (this.shouldLog(LOG_LEVELS.INFO)) {
             console.log(this.formatMessage(LOG_LEVELS.INFO, message, context));
         }
     }
 
-    debug(message: string, context?: any): void {
+    debug(message: string, context?: unknown): void {
         if (this.shouldLog(LOG_LEVELS.DEBUG)) {
             console.log(this.formatMessage(LOG_LEVELS.DEBUG, message, context));
         }

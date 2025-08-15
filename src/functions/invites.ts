@@ -41,11 +41,13 @@ export async function createInvite(createdBy: string): Promise<IResolve<IInvite 
         return prep.response(false, 'Failed to generate unique invite code', undefined);
     }
 
-    return await database.createInvite({
+    const inviteWithId = {
         id: generateGuid(),
         ...invite,
         created_at: new Date().toISOString()
-    });
+    };
+    
+    return await database.createInvite(inviteWithId);
 }
 
 /**

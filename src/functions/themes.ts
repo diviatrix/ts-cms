@@ -6,7 +6,8 @@ import database from '../db';
 import { ITheme, IThemeSetting, IUserThemePreference } from '../types/ITheme';
 import { generateGuid } from '../utils/guid';
 import prep from '../utils/prepare';
-import IResolve from '../types/IResolve';
+import IResolve, { IResolveWithStatus } from '../types/IResolve';
+import { getUser } from './user';
 
 /**
  * Create a new theme
@@ -47,11 +48,26 @@ export async function getTheme(id: string): Promise<IResolve<ITheme | null>> {
 /**
  * Update theme
  */
-export async function updateTheme(id: string, updates: Partial<ITheme>): Promise<IResolve<ITheme>> {
-    // Remove fields that shouldn't be updated
-    const { id: _, created_at, ...allowedUpdates } = updates as any;
+export async function updateTheme(id: string, updates: Partial<ITheme>): Promise<IResolveWithStatus<ITheme>> {
+    // Check if theme exists first
+    const themeExists = await database.getThemeById(id);
+    if (!themeExists.success || !themeExists.data) {
+        const result: IResolveWithStatus<ITheme> = {
+            ...prep.response(false, 'Theme not found', {} as ITheme),
+            statusCode: 404
+        };
+        return result;
+    }
     
-    return await database.updateTheme(id, allowedUpdates);
+    // Remove fields that shouldn't be updated
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id: updateId, created_at, ...allowedUpdates } = updates;
+    
+    const result = await database.updateTheme(id, allowedUpdates);
+    if (result.success && result.data) {
+        return prep.response(result.success, result.message, result.data);
+    }
+    return prep.response(false, 'Failed to update theme', {} as ITheme);
 }
 
 /**
@@ -85,7 +101,17 @@ export async function getThemeSettings(themeId: string): Promise<IResolve<ITheme
 /**
  * Set theme setting
  */
-export async function setThemeSetting(themeId: string, key: string, value: string, type: string = 'string'): Promise<IResolve<boolean>> {
+export async function setThemeSetting(themeId: string, key: string, value: string, type: string = 'string'): Promise<IResolveWithStatus<boolean>> {
+    // Check if theme exists first
+    const themeExists = await database.getThemeById(themeId);
+    if (!themeExists.success || !themeExists.data) {
+        const result: IResolveWithStatus<boolean> = {
+            ...prep.response(false, 'Theme not found', false),
+            statusCode: 500
+        };
+        return result;
+    }
+    
     return await database.setThemeSetting(themeId, key, value, type);
 }
 
@@ -93,13 +119,19 @@ export async function setThemeSetting(themeId: string, key: string, value: strin
  * Get user theme preference
  */
 export async function getUserThemePreference(userId: string): Promise<IResolve<IUserThemePreference | null>> {
+    // First check if user exists
+    const userCheck = await getUser(userId);
+    if (!userCheck.success || !userCheck.data) {
+        return prep.response(false, 'User not found', null);
+    }
+    
     const result = await database.getUserThemePreference(userId);
     
     if (result.success && result.data) {
         // Parse custom_settings JSON
         try {
-            result.data.custom_settings = JSON.parse(result.data.custom_settings || '{}');
-        } catch (error) {
+            result.data.custom_settings = JSON.parse(result.data.custom_settings as unknown as string || '{}');
+        } catch {
             result.data.custom_settings = {};
         }
     }
@@ -110,7 +142,13 @@ export async function getUserThemePreference(userId: string): Promise<IResolve<I
 /**
  * Set user theme preference
  */
-export async function setUserThemePreference(userId: string, themeId: string, customSettings: Record<string, any> = {}): Promise<IResolve<boolean>> {
+export async function setUserThemePreference(userId: string, themeId: string, customSettings: Record<string, unknown> = {}): Promise<IResolve<boolean>> {
+    // First check if user exists
+    const userCheck = await getUser(userId);
+    if (!userCheck.success || !userCheck.data) {
+        return prep.response(false, 'User not found', false);
+    }
+    
     const customSettingsJson = JSON.stringify(customSettings);
     return await database.setUserThemePreference(userId, themeId, customSettingsJson);
 }

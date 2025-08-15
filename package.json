@@ -1,13 +1,19 @@
 {
-  "name": "ts-cms",
-  "version": "1.0.0",
-  "description": "tiny cms with sqlite3 db",
+  "name": "1337-cms",
+  "version": "1.1.0",
+  "description": "Tiny but functional cms with sqlite3 db",
   "main": "server.ts",
   "scripts": {
     "lint": "eslint . --ext .ts",
     "start": "npx ts-node server.ts",
     "dev": "nodemon --exec npx ts-node server.ts",
-    "test": "mocha --require ts-node/register --project tsconfig.test.json tests/**/*.ts"
+    "test": "tsx node_modules/mocha/bin/_mocha --extensions ts --reporter allure-mocha --require \"tests/setup.ts\" \"tests/**/*.ts\"",
+    "test:simple": "mocha tests/simple.test.js",
+    "test:allure": "npm test && npm run allure:generate && npm run allure:open",
+    "allure:generate": "allure generate allure-results --clean -o allure-report",
+    "allure:open": "allure open allure-report",
+    "allure:serve": "allure serve allure-results",
+    "cleanup:test-data": "npx ts-node tests/cleanup-test-data.ts"
   },
   "repository": {
     "type": "git",
@@ -47,12 +53,16 @@
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
+    "allure-commandline": "^2.34.1",
+    "allure-mocha": "^3.3.3",
     "chai": "^5.2.0",
+    "cross-env": "^10.0.0",
     "eslint": "^9.27.0",
     "globals": "^16.1.0",
     "mocha": "^11.7.1",
     "supertest": "^7.1.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.1"
   }

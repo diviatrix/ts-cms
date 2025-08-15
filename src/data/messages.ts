@@ -1,5 +1,3 @@
-import { fail } from "assert";
-
 export default {
     ok: 'ok',
     welcome: 'Welcome to the API',

@@ -175,5 +175,9 @@ export const defaultCMSSettings = [
     { key: 'allow_registration', value: 'true', type: 'boolean', description: 'Allow new user registration', category: 'security' },
     { key: 'registration_mode', value: 'OPEN', type: 'string', description: 'Registration mode: OPEN, CLOSED, or INVITE_ONLY', category: 'security' },
     { key: 'default_user_role', value: 'user', type: 'string', description: 'Default role for new users', category: 'security' },
-    { key: 'api_docs_enabled', value: 'false', type: 'boolean', description: 'Enable API documentation at /api-docs', category: 'api' }
+    { key: 'api_docs_enabled', value: 'false', type: 'boolean', description: 'Enable API documentation at /api-docs', category: 'api' },
+    { key: 'default_categories', value: 'news,about,ads', type: 'string', description: 'Default selected categories on homepage (comma-separated)', category: 'content' },
+    { key: 'pagination_size', value: '10', type: 'number', description: 'Records per page on homepage', category: 'content' },
+    { key: 'pagination_max_size', value: '50', type: 'number', description: 'Maximum records per page allowed', category: 'content' },
+    { key: 'enable_search', value: 'true', type: 'boolean', description: 'Enable search functionality in records', category: 'content' }
 ];

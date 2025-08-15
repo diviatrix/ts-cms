@@ -4,26 +4,26 @@ import { BasePageController } from './base-page-controller.js';
 import { cacheManager } from '../../utils/cache-manager.js';
 
 export default class InvitesManageController extends BasePageController {
-    constructor(app) {
-        super();
-        this.app = app;
-        this.container = document.getElementById('invites-manage-container');
-        this.cacheKey = 'invites-manage-data';
-        this.init();
-    }
+  constructor(app) {
+    super();
+    this.app = app;
+    this.container = document.getElementById('invites-manage-container');
+    this.cacheKey = 'invites-manage-data';
+    this.init();
+  }
 
-    async init() {
-        if (!this.app.user.roles.includes('admin')) {
-            window.location.href = '/';
-            return;
-        }
+  async init() {
+    if (!this.app.user.roles.includes('admin')) {
+      window.location.href = '/';
+      return;
+    }
         
-        this.render();
-        await this.loadInvites();
-    }
+    this.render();
+    await this.loadInvites();
+  }
 
-    render() {
-        this.container.innerHTML = `
+  render() {
+    this.container.innerHTML = `
             <div class="page-header">
                 <h2 class="page-title">Manage Invites</h2>
                 <div class="page-actions">
@@ -40,57 +40,56 @@ export default class InvitesManageController extends BasePageController {
             </div>
         `;
         
-        // Make controller globally available
-        window.invitesManager = this;
+    // Make controller globally available
+    window.invitesManager = this;
+  }
+
+  async loadInvites() {
+    const contentElement = document.getElementById('invites-content');
+        
+    // Try to load from cache first
+    const cachedData = cacheManager.get(this.cacheKey);
+    if (cachedData) {
+      this.renderInvites(cachedData);
+      return;
     }
 
-    async loadInvites() {
-        const contentElement = document.getElementById('invites-content');
-        
-        // Try to load from cache first
-        const cachedData = cacheManager.get(this.cacheKey);
-        if (cachedData) {
-            this.renderInvites(cachedData);
-            return;
-        }
+    await this.setMultipleLoading([contentElement], true, 'Loading invites...', 'skeleton');
 
-        await this.setMultipleLoading([contentElement], true, 'Loading invites...', 'skeleton');
-
-        try {
-            const response = await AdminAPI.getInvites();
+    try {
+      const response = await AdminAPI.getInvites();
             
-            if (response.success) {
-                const invites = Array.isArray(response.data) ? response.data : [];
+      if (response.success) {
+        const invites = Array.isArray(response.data) ? response.data : [];
                 
-                // Cache the data for 2 minutes
-                cacheManager.set(this.cacheKey, invites, 120000);
+        // Cache the data for 2 minutes
+        cacheManager.set(this.cacheKey, invites, 120000);
                 
-                this.renderInvites(invites);
-            } else {
-                contentElement.innerHTML = `
+        this.renderInvites(invites);
+      } else {
+        contentElement.innerHTML = `
                     <div class="alert alert-danger">
                         Failed to load invites: ${response.message}
                     </div>
                 `;
-            }
-        } catch (error) {
-            console.error('Error loading invites:', error);
-            this.handleNetworkErrorMessage(error);
-            contentElement.innerHTML = `
+      }
+    } catch (error) {
+      this.handleNetworkErrorMessage(error);
+      contentElement.innerHTML = `
                 <div class="alert alert-danger">
                     Failed to load invites. Please try again.
                 </div>
             `;
-        } finally {
-            await this.setMultipleLoading([contentElement], false);
-        }
+    } finally {
+      await this.setMultipleLoading([contentElement], false);
     }
+  }
 
-    renderInvites(invites) {
-        const contentElement = document.getElementById('invites-content');
+  renderInvites(invites) {
+    const contentElement = document.getElementById('invites-content');
         
-        if (!invites || invites.length === 0) {
-            contentElement.innerHTML = `
+    if (!invites || invites.length === 0) {
+      contentElement.innerHTML = `
                 <div class="empty-state">
                     <h3>No Invites Found</h3>
                     <p>You haven't created any invite codes yet.</p>
@@ -99,13 +98,13 @@ export default class InvitesManageController extends BasePageController {
                     </button>
                 </div>
             `;
-            return;
-        }
+      return;
+    }
 
-        const unusedInvites = invites.filter(invite => !invite.used_by);
-        const usedInvites = invites.filter(invite => invite.used_by);
+    const unusedInvites = invites.filter(invite => !invite.used_by);
+    const usedInvites = invites.filter(invite => invite.used_by);
 
-        contentElement.innerHTML = `
+    contentElement.innerHTML = `
             <div class="invite-summary" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing); margin-bottom: calc(var(--spacing) * 2);">
                 <div class="stat-box">
                     <div class="stat-number">${invites.length}</div>
@@ -141,13 +140,13 @@ export default class InvitesManageController extends BasePageController {
                 </div>
             ` : ''}
         `;
-    }
+  }
 
-    renderInviteItem(invite, isUsed) {
-        const createdDate = new Date(invite.created_at).toLocaleDateString();
-        const createdTime = new Date(invite.created_at).toLocaleTimeString();
+  renderInviteItem(invite, isUsed) {
+    const createdDate = new Date(invite.created_at).toLocaleDateString();
+    const createdTime = new Date(invite.created_at).toLocaleTimeString();
         
-        return `
+    return `
             <div class="invite-item ${isUsed ? 'invite-used' : 'invite-unused'}">
                 <div class="invite-header">
                     <div class="invite-code">
@@ -181,65 +180,62 @@ export default class InvitesManageController extends BasePageController {
                 </div>
             </div>
         `;
-    }
+  }
 
-    async createInvite() {
-        try {
-            const result = await AdminAPI.createInvite();
+  async createInvite() {
+    try {
+      const result = await AdminAPI.createInvite();
             
-            if (result.success) {
-                notifications.success(`Invite created: ${result.data.code}`);
-                cacheManager.clear(this.cacheKey);
-                await this.loadInvites(); // Refresh the list
-            } else {
-                notifications.error(result.message || 'Failed to create invite');
-            }
-        } catch (error) {
-            console.error('Error creating invite:', error);
-            notifications.error('Failed to create invite');
-        }
+      if (result.success) {
+        notifications.success(`Invite created: ${result.data.code}`);
+        cacheManager.clear(this.cacheKey);
+        await this.loadInvites(); // Refresh the list
+      } else {
+        notifications.error(result.message || 'Failed to create invite');
+      }
+    } catch (error) {
+      notifications.error('Failed to create invite');
+    }
+  }
+
+  async deleteInvite(inviteId, inviteCode) {
+    if (!confirm(`Are you sure you want to delete invite "${inviteCode}"? This action cannot be undone.`)) {
+      return;
     }
 
-    async deleteInvite(inviteId, inviteCode) {
-        if (!confirm(`Are you sure you want to delete invite "${inviteCode}"? This action cannot be undone.`)) {
-            return;
-        }
-
-        try {
-            const result = await AdminAPI.deleteInvite(inviteId);
+    try {
+      const result = await AdminAPI.deleteInvite(inviteId);
             
-            if (result.success) {
-                notifications.success(`Invite "${inviteCode}" deleted successfully`);
-                cacheManager.clear(this.cacheKey);
-                await this.loadInvites(); // Refresh the list
-            } else {
-                notifications.error(result.message || 'Failed to delete invite');
-            }
-        } catch (error) {
-            console.error('Error deleting invite:', error);
-            notifications.error('Failed to delete invite');
-        }
+      if (result.success) {
+        notifications.success(`Invite "${inviteCode}" deleted successfully`);
+        cacheManager.clear(this.cacheKey);
+        await this.loadInvites(); // Refresh the list
+      } else {
+        notifications.error(result.message || 'Failed to delete invite');
+      }
+    } catch (error) {
+      notifications.error('Failed to delete invite');
     }
+  }
 
-    copyInviteCode(code) {
-        navigator.clipboard.writeText(code).then(() => {
-            notifications.success(`Invite code "${code}" copied to clipboard`);
-        }).catch(err => {
-            console.error('Failed to copy:', err);
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = code;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            notifications.success(`Invite code "${code}" copied to clipboard`);
-        });
-    }
+  copyInviteCode(code) {
+    navigator.clipboard.writeText(code).then(() => {
+      notifications.success(`Invite code "${code}" copied to clipboard`);
+    }).catch(err => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = code;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      notifications.success(`Invite code "${code}" copied to clipboard`);
+    });
+  }
 
-    destroy() {
-        if (window.invitesManager === this) {
-            window.invitesManager = null;
-        }
+  destroy() {
+    if (window.invitesManager === this) {
+      window.invitesManager = null;
     }
+  }
 }

@@ -32,8 +32,29 @@ export async function loginUser(login: string, password: string): Promise<IResol
       await database.deleteSessionByUserId(user.id);
 
       const sessionId = generateGuid();
-      const userRolesResult = await database.getUserRoles(user.id);
-      const roles = userRolesResult.success && userRolesResult.data ? userRolesResult.data : [UserRoles.USER];
+      
+      // Получаем роли пользователя
+      let userRolesResult = await database.getUserRoles(user.id);
+      console.log('🔍 DEBUG LOGIN - Initial getUserRoles result:', userRolesResult);
+      
+      // ВРЕМЕННОЕ РЕШЕНИЕ: для первого admin пользователя системы
+      // автоматически добавляем admin роль, если её нет
+      if (user.login === 'first_admin' || user.email === 'first.admin@system.com') {
+        const currentRoles = userRolesResult.data || [];
+        if (!currentRoles.includes('admin')) {
+          console.log('🔍 DEBUG LOGIN - Adding admin role for system admin');
+          await database.addUserToGroup(user.id, 'admin');
+          // Перечитываем роли после добавления
+          userRolesResult = await database.getUserRoles(user.id);
+          console.log('🔍 DEBUG LOGIN - Roles after adding admin:', userRolesResult);
+        }
+      }
+      
+      const roles = userRolesResult.success && userRolesResult.data && userRolesResult.data.length > 0
+        ? userRolesResult.data
+        : [UserRoles.USER];
+      console.log('🔍 DEBUG LOGIN - Final roles used for token:', roles);
+      
       const tokenResult = await generateToken({ id: user.id, sessionId: sessionId, roles: roles });
       if (!tokenResult.success || !tokenResult.data) {
         return prep.response(false, messages.failure, undefined);
@@ -41,6 +62,7 @@ export async function loginUser(login: string, password: string): Promise<IResol
       const token = tokenResult.data;
       await database.saveSession(sessionId, user.id, token);
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password_hash, ...userWithoutPasswordHash } = user;
       return prep.response(true, messages.ok, { user: userWithoutPasswordHash as IUser, token});
     } else {

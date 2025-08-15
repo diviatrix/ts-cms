@@ -4,125 +4,125 @@ import { notifications } from '../../modules/notifications.js';
 import { BasePageController } from './base-page-controller.js';
 
 export default class ThemeEditorController extends BasePageController {
-    constructor(app) {
-        super();
-        this.app = app;
-        this.container = document.getElementById('theme-editor-container');
-        this.themeId = null;
-        this.theme = null;
-        this.settings = null;
-        this.originalSettings = null;
-        this.init();
-    }
+  constructor(app) {
+    super();
+    this.app = app;
+    this.container = document.getElementById('theme-editor-container');
+    this.themeId = null;
+    this.theme = null;
+    this.settings = null;
+    this.originalSettings = null;
+    this.init();
+  }
 
-    async init() {
-        if (!this.app.user.roles.includes('admin')) {
-            window.location.href = '/';
-            return;
-        }
-        
-        // Get theme ID from URL
-        const params = new URLSearchParams(window.location.search);
-        this.themeId = params.get('id');
-        
-        if (this.themeId) {
-            await this.loadTheme();
-        } else {
-            this.initNewTheme();
-        }
-        
-        this.render();
+  async init() {
+    if (!this.app.user.roles.includes('admin')) {
+      window.location.href = '/';
+      return;
     }
+        
+    // Get theme ID from URL
+    const params = new URLSearchParams(window.location.search);
+    this.themeId = params.get('id');
+        
+    if (this.themeId) {
+      await this.loadTheme();
+    } else {
+      this.initNewTheme();
+    }
+        
+    this.render();
+  }
 
-    async loadTheme() {
-        await this.safeApiCall(
-            () => ThemesAPI.getById(this.themeId),
-            {
-                successCallback: (data) => {
-                    this.theme = data.theme;
+  async loadTheme() {
+    await this.safeApiCall(
+      () => ThemesAPI.getById(this.themeId),
+      {
+        successCallback: (data) => {
+          this.theme = data.theme;
                     
-                    // Transform settings array to object if needed
-                    let settings = data.settings || {};
-                    if (Array.isArray(settings)) {
-                        const transformed = {};
-                        settings.forEach(item => {
-                            transformed[item.setting_key] = item.setting_value;
-                        });
-                        settings = transformed;
-                    }
+          // Transform settings array to object if needed
+          let settings = data.settings || {};
+          if (Array.isArray(settings)) {
+            const transformed = {};
+            settings.forEach(item => {
+              transformed[item.setting_key] = item.setting_value;
+            });
+            settings = transformed;
+          }
                     
-                    // Map old property names to new ones for the editor
-                    this.settings = {
-                        primary: settings.primary_color || settings.primary || '#3cff7a',
-                        secondary: settings.secondary_color || settings.secondary || '#444444',
-                        background: settings.background_color || settings.background || '#222222',
-                        surface: settings.surface_color || settings.surface || '#2a2a2a',
-                        text: settings.text_color || settings.text || '#e0e0e0',
-                        border: settings.border_color || settings.border || '#444444',
-                        muted: settings.muted_color || settings.muted || '#aaa',
-                        error: settings.error_color || settings.error || '#ff3c3c',
-                        success: settings.success_color || settings.success || '#3cff7a',
-                        font_family: settings.font_family || "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                        font_size: settings.font_size || '1rem',
-                        radius: settings.radius || '1rem',
-                        spacing: settings.spacing || '0.5rem',
-                        shadow: settings.shadow || '0 4px 24px rgba(0,0,0,0.10)',
-                        custom_css: settings.custom_css || ''
-                    };
-                    this.originalSettings = { ...this.settings };
-                },
-                errorCallback: () => {
-                    notifications.error('Failed to load theme');
-                    setTimeout(() => {
-                        window.location.href = '/themes-manage';
-                    }, 2000);
-                }
-            }
-        );
-    }
+          // Map old property names to new ones for the editor
+          this.settings = {
+            primary: settings.primary_color || settings.primary || '#3cff7a',
+            secondary: settings.secondary_color || settings.secondary || '#444444',
+            background: settings.background_color || settings.background || '#222222',
+            surface: settings.surface_color || settings.surface || '#2a2a2a',
+            text: settings.text_color || settings.text || '#e0e0e0',
+            border: settings.border_color || settings.border || '#444444',
+            muted: settings.muted_color || settings.muted || '#aaa',
+            error: settings.error_color || settings.error || '#ff3c3c',
+            success: settings.success_color || settings.success || '#3cff7a',
+            font_family: settings.font_family || '-apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif',
+            font_size: settings.font_size || '1rem',
+            radius: settings.radius || '1rem',
+            spacing: settings.spacing || '0.5rem',
+            shadow: settings.shadow || '0 4px 24px rgba(0,0,0,0.10)',
+            custom_css: settings.custom_css || ''
+          };
+          this.originalSettings = { ...this.settings };
+        },
+        errorCallback: () => {
+          notifications.error('Failed to load theme');
+          setTimeout(() => {
+            window.location.href = '/themes-manage';
+          }, 2000);
+        }
+      }
+    );
+  }
 
-    initNewTheme() {
-        this.theme = {
-            name: '',
-            description: '',
-            is_active: false
-        };
+  initNewTheme() {
+    this.theme = {
+      name: '',
+      description: '',
+      is_active: false
+    };
         
-        // Get current theme as base - use computed styles to get actual values
-        const computed = getComputedStyle(document.documentElement);
-        this.settings = {
-            // Core colors
-            primary: computed.getPropertyValue('--primary').trim() || '#3cff7a',
-            secondary: computed.getPropertyValue('--secondary').trim() || '#444444',
-            background: computed.getPropertyValue('--background').trim() || '#222222',
-            surface: computed.getPropertyValue('--surface').trim() || '#2a2a2a',
-            text: computed.getPropertyValue('--text').trim() || '#e0e0e0',
-            border: computed.getPropertyValue('--border').trim() || '#444444',
+    // Get current theme as base - use computed styles to get actual values
+    const computed = getComputedStyle(document.documentElement);
+    this.settings = {
+      // Core colors
+      primary: computed.getPropertyValue('--primary').trim() || '#3cff7a',
+      secondary: computed.getPropertyValue('--secondary').trim() || '#444444',
+      background: computed.getPropertyValue('--background').trim() || '#222222',
+      surface: computed.getPropertyValue('--surface').trim() || '#2a2a2a',
+      text: computed.getPropertyValue('--text').trim() || '#e0e0e0',
+      border: computed.getPropertyValue('--border').trim() || '#444444',
             
-            // Additional colors
-            muted: computed.getPropertyValue('--muted').trim() || '#aaa',
-            error: computed.getPropertyValue('--error').trim() || '#ff3c3c',
-            success: computed.getPropertyValue('--success').trim() || '#3cff7a',
+      // Additional colors
+      muted: computed.getPropertyValue('--muted').trim() || '#aaa',
+      error: computed.getPropertyValue('--error').trim() || '#ff3c3c',
+      success: computed.getPropertyValue('--success').trim() || '#3cff7a',
             
-            // Typography
-            font_family: computed.getPropertyValue('--font-family').trim() || "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            font_size: computed.getPropertyValue('--font-size').trim() || '1rem',
+      // Typography
+      font_family: computed.getPropertyValue('--font-family').trim() || '-apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif',
+      font_size: computed.getPropertyValue('--font-size').trim() || '1rem',
             
-            // Layout
-            radius: computed.getPropertyValue('--radius').trim() || '1rem',
-            spacing: computed.getPropertyValue('--spacing').trim() || '0.5rem',
-            shadow: computed.getPropertyValue('--shadow').trim() || '0 4px 24px rgba(0,0,0,0.10)',
+      // Layout
+      radius: computed.getPropertyValue('--radius').trim() || '1rem',
+      spacing: computed.getPropertyValue('--spacing').trim() || '0.5rem',
+      shadow: computed.getPropertyValue('--shadow').trim() || '0 4px 24px rgba(0,0,0,0.10)',
             
-            // Custom CSS
-            custom_css: ''
-        };
-        this.originalSettings = { ...this.settings };
-    }
+      // Custom CSS
+      custom_css: ''
+    };
+    this.originalSettings = { ...this.settings };
+  }
 
-    render() {
-        const isNew = !this.themeId;
+  render() {
+    const isNew = !this.themeId;
         
-        this.container.innerHTML = `
+    this.container.innerHTML = `
             <form id="themeForm">
                 <div class="card-grid">
                     <div class="card-full-height">
@@ -233,41 +233,41 @@ export default class ThemeEditorController extends BasePageController {
             </form>
         `;
         
-        // Attach event listeners
-        document.getElementById('themeForm').addEventListener('submit', (e) => this.handleSubmit(e));
+    // Attach event listeners
+    document.getElementById('themeForm').addEventListener('submit', (e) => this.handleSubmit(e));
         
-        // Attach color input listeners for live preview and synchronization
-        document.querySelectorAll('input[type="color"]').forEach(input => {
-            input.addEventListener('input', (e) => {
-                // Sync with text input
-                const textInput = document.getElementById(e.target.id + '_text');
-                if (textInput) {
-                    textInput.value = e.target.value;
-                }
-                this.previewChanges();
-            });
-        });
+    // Attach color input listeners for live preview and synchronization
+    document.querySelectorAll('input[type="color"]').forEach(input => {
+      input.addEventListener('input', (e) => {
+        // Sync with text input
+        const textInput = document.getElementById(e.target.id + '_text');
+        if (textInput) {
+          textInput.value = e.target.value;
+        }
+        this.previewChanges();
+      });
+    });
         
-        // Attach text input listeners for color synchronization
-        document.querySelectorAll('[id$="_text"]').forEach(input => {
-            input.addEventListener('input', (e) => {
-                const colorInputId = e.target.id.replace('_text', '');
-                const colorInput = document.getElementById(colorInputId);
-                if (colorInput && /^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                    colorInput.value = e.target.value;
-                    this.previewChanges();
-                }
-            });
-        });
+    // Attach text input listeners for color synchronization
+    document.querySelectorAll('[id$="_text"]').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const colorInputId = e.target.id.replace('_text', '');
+        const colorInput = document.getElementById(colorInputId);
+        if (colorInput && /^#[0-9A-F]{6}$/i.test(e.target.value)) {
+          colorInput.value = e.target.value;
+          this.previewChanges();
+        }
+      });
+    });
         
-        window.themeEditor = this;
-    }
+    window.themeEditor = this;
+  }
 
-    renderColorInput(id, label, value) {
-        // Ensure value is a valid hex color
-        const colorValue = value && /^#[0-9A-F]{6}$/i.test(value) ? value : '#000000';
+  renderColorInput(id, label, value) {
+    // Ensure value is a valid hex color
+    const colorValue = value && /^#[0-9A-F]{6}$/i.test(value) ? value : '#000000';
         
-        return `
+    return `
             <div class="color-input-group">
                 <label for="${id}">${label}</label>
                 <div class="flex gap-1">
@@ -276,227 +276,222 @@ export default class ThemeEditorController extends BasePageController {
                 </div>
             </div>
         `;
-    }
+  }
 
-    previewChanges() {
-        const formData = this.collectFormData();
-        // Convert back to the format expected by theme system
-        const settings = formData.settings;
-        applyThemeFromSettings(settings);
-    }
+  previewChanges() {
+    const formData = this.collectFormData();
+    // Convert back to the format expected by theme system
+    const settings = formData.settings;
+    applyThemeFromSettings(settings);
+  }
 
-    resetChanges() {
-        // Convert editor format back to theme system format for preview
-        const resetSettings = {
-            primary_color: this.originalSettings.primary,
-            secondary_color: this.originalSettings.secondary,
-            background_color: this.originalSettings.background,
-            surface_color: this.originalSettings.surface,
-            text_color: this.originalSettings.text,
-            border_color: this.originalSettings.border,
-            muted_color: this.originalSettings.muted,
-            error_color: this.originalSettings.error,
-            success_color: this.originalSettings.success,
-            font_family: this.originalSettings.font_family,
-            font_size: this.originalSettings.font_size,
-            radius: this.originalSettings.radius,
-            spacing: this.originalSettings.spacing,
-            shadow: this.originalSettings.shadow,
-            custom_css: this.originalSettings.custom_css
-        };
-        applyThemeFromSettings(resetSettings);
-        this.render();
-    }
+  resetChanges() {
+    // Convert editor format back to theme system format for preview
+    const resetSettings = {
+      primary_color: this.originalSettings.primary,
+      secondary_color: this.originalSettings.secondary,
+      background_color: this.originalSettings.background,
+      surface_color: this.originalSettings.surface,
+      text_color: this.originalSettings.text,
+      border_color: this.originalSettings.border,
+      muted_color: this.originalSettings.muted,
+      error_color: this.originalSettings.error,
+      success_color: this.originalSettings.success,
+      font_family: this.originalSettings.font_family,
+      font_size: this.originalSettings.font_size,
+      radius: this.originalSettings.radius,
+      spacing: this.originalSettings.spacing,
+      shadow: this.originalSettings.shadow,
+      custom_css: this.originalSettings.custom_css
+    };
+    applyThemeFromSettings(resetSettings);
+    this.render();
+  }
 
-    collectFormData() {
-        // Helper to get color value from either color picker or text input
-        const getColorValue = (id) => {
-            const textInput = document.getElementById(id + '_text');
-            const colorInput = document.getElementById(id);
+  collectFormData() {
+    // Helper to get color value from either color picker or text input
+    const getColorValue = (id) => {
+      const textInput = document.getElementById(id + '_text');
+      const colorInput = document.getElementById(id);
             
-            // Prefer text input if it has a valid hex value
-            if (textInput && textInput.value && /^#[0-9A-F]{6}$/i.test(textInput.value)) {
-                return textInput.value;
-            }
+      // Prefer text input if it has a valid hex value
+      if (textInput && textInput.value && /^#[0-9A-F]{6}$/i.test(textInput.value)) {
+        return textInput.value;
+      }
             
-            // Otherwise use color picker value
-            return colorInput ? colorInput.value : '#000000';
-        };
+      // Otherwise use color picker value
+      return colorInput ? colorInput.value : '#000000';
+    };
         
-        return {
-            theme: {
-                name: document.getElementById('themeName').value,
-                description: document.getElementById('themeDescription').value,
-                is_active: document.getElementById('themeActive').checked
-            },
-            settings: {
-                // Core colors - map to old names for backward compatibility
-                primary_color: getColorValue('primary'),
-                secondary_color: getColorValue('secondary'),
-                background_color: getColorValue('background'),
-                surface_color: getColorValue('surface'),
-                text_color: getColorValue('text'),
-                border_color: getColorValue('border'),
+    return {
+      theme: {
+        name: document.getElementById('themeName').value,
+        description: document.getElementById('themeDescription').value,
+        is_active: document.getElementById('themeActive').checked
+      },
+      settings: {
+        // Core colors - map to old names for backward compatibility
+        primary_color: getColorValue('primary'),
+        secondary_color: getColorValue('secondary'),
+        background_color: getColorValue('background'),
+        surface_color: getColorValue('surface'),
+        text_color: getColorValue('text'),
+        border_color: getColorValue('border'),
                 
-                // Additional colors
-                muted_color: getColorValue('muted'),
-                error_color: getColorValue('error'),
-                success_color: getColorValue('success'),
+        // Additional colors
+        muted_color: getColorValue('muted'),
+        error_color: getColorValue('error'),
+        success_color: getColorValue('success'),
                 
-                // Typography
-                font_family: document.getElementById('fontFamily').value,
-                font_size: document.getElementById('fontSize').value,
+        // Typography
+        font_family: document.getElementById('fontFamily').value,
+        font_size: document.getElementById('fontSize').value,
                 
-                // Layout
-                radius: document.getElementById('radius').value,
-                spacing: document.getElementById('spacing').value,
-                shadow: document.getElementById('shadow').value,
+        // Layout
+        radius: document.getElementById('radius').value,
+        spacing: document.getElementById('spacing').value,
+        shadow: document.getElementById('shadow').value,
                 
-                // Custom CSS
-                custom_css: document.getElementById('customCSS').value
-            }
-        };
-    }
+        // Custom CSS
+        custom_css: document.getElementById('customCSS').value
+      }
+    };
+  }
 
-    async handleSubmit(e) {
-        e.preventDefault();
+  async handleSubmit(e) {
+    e.preventDefault();
         
-        const data = this.collectFormData();
-        console.log('Submitting theme data:', data);
+    const data = this.collectFormData();
         
-        try {
-            if (this.themeId) {
-                // Update existing theme metadata
-                const metadataResponse = await ThemesAPI.update(this.themeId, data.theme);
+    try {
+      if (this.themeId) {
+        // Update existing theme metadata
+        const metadataResponse = await ThemesAPI.update(this.themeId, data.theme);
                 
-                if (!metadataResponse.success) {
-                    notifications.error('Failed to update theme: ' + metadataResponse.message);
-                    return;
-                }
-                
-                // Update each setting individually
-                const errors = [];
-                const successCount = { value: 0 };
-                
-                for (const [settingKey, settingValue] of Object.entries(data.settings)) {
-                    if (settingValue && settingValue.toString().trim() !== '') {
-                        try {
-                            const payload = {
-                                key: settingKey,
-                                value: settingValue.toString(),
-                                type: settingKey.includes('color') ? 'color' : 'string'
-                            };
-                            console.log(`Sending setting ${settingKey}:`, payload);
-                            
-                            const response = await apiFetch(`/api/themes/${this.themeId}/settings`, {
-                                method: 'POST',
-                                data: payload
-                            });
-                            
-                            if (response.success) {
-                                successCount.value++;
-                            } else {
-                                errors.push(`${key}: ${response.message || 'Failed to update'}`);
-                            }
-                        } catch (err) {
-                            console.error(`Failed to update setting ${key}:`, err);
-                            errors.push(`${key}: ${err.message || 'Unknown error'}`);
-                        }
-                    }
-                }
-                
-                if (errors.length > 0) {
-                    console.error('Errors updating settings:', errors);
-                    notifications.error('Theme updated with errors: ' + errors.join(', '));
-                } else if (successCount.value > 0) {
-                    notifications.success('Theme updated successfully!');
-                    // Update original settings to reflect saved state
-                    const formData = this.collectFormData();
-                    this.originalSettings = {
-                        primary: formData.settings.primary_color,
-                        secondary: formData.settings.secondary_color,
-                        background: formData.settings.background_color,
-                        surface: formData.settings.surface_color,
-                        text: formData.settings.text_color,
-                        border: formData.settings.border_color,
-                        muted: formData.settings.muted_color,
-                        error: formData.settings.error_color,
-                        success: formData.settings.success_color,
-                        font_family: formData.settings.font_family,
-                        font_size: formData.settings.font_size,
-                        radius: formData.settings.radius,
-                        spacing: formData.settings.spacing,
-                        shadow: formData.settings.shadow,
-                        custom_css: formData.settings.custom_css
-                    };
-                } else {
-                    notifications.error('No settings were updated');
-                }
-            } else {
-                // Create new theme - for now just create with metadata
-                const response = await ThemesAPI.create(data.theme);
-                
-                if (response.success && response.data) {
-                    // Now update settings for the new theme
-                    const newThemeId = response.data.id;
-                    const errors = [];
-                    
-                    for (const [key, value] of Object.entries(data.settings)) {
-                        if (value && value.toString().trim() !== '') {
-                            try {
-                                const settingResponse = await apiFetch(`/api/themes/${newThemeId}/settings`, {
-                                    method: 'POST',
-                                    data: {
-                                        key: key,
-                                        value: value.toString(),
-                                        type: key.includes('color') ? 'color' : 'string'
-                                    }
-                                });
-                                
-                                if (!settingResponse.success) {
-                                    errors.push(`${key}: ${settingResponse.message || 'Failed to set'}`);
-                                }
-                            } catch (err) {
-                                errors.push(`${key}: ${err.message || 'Unknown error'}`);
-                            }
-                        }
-                    }
-                    
-                    if (errors.length > 0) {
-                        notifications.error('Theme created with errors: ' + errors.join(', '));
-                    } else {
-                        notifications.success('Theme created successfully!');
-                        // Update the URL to include the new theme ID
-                        const newUrl = `/theme-editor?id=${newThemeId}`;
-                        window.history.replaceState({}, '', newUrl);
-                        this.themeId = newThemeId;
-                        // Update original settings to reflect saved state
-                        const formData = this.collectFormData();
-                        this.originalSettings = {
-                            primary: formData.settings.primary_color,
-                            secondary: formData.settings.secondary_color,
-                            background: formData.settings.background_color,
-                            surface: formData.settings.surface_color,
-                            text: formData.settings.text_color,
-                            border: formData.settings.border_color,
-                            muted: formData.settings.muted_color,
-                            error: formData.settings.error_color,
-                            success: formData.settings.success_color,
-                            font_family: formData.settings.font_family,
-                            font_size: formData.settings.font_size,
-                            radius: formData.settings.radius,
-                            spacing: formData.settings.spacing,
-                            shadow: formData.settings.shadow,
-                            custom_css: formData.settings.custom_css
-                        };
-                    }
-                } else {
-                    notifications.error('Failed to create theme: ' + response.message);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to save theme:', error);
-            notifications.error('Error saving theme');
+        if (!metadataResponse.success) {
+          notifications.error('Failed to update theme: ' + metadataResponse.message);
+          return;
         }
+                
+        // Update each setting individually
+        const errors = [];
+        const successCount = { value: 0 };
+                
+        for (const [settingKey, settingValue] of Object.entries(data.settings)) {
+          if (settingValue && settingValue.toString().trim() !== '') {
+            try {
+              const payload = {
+                key: settingKey,
+                value: settingValue.toString(),
+                type: settingKey.includes('color') ? 'color' : 'string'
+              };
+                            
+              const response = await apiFetch(`/api/themes/${this.themeId}/settings`, {
+                method: 'POST',
+                data: payload
+              });
+                            
+              if (response.success) {
+                successCount.value++;
+              } else {
+                errors.push(`${key}: ${response.message || 'Failed to update'}`);
+              }
+            } catch (err) {
+              errors.push(`${key}: ${err.message || 'Unknown error'}`);
+            }
+          }
+        }
+                
+        if (errors.length > 0) {
+          notifications.error('Theme updated with errors: ' + errors.join(', '));
+        } else if (successCount.value > 0) {
+          notifications.success('Theme updated successfully!');
+          // Update original settings to reflect saved state
+          const formData = this.collectFormData();
+          this.originalSettings = {
+            primary: formData.settings.primary_color,
+            secondary: formData.settings.secondary_color,
+            background: formData.settings.background_color,
+            surface: formData.settings.surface_color,
+            text: formData.settings.text_color,
+            border: formData.settings.border_color,
+            muted: formData.settings.muted_color,
+            error: formData.settings.error_color,
+            success: formData.settings.success_color,
+            font_family: formData.settings.font_family,
+            font_size: formData.settings.font_size,
+            radius: formData.settings.radius,
+            spacing: formData.settings.spacing,
+            shadow: formData.settings.shadow,
+            custom_css: formData.settings.custom_css
+          };
+        } else {
+          notifications.error('No settings were updated');
+        }
+      } else {
+        // Create new theme - for now just create with metadata
+        const response = await ThemesAPI.create(data.theme);
+                
+        if (response.success && response.data) {
+          // Now update settings for the new theme
+          const newThemeId = response.data.id;
+          const errors = [];
+                    
+          for (const [key, value] of Object.entries(data.settings)) {
+            if (value && value.toString().trim() !== '') {
+              try {
+                const settingResponse = await apiFetch(`/api/themes/${newThemeId}/settings`, {
+                  method: 'POST',
+                  data: {
+                    key: key,
+                    value: value.toString(),
+                    type: key.includes('color') ? 'color' : 'string'
+                  }
+                });
+                                
+                if (!settingResponse.success) {
+                  errors.push(`${key}: ${settingResponse.message || 'Failed to set'}`);
+                }
+              } catch (err) {
+                errors.push(`${key}: ${err.message || 'Unknown error'}`);
+              }
+            }
+          }
+                    
+          if (errors.length > 0) {
+            notifications.error('Theme created with errors: ' + errors.join(', '));
+          } else {
+            notifications.success('Theme created successfully!');
+            // Update the URL to include the new theme ID
+            const newUrl = `/theme-editor?id=${newThemeId}`;
+            window.history.replaceState({}, '', newUrl);
+            this.themeId = newThemeId;
+            // Update original settings to reflect saved state
+            const formData = this.collectFormData();
+            this.originalSettings = {
+              primary: formData.settings.primary_color,
+              secondary: formData.settings.secondary_color,
+              background: formData.settings.background_color,
+              surface: formData.settings.surface_color,
+              text: formData.settings.text_color,
+              border: formData.settings.border_color,
+              muted: formData.settings.muted_color,
+              error: formData.settings.error_color,
+              success: formData.settings.success_color,
+              font_family: formData.settings.font_family,
+              font_size: formData.settings.font_size,
+              radius: formData.settings.radius,
+              spacing: formData.settings.spacing,
+              shadow: formData.settings.shadow,
+              custom_css: formData.settings.custom_css
+            };
+          }
+        } else {
+          notifications.error('Failed to create theme: ' + response.message);
+        }
+      }
+    } catch (error) {
+      notifications.error('Error saving theme');
     }
+  }
 }

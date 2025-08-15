@@ -11,7 +11,43 @@ import { asyncHandler, Errors } from '../middleware/error.middleware';
 
 const router = express.Router();
 
-// Add the profile endpoint
+/**
+ * @swagger
+ * /api/profile:
+ *   get:
+ *     tags: [Profile]
+ *     summary: Получить профиль пользователя
+ *     description: Возвращает профиль текущего авторизованного пользователя
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Профиль успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/UserProfile'
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Профиль не найден
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get('/profile', requireAuth, asyncHandler(async (req: Request, res: Response): Promise<void> => {
     if (!req.user || !req.user.id) {
         throw Errors.unauthorized('User information not available');
@@ -27,7 +63,49 @@ router.get('/profile', requireAuth, asyncHandler(async (req: Request, res: Respo
     ResponseUtils.success(res, profile.data, profile.message);
 }));
 
-// Add the update profile endpoint
+/**
+ * @swagger
+ * /api/profile:
+ *   put:
+ *     tags: [Profile]
+ *     summary: Обновить профиль пользователя
+ *     description: Обновляет публичное имя и/или биографию пользователя
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProfileUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Профиль успешно обновлен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Ошибка валидации
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.put('/profile', requireAuth, asyncHandler(async (req: Request, res: Response): Promise<void> => {
     if (!req.user || !req.user.id) {
         throw Errors.unauthorized('User information not available');
@@ -50,7 +128,65 @@ router.put('/profile', requireAuth, asyncHandler(async (req: Request, res: Respo
     ResponseUtils.success(res, result.data, result.message);
 }));
 
-// Add the profile update endpoint
+/**
+ * @swagger
+ * /api/profile:
+ *   post:
+ *     tags: [Profile]
+ *     summary: Обновить расширенный профиль пользователя
+ *     description: Обновляет профиль пользователя с возможностью изменения ролей (для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               user_id:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID пользователя (только для администраторов)
+ *               profile:
+ *                 type: object
+ *                 properties:
+ *                   public_name:
+ *                     type: string
+ *                   bio:
+ *                     type: string
+ *               base:
+ *                 type: object
+ *                 properties:
+ *                   login:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *               roles:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Роли пользователя (только для администраторов)
+ *     responses:
+ *       200:
+ *         description: Профиль успешно обновлен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       400:
+ *         description: Ошибка валидации
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
+ */
 router.post('/profile', requireAuth, validateNestedBody(ValidationSchemas.profileUpdate), asyncHandler(async (req: Request, res: Response) => {
     const authenticatedUserId = req.user!.id;
     const isAuthenticatedUserAdmin = req.user!.roles && RoleCheck.hasRole(req.user!.roles, UserRoles.ADMIN);
@@ -100,7 +236,48 @@ router.post('/profile', requireAuth, validateNestedBody(ValidationSchemas.profil
     }
 }));
 
-// Add the endpoint to set user password
+/**
+ * @swagger
+ * /api/profile/password/set:
+ *   post:
+ *     tags: [Profile]
+ *     summary: Изменить пароль пользователя
+ *     description: Устанавливает новый пароль для пользователя (администраторы могут менять пароли других пользователей)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PasswordChangeRequest'
+ *     responses:
+ *       200:
+ *         description: Пароль успешно изменен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password updated successfully"
+ *       400:
+ *         description: Ошибка валидации
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post('/profile/password/set', requireAuth, validateBody(ValidationSchemas.passwordChange), asyncHandler(async (req: Request, res: Response) => {
     const { userId, newPassword } = req.body;
     const authenticatedUserId = req.user!.id;

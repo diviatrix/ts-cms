@@ -5,6 +5,8 @@ export interface IInvite {
     created_at: string;
     used_by?: string | null;
     used_at?: string | null;
+    is_used?: boolean;
+    used_by_user_id?: string | null;
 }
 
 export interface ICreateInvite {

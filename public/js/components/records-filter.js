@@ -3,16 +3,26 @@ export class RecordsFilter {
     this.onFilterChange = onFilterChange;
     this.activeCategories = new Set();
     this.activeTags = new Set();
+    this.currentSearch = '';
     this.allRecords = [];
-    this.categoryColors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#a29bfe'];
     this.eventListeners = [];
   }
 
-  init(records) {
+  async init(records, enableSearch = true) {
     this.allRecords = records;
+    this.enableSearch = enableSearch;
     this.extractFilters();
     this.render();
     this.setupEventListeners();
+    await this.loadDefaultCategories();
+    this.updateUI();
+    this.applyFilters();
+  }
+
+  async loadDefaultCategories() {
+    // This method is now handled by the main controller
+    // Keep it for backward compatibility but don't load defaults here
+    // as they are already loaded and applied by the main controller
   }
 
   extractFilters() {
@@ -48,14 +58,23 @@ export class RecordsFilter {
     container.innerHTML = `
       <div class="filters-panel" id="filtersPanel">
         <div class="filters-content">
+          ${this.enableSearch ? `
+            <div class="filter-section">
+              <h4 class="filter-section-title">Search:</h4>
+              <div class="filter-search">
+                <input type="text" id="searchInput" placeholder="Search posts..."
+                       class="form-control form-control-sm"
+                       value="${this.escapeHtml(this.currentSearch)}">
+              </div>
+            </div>
+          ` : ''}
           ${this.categories.length > 0 ? `
             <div class="filter-section">
               <h4 class="filter-section-title">Categories:</h4>
               <div class="filter-categories">
-                ${this.categories.slice(0, 6).map((cat, index) => `
-                  <div class="filter-category" 
-                       data-category="${this.escapeHtml(cat.name)}"
-                       style="background-color: ${this.categoryColors[index % this.categoryColors.length]}; color: ${index === 3 ? '#181a1f' : 'white'};">
+                ${this.categories.slice(0, 6).map(cat => `
+                  <div class="filter-category"
+                       data-category="${this.escapeHtml(cat.name)}">
                     ${this.escapeHtml(cat.name)}
                     <span class="count">${cat.count}</span>
                   </div>
@@ -77,7 +96,7 @@ export class RecordsFilter {
             </div>
           ` : ''}
           <button class="btn btn-secondary btn-sm clear-filters hidden" id="clearFilters">
-            Clear
+            Clear All
           </button>
         </div>
       </div>
@@ -138,6 +157,22 @@ export class RecordsFilter {
     };
     document.addEventListener('click', cardClickHandler);
     this.eventListeners.push({ element: document, event: 'click', handler: cardClickHandler });
+
+    // Search input handler
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      let searchTimeout;
+      const searchHandler = (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          this.currentSearch = e.target.value;
+          this.applyFilters();
+        }, 300); // Debounce search for 300ms
+      };
+      
+      searchInput.addEventListener('input', searchHandler);
+      this.eventListeners.push({ element: searchInput, event: 'input', handler: searchHandler });
+    }
   }
 
   toggleCategory(category) {
@@ -163,6 +198,14 @@ export class RecordsFilter {
   clearAllFilters() {
     this.activeCategories.clear();
     this.activeTags.clear();
+    this.currentSearch = '';
+    
+    // Clear search input if it exists
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.value = '';
+    }
+    
     this.updateUI();
     this.applyFilters();
   }
@@ -181,33 +224,20 @@ export class RecordsFilter {
     // Update clear button visibility
     const clearBtn = document.getElementById('clearFilters');
     if (clearBtn) {
-      clearBtn.classList.toggle('hidden', 
-        this.activeCategories.size === 0 && this.activeTags.size === 0);
+      clearBtn.classList.toggle('hidden',
+        this.activeCategories.size === 0 && this.activeTags.size === 0 && !this.currentSearch);
     }
   }
 
   applyFilters() {
-    const filteredRecords = this.allRecords.filter(record => {
-      // Check categories
-      if (this.activeCategories.size > 0) {
-        const recordCategories = new Set(record.categories || []);
-        const hasCategory = Array.from(this.activeCategories).some(cat => 
-          recordCategories.has(cat));
-        if (!hasCategory) return false;
-      }
+    // Instead of filtering locally, send filter parameters to callback
+    const filterParams = {
+      categories: this.activeCategories,
+      tags: this.activeTags,
+      search: this.currentSearch || ''
+    };
 
-      // Check tags
-      if (this.activeTags.size > 0) {
-        const recordTags = new Set(record.tags || []);
-        const hasTag = Array.from(this.activeTags).some(tag => 
-          recordTags.has(tag));
-        if (!hasTag) return false;
-      }
-
-      return true;
-    });
-
-    this.onFilterChange(filteredRecords);
+    this.onFilterChange(filterParams);
   }
 
   escapeHtml(text) {

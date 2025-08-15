@@ -3,25 +3,25 @@ import { notifications } from '../../modules/notifications.js';
 import { BasePageController } from './base-page-controller.js';
 
 export default class RecordsManageController extends BasePageController {
-    constructor(app) {
-        super();
-        this.app = app;
-        this.container = document.getElementById('records-manage-container');
-        this.init();
-    }
+  constructor(app) {
+    super();
+    this.app = app;
+    this.container = document.getElementById('records-manage-container');
+    this.init();
+  }
 
-    async init() {
-        if (!this.app.user.roles.includes('admin')) {
-            window.location.href = '/';
-            return;
-        }
+  async init() {
+    if (!this.app.user.roles.includes('admin')) {
+      window.location.href = '/';
+      return;
+    }
         
-        this.render();
-        await this.loadRecords();
-    }
+    this.render();
+    await this.loadRecords();
+  }
 
-    render() {
-        this.container.innerHTML = `
+  render() {
+    this.container.innerHTML = `
             <h2 class="page-title">Manage Records</h2>
             
             <div class="form-actions mb-2">
@@ -37,29 +37,29 @@ export default class RecordsManageController extends BasePageController {
             </div>
         `;
         
-        window.recordsManager = this;
-    }
+    window.recordsManager = this;
+  }
 
-    async loadRecords() {
-        await this.safeApiCall(
-            () => RecordsAPI.getAll(),
-            {
-                successCallback: (data) => this.renderRecordsList(data),
-                errorCallback: () => {
-                    document.getElementById('recordsList').innerHTML = '<p class="alert alert-danger">Failed to load records</p>';
-                }
-            }
-        );
-    }
-
-    renderRecordsList(records) {
-        const container = document.getElementById('recordsList');
-        if (!records.length) {
-            container.innerHTML = '<p>No records found</p>';
-            return;
+  async loadRecords() {
+    await this.safeApiCall(
+      () => RecordsAPI.getAll(),
+      {
+        successCallback: (data) => this.renderRecordsList(data),
+        errorCallback: () => {
+          document.getElementById('recordsList').innerHTML = '<p class="alert alert-danger">Failed to load records</p>';
         }
+      }
+    );
+  }
+
+  renderRecordsList(records) {
+    const container = document.getElementById('recordsList');
+    if (!records.length) {
+      container.innerHTML = '<p>No records found</p>';
+      return;
+    }
         
-        container.innerHTML = records.map(record => `
+    container.innerHTML = records.map(record => `
             <div class="box">
                 <div class="meta-row">
                     <span><strong>${record.title}</strong></span>
@@ -71,27 +71,27 @@ export default class RecordsManageController extends BasePageController {
                 </div>
             </div>
         `).join('');
-    }
+  }
 
-    createNewRecord() {
-        window.location.href = '/record-editor';
-    }
+  createNewRecord() {
+    window.location.href = '/record-editor';
+  }
 
-    async deleteRecord(id) {
-        const confirmed = await notifications.confirm('Are you sure you want to delete this record?');
-        if (!confirmed) return;
+  async deleteRecord(id) {
+    const confirmed = await notifications.confirm('Are you sure you want to delete this record?');
+    if (!confirmed) return;
         
-        await this.safeApiCall(
-            () => RecordsAPI.delete(id),
-            {
-                successCallback: async () => {
-                    notifications.success('Record deleted successfully');
-                    await this.loadRecords();
-                },
-                errorCallback: () => {
-                    notifications.error('Failed to delete record');
-                }
-            }
-        );
-    }
+    await this.safeApiCall(
+      () => RecordsAPI.delete(id),
+      {
+        successCallback: async () => {
+          notifications.success('Record deleted successfully');
+          await this.loadRecords();
+        },
+        errorCallback: () => {
+          notifications.error('Failed to delete record');
+        }
+      }
+    );
+  }
 }

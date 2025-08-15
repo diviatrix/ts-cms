@@ -163,3 +163,7 @@ Thumbs.db
 .claude/settings.local.json
 CLAUDE.md
 RULES.md
+
+# Allure reports
+allure-results/
+allure-report/

@@ -3,54 +3,54 @@ import { notifications } from '../../modules/notifications.js';
 import { BasePageController } from './base-page-controller.js';
 
 export default class UserEditorController extends BasePageController {
-    constructor(app) {
-        super();
-        this.app = app;
-        this.container = document.getElementById('user-editor-container');
-        this.userId = null;
-        this.user = null;
-        this.init();
+  constructor(app) {
+    super();
+    this.app = app;
+    this.container = document.getElementById('user-editor-container');
+    this.userId = null;
+    this.user = null;
+    this.init();
+  }
+
+  async init() {
+    if (!this.app.user.roles.includes('admin')) {
+      window.location.href = '/';
+      return;
     }
 
-    async init() {
-        if (!this.app.user.roles.includes('admin')) {
-            window.location.href = '/';
-            return;
+    // Get user ID from URL
+    const params = new URLSearchParams(window.location.search);
+    this.userId = params.get('id');
+
+    if (!this.userId) {
+      notifications.error('No user ID provided');
+      setTimeout(() => window.location.href = '/users-manage', 1000);
+      return;
+    }
+
+    await this.loadUser();
+    this.render();
+  }
+
+  async loadUser() {
+    await this.safeApiCall(
+      () => AdminAPI.getUserProfile(this.userId),
+      {
+        successCallback: (response) => {
+          this.user = response.data;
+        },
+        errorCallback: () => {
+          notifications.error('Failed to load user');
+          setTimeout(() => window.location.href = '/users-manage', 1000);
         }
+      }
+    );
+  }
 
-        // Get user ID from URL
-        const params = new URLSearchParams(window.location.search);
-        this.userId = params.get('id');
+  render() {
+    if (!this.user) return;
 
-        if (!this.userId) {
-            notifications.error('No user ID provided');
-            setTimeout(() => window.location.href = '/users-manage', 1000);
-            return;
-        }
-
-        await this.loadUser();
-        this.render();
-    }
-
-    async loadUser() {
-        await this.safeApiCall(
-            () => AdminAPI.getUserProfile(this.userId),
-            {
-                successCallback: (response) => {
-                    this.user = response.data;
-                },
-                errorCallback: () => {
-                    notifications.error('Failed to load user');
-                    setTimeout(() => window.location.href = '/users-manage', 1000);
-                }
-            }
-        );
-    }
-
-    render() {
-        if (!this.user) return;
-
-        this.container.innerHTML = `
+    this.container.innerHTML = `
             <h2 class="page-title">Edit User: ${this.user.base?.login || 'Unknown'}</h2>
             
             <form id="userForm">
@@ -113,60 +113,60 @@ export default class UserEditorController extends BasePageController {
             </form>
         `;
 
-        document.getElementById('userForm').addEventListener('submit', (e) => this.handleSubmit(e));
+    document.getElementById('userForm').addEventListener('submit', (e) => this.handleSubmit(e));
+  }
+
+
+  async handleSubmit(e) {
+    e.preventDefault();
+
+    // Prepare data according to API documentation
+    const updateData = {
+      user_id: this.userId,
+      profile: {
+        public_name: document.getElementById('userPublicName').value,
+        profile_picture_url: document.getElementById('userAvatar').value,
+        bio: document.getElementById('userBio').value
+      },
+      base: {
+        email: document.getElementById('userEmail').value,
+        is_active: document.getElementById('userActive').checked
+      },
+      roles: []
+    };
+
+    // Collect roles from text input
+    const rolesInput = document.getElementById('userRoles').value;
+    updateData.roles = rolesInput
+      .split(',')
+      .map(role => role.trim())
+      .filter(role => role.length > 0);
+
+    // Check password
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (newPassword) {
+      if (newPassword !== confirmPassword) {
+        notifications.error('Passwords do not match');
+        return;
+      }
+      updateData.password = newPassword;
     }
 
-
-    async handleSubmit(e) {
-        e.preventDefault();
-
-        // Prepare data according to API documentation
-        const updateData = {
-            user_id: this.userId,
-            profile: {
-                public_name: document.getElementById('userPublicName').value,
-                profile_picture_url: document.getElementById('userAvatar').value,
-                bio: document.getElementById('userBio').value
-            },
-            base: {
-                email: document.getElementById('userEmail').value,
-                is_active: document.getElementById('userActive').checked
-            },
-            roles: []
-        };
-
-        // Collect roles from text input
-        const rolesInput = document.getElementById('userRoles').value;
-        updateData.roles = rolesInput
-            .split(',')
-            .map(role => role.trim())
-            .filter(role => role.length > 0);
-
-        // Check password
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-
-        if (newPassword) {
-            if (newPassword !== confirmPassword) {
-                notifications.error('Passwords do not match');
-                return;
-            }
-            updateData.password = newPassword;
+    await this.safeApiCall(
+      () => apiFetch('/api/profile', { method: 'POST', data: updateData }),
+      {
+        loadingElement: e.target.querySelector('button[type="submit"]'),
+        successCallback: () => {
+          notifications.success('User updated successfully');
+          // Reload user data to show updated information
+          this.loadUser();
+        },
+        errorCallback: (response) => {
+          notifications.error(response.message || 'Failed to update user');
         }
-
-        await this.safeApiCall(
-            () => apiFetch('/api/profile', { method: 'POST', data: updateData }),
-            {
-                loadingElement: e.target.querySelector('button[type="submit"]'),
-                successCallback: () => {
-                    notifications.success('User updated successfully');
-                    // Reload user data to show updated information
-                    this.loadUser();
-                },
-                errorCallback: (response) => {
-                    notifications.error(response.message || 'Failed to update user');
-                }
-            }
-        );
-    }
+      }
+    );
+  }
 }

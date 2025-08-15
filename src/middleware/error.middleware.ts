@@ -49,7 +49,7 @@ export function asyncHandler(handler: AsyncHandler) {
 
 // Database transaction wrapper
 export function withTransaction<T>(
-    operation: (transaction?: any) => Promise<T>
+    operation: (transaction?: unknown) => Promise<T>
 ): Promise<T> {
     // This would integrate with your database's transaction system
     // For now, it's a placeholder that just calls the operation
@@ -83,8 +83,7 @@ export function createError(
 export function errorHandler(
     error: Error | AppError,
     req: Request,
-    res: Response,
-    next: NextFunction
+    res: Response
 ): void {
     let statusCode = 500;
     let message = 'Internal server error';
@@ -102,7 +101,7 @@ export function errorHandler(
         message = 'Validation failed';
         type = ErrorType.VALIDATION;
     }
-    else if (error.name === 'UnauthorizedError' || error.message.includes('jwt')) {
+    else if (error.name === 'UnauthorizedError' || (error.message && error.message.includes('jwt'))) {
         statusCode = 401;
         message = 'Authentication failed';
         type = ErrorType.AUTHENTICATION;
@@ -113,19 +112,22 @@ export function errorHandler(
         type = ErrorType.VALIDATION;
     }
     // Database errors
-    else if (error.message.includes('SQLITE_') || error.message.includes('database')) {
+    else if (error.message && (error.message.includes('SQLITE_') || error.message.includes('database'))) {
         statusCode = 500;
         message = 'Database operation failed';
         type = ErrorType.DATABASE;
     }
 
-    // Log error for debugging
-    console.error(`[${type}] ${error.message}`, {
+    // Log error for debugging (with diagnostic info)
+    console.error(`[${type}] ${error.message || 'No error message'}`, {
         timestamp: new Date().toISOString(),
         method: req.method,
         url: req.url,
         statusCode,
-        stack: error.stack
+        stack: error.stack,
+        errorName: error.name,
+        errorHasMessage: !!error.message,
+        errorType: typeof error.message
     });
 
     // Send appropriate response based on error type

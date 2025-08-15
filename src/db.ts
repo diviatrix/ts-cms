@@ -1,12 +1,15 @@
-import config from './data/config';
-import messages from './data/messages';
-import adapter from './db-adapter/sqlite-adapter';
+import messages from './data/messages.ts';
+import adapter from './db-adapter/sqlite-adapter.ts';
 import IUser from './types/IUser';
 import IUserProfile from './types/IUserProfile';
 import IResolve from './types/IResolve';
 import prep from './utils/prepare'
 import IRecord from './types/IRecord';
+import { PaginationParams, PaginatedResponse } from './types/IPagination';
 import { DatabaseChecker } from './utils/database-checker';
+import { ITheme, IThemeSetting, IUserThemePreference } from './types/ITheme';
+import { IInvite, IInviteWithCreatorInfo } from './types/IInvite';
+import { ICMSSetting } from './types/ICMSSetting';
 
 class Database {
     private static instance: Database;
@@ -102,7 +105,7 @@ class Database {
             // If successful, return the defaultProfile as the created profile
             return prep.response(true, messages.success, defaultProfile);
         } else {
-            return prep.response(false, messages.failure, undefined as unknown as IUserProfile);
+            return prep.response(false, messages.failure, {} as IUserProfile);
         }
     }
 
@@ -137,7 +140,7 @@ class Database {
         const query = `SELECT group_id FROM user_groups WHERE user_id = ?`;
         const response = await this.db.executeQuery(query, [userId]);
         if (response.success && Array.isArray(response.data)) {
-            const roles = response.data.map((row: any) => row.group_id);
+            const roles = (response.data as { group_id: string }[]).map(row => row.group_id);
             return prep.response(true, messages.success, roles);
         }
         return prep.response(false, messages.failure, []);
@@ -147,7 +150,7 @@ class Database {
         const query = `SELECT COUNT(*) as count FROM users`;
         const response = await this.db.executeQuery(query, []);
         if (response.success && Array.isArray(response.data) && response.data.length > 0) {
-            const count = (response.data[0] as any).count;
+            const count = (response.data[0] as { count: number }).count;
             return prep.response(true, messages.success, count);
         }
         return prep.response(false, messages.failure, 0);
@@ -166,7 +169,7 @@ class Database {
     }
 
     public async updateUserProfile(userId: string, profile: Partial<IUserProfile>): Promise<IResolve<IUserProfile | undefined>> {
-        const fieldsToUpdate = Object.keys(profile).filter(key => (profile as any)[key] !== undefined);
+        const fieldsToUpdate = Object.keys(profile).filter(key => profile[key as keyof IUserProfile] !== undefined);
         
         if (fieldsToUpdate.length === 0) {
             return prep.response(true, messages.success, undefined); // Nothing to update
@@ -175,7 +178,18 @@ class Database {
         const setClauses = fieldsToUpdate.map(field => `${field} = ?`).join(', ');
 
         const values = fieldsToUpdate.map(field => {
-            return (profile as any)[field];
+            const value = profile[field as keyof IUserProfile];
+            // Handle different value types for database insertion
+            if (value === null || value === undefined) {
+                return null;
+            }
+            if (typeof value === 'boolean') {
+                return value ? 1 : 0;
+            }
+            if (value instanceof Date) {
+                return value.toISOString();
+            }
+            return value;
         });
         values.push(userId);
 
@@ -185,18 +199,31 @@ class Database {
     }
 
     public async updateUser(userId: string, userData: Partial<IUser>): Promise<IResolve<IUser | undefined>> {
-        const fieldsToUpdate = Object.keys(userData).filter(key => (userData as any)[key] !== undefined);
+        const fieldsToUpdate = Object.keys(userData).filter(key => userData[key as keyof IUser] !== undefined);
 
         if (fieldsToUpdate.length === 0) {
             return prep.response(true, messages.success, undefined); // Nothing to update
         }
 
         const setClauses = fieldsToUpdate.map(field => `${field} = ?`).join(', ');
-        const values = fieldsToUpdate.map(field => (userData as any)[field]);
+        const values = fieldsToUpdate.map(field => {
+            const value = userData[field as keyof IUser];
+            // Handle different value types for database insertion
+            if (value === null || value === undefined) {
+                return null;
+            }
+            if (typeof value === 'boolean') {
+                return value ? 1 : 0;
+            }
+            if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+            return value;
+        });
         values.push(userId);
 
         const query = `UPDATE users SET ${setClauses} WHERE id = ?`;
-        const response = await this.db.executeQuery(query, values);
+        const response = await this.db.executeQuery(query, values as (string | number | boolean | null)[]);
         return prep.response(response.success, response.message, undefined);
     }
 
@@ -240,7 +267,7 @@ class Database {
     }
 
     public async updateRecord(id: string, updates: Partial<IRecord>): Promise<IResolve<IRecord | undefined>> {
-        const fieldsToUpdate = Object.keys(updates).filter(key => (updates as any)[key] !== undefined);
+        const fieldsToUpdate = Object.keys(updates).filter(key => updates[key as keyof IRecord] !== undefined);
 
         if (fieldsToUpdate.length === 0) {
             return prep.response(true, messages.success, undefined); // Nothing to update
@@ -258,15 +285,18 @@ class Database {
         }).join(', ');
 
         const values = fieldsToUpdate.map(field => {
-            if (field === 'tags' || field === 'categories') return JSON.stringify((updates as any)[field]);
-            if (field === 'is_published') return (updates as any)[field] ? 1 : 0;
-            if (field === 'created_at' || field === 'updated_at') return (updates as any)[field].toISOString();
-            return (updates as any)[field];
+            const value = updates[field as keyof IRecord];
+            if (field === 'tags' || field === 'categories') return JSON.stringify(value);
+            if (field === 'is_published') return value ? 1 : 0;
+            if (field === 'created_at' || field === 'updated_at') return (value as Date).toISOString();
+            if (value === null || value === undefined) return null;
+            if (typeof value === 'boolean') return value ? 1 : 0;
+            return value;
         });
         values.push(id);
 
         const query = `UPDATE records SET ${setClauses} WHERE id = ?`;
-        const response = await this.db.executeQuery(query, values);
+        const response = await this.db.executeQuery(query, values as (string | number | boolean | null)[]);
         return prep.response(response.success, response.message, undefined);
     }
 
@@ -276,7 +306,111 @@ class Database {
         return prep.response(response.success, response.message, response.success);
     }
 
-    public async getAllRecords(publishedOnly: boolean = false): Promise<IResolve<(IRecord & { public_name: string })[] | undefined>> {
+    public async getAllRecords(
+        publishedOnly: boolean = false,
+        paginationParams?: PaginationParams
+    ): Promise<IResolve<(IRecord & { public_name: string })[] | PaginatedResponse<IRecord & { public_name: string }> | undefined>> {
+        
+        // Если пагинация не передана - возвращаем все (для обратной совместимости)
+        if (!paginationParams) {
+            return await this.getAllRecordsLegacy(publishedOnly);
+        }
+
+        const { page, size, categories, tags, search } = paginationParams;
+        const offset = (page - 1) * size;
+
+        // Строим WHERE условия
+        const whereConditions = [];
+        const params: (string | number)[] = [];
+        
+        if (publishedOnly) {
+            whereConditions.push('r.is_published = 1');
+        }
+        
+        // Фильтрация по категориям
+        if (categories && categories.length > 0) {
+            const categoryConditions = categories.map(() => 'r.categories LIKE ?').join(' OR ');
+            whereConditions.push(`(${categoryConditions})`);
+            categories.forEach(cat => params.push(`%"${cat}"%`));
+        }
+        
+        // Фильтрация по тегам
+        if (tags && tags.length > 0) {
+            const tagConditions = tags.map(() => 'r.tags LIKE ?').join(' OR ');
+            whereConditions.push(`(${tagConditions})`);
+            tags.forEach(tag => params.push(`%"${tag}"%`));
+        }
+        
+        // Поиск
+        if (search && search.trim()) {
+            whereConditions.push('(r.title LIKE ? OR r.description LIKE ? OR r.content LIKE ?)');
+            const searchPattern = `%${search.trim()}%`;
+            params.push(searchPattern, searchPattern, searchPattern);
+        }
+
+        const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+        // Запрос для подсчета общего количества
+        const countQuery = `
+            SELECT COUNT(*) as total
+            FROM records r
+            LEFT JOIN user_profiles up ON r.user_id = up.user_id
+            ${whereClause}
+        `;
+        
+        const countResult = await this.db.executeQuery(countQuery, params);
+        const total = (countResult.data?.[0] as { total: number })?.total || 0;
+
+        // Основной запрос с пагинацией
+        const dataQuery = `
+            SELECT
+                r.id, r.title, r.description, r.content, r.image_url, r.user_id,
+                r.tags, r.categories, r.is_published, r.created_at, r.updated_at,
+                COALESCE(up.public_name, 'Admin') as public_name
+            FROM records r
+            LEFT JOIN user_profiles up ON r.user_id = up.user_id
+            ${whereClause}
+            ORDER BY r.created_at DESC
+            LIMIT ? OFFSET ?
+        `;
+
+        const dataParams = [...params, size, offset];
+        const dataResult = await this.db.executeQuery(dataQuery, dataParams);
+
+        if (!dataResult.success) {
+            return prep.response(false, dataResult.message, undefined);
+        }
+
+        const records = Array.isArray(dataResult.data) ? dataResult.data as unknown as (IRecord & { public_name: string })[] : [];
+        
+        // Парсим JSON поля
+        records.forEach(record => {
+            record.tags = JSON.parse(record.tags as unknown as string);
+            record.categories = JSON.parse(record.categories as unknown as string);
+            record.is_published = Boolean(record.is_published);
+            record.created_at = new Date(record.created_at);
+            record.updated_at = new Date(record.updated_at);
+        });
+
+        const totalPages = Math.ceil(total / size);
+        
+        const paginatedResponse: PaginatedResponse<IRecord & { public_name: string }> = {
+            data: records,
+            pagination: {
+                page,
+                size,
+                total,
+                totalPages,
+                hasNext: page < totalPages,
+                hasPrev: page > 1
+            }
+        };
+
+        return prep.response(true, 'Records retrieved successfully', paginatedResponse);
+    }
+
+    // Старый метод для обратной совместимости
+    private async getAllRecordsLegacy(publishedOnly: boolean = false): Promise<IResolve<(IRecord & { public_name: string })[] | undefined>> {
         let query = `
             SELECT
                 r.id, r.title, r.description, r.content, r.image_url, r.user_id,
@@ -285,10 +419,12 @@ class Database {
             FROM records r
             LEFT JOIN user_profiles up ON r.user_id = up.user_id
         `;
-        const params: any[] = [];
+        const params: (string | number)[] = [];
         if (publishedOnly) {
             query += ` WHERE r.is_published = 1`;
         }
+        query += ` ORDER BY r.created_at DESC`;
+        
         const response = await this.db.executeQuery(query, params);
         const data = Array.isArray(response.data) ? (response.data as unknown as (IRecord & { public_name: string })[]) : undefined;
         if (data) {
@@ -320,36 +456,37 @@ class Database {
     }
 
     // Theme management methods
-    public async createTheme(theme: any): Promise<IResolve<any>> {
+    public async createTheme(theme: Omit<ITheme, 'id' | 'created_at' | 'updated_at'>): Promise<IResolve<ITheme>> {
         const columns = Object.keys(theme).join(', ');
         const placeholders = Object.keys(theme).map(() => '?').join(', ');
         const values = Object.values(theme);
         const query = `INSERT INTO themes (${columns}) VALUES (${placeholders})`;
         const response = await this.db.executeQuery(query, values);
-        return prep.response(response.success, response.message, theme);
+        return prep.response(response.success, response.message, theme as ITheme);
     }
 
-    public async getThemes(): Promise<IResolve<any[]>> {
+    public async getThemes(): Promise<IResolve<ITheme[]>> {
         const query = 'SELECT * FROM themes ORDER BY created_at DESC';
         const response = await this.db.executeQuery(query, []);
-        return prep.response(response.success, response.message, response.data);
+        return prep.response(response.success, response.message, response.data as ITheme[]);
     }
 
-    public async getThemeById(id: string): Promise<IResolve<any>> {
+    public async getThemeById(id: string): Promise<IResolve<ITheme | null>> {
         const query = 'SELECT * FROM themes WHERE id = ?';
         const response = await this.db.executeQuery(query, [id]);
-        const theme = response.data?.[0];
-        return prep.response(response.success, response.message, theme);
+        const theme = response.data?.[0] as ITheme | undefined;
+        return prep.response(response.success, response.message, theme || null);
     }
 
-    public async updateTheme(id: string, updates: any): Promise<IResolve<any>> {
+    public async updateTheme(id: string, updates: Partial<ITheme>): Promise<IResolve<ITheme | null>> {
         const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
         const values = [...Object.values(updates), id];
         const query = `UPDATE themes SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
         const response = await this.db.executeQuery(query, values);
         
         if (response.success) {
-            return await this.getThemeById(id);
+            const themeResponse = await this.getThemeById(id);
+            return prep.response(themeResponse.success, themeResponse.message, themeResponse.data);
         }
         return prep.response(response.success, response.message, null);
     }
@@ -360,21 +497,21 @@ class Database {
         return prep.response(response.success, response.message, response.success);
     }
 
-    public async getActiveTheme(): Promise<IResolve<any>> {
+    public async getActiveTheme(): Promise<IResolve<ITheme | null>> {
         const query = 'SELECT * FROM themes WHERE is_active = 1 LIMIT 1';
         const response = await this.db.executeQuery(query, []);
-        const theme = response.data?.[0];
+        const theme = response.data?.[0] as ITheme | undefined;
         
         // If no active theme exists, ensure default theme is created
         if (!theme) {
             await this.ensureDefaultTheme();
             // Try again after creating default theme
             const retryResponse = await this.db.executeQuery(query, []);
-            const retryTheme = retryResponse.data?.[0];
-            return prep.response(retryResponse.success, retryResponse.message, retryTheme);
+            const retryTheme = retryResponse.data?.[0] as ITheme | undefined;
+            return prep.response(retryResponse.success, retryResponse.message, retryTheme || null);
         }
         
-        return prep.response(response.success, response.message, theme);
+        return prep.response(response.success, response.message, theme || null);
     }
 
     public async ensureDefaultTheme(): Promise<IResolve<boolean>> {
@@ -388,7 +525,7 @@ class Database {
 
         // Create default theme using the database adapter method
         try {
-            await (this.db as any).insertDefaultTheme();
+            await (this.db as { insertDefaultTheme(): Promise<void> }).insertDefaultTheme();
             return prep.response(true, 'Default theme created successfully', true);
         } catch (error) {
             return prep.response(false, `Failed to create default theme: ${error}`, false);
@@ -411,10 +548,10 @@ class Database {
         return prep.response(true, 'Theme activated successfully', true);
     }
 
-    public async getThemeSettings(themeId: string): Promise<IResolve<any[]>> {
+    public async getThemeSettings(themeId: string): Promise<IResolve<IThemeSetting[]>> {
         const query = 'SELECT * FROM theme_settings WHERE theme_id = ?';
         const response = await this.db.executeQuery(query, [themeId]);
-        return prep.response(response.success, response.message, response.data);
+        return prep.response(response.success, response.message, response.data as IThemeSetting[]);
     }
 
     public async setThemeSetting(themeId: string, key: string, value: string, type: string = 'string'): Promise<IResolve<boolean>> {
@@ -423,11 +560,11 @@ class Database {
         return prep.response(response.success, response.message, response.success);
     }
 
-    public async getUserThemePreference(userId: string): Promise<IResolve<any>> {
+    public async getUserThemePreference(userId: string): Promise<IResolve<IUserThemePreference | null>> {
         const query = 'SELECT * FROM user_theme_preferences WHERE user_id = ?';
         const response = await this.db.executeQuery(query, [userId]);
-        const preference = response.data?.[0];
-        return prep.response(response.success, response.message, preference);
+        const preference = response.data?.[0] as IUserThemePreference | undefined;
+        return prep.response(response.success, response.message, preference || null);
     }
 
     public async setUserThemePreference(userId: string, themeId: string, customSettings: string): Promise<IResolve<boolean>> {
@@ -456,26 +593,40 @@ class Database {
     }
 
     // CMS Settings management methods
-    public async getCMSSettings(): Promise<IResolve<any[]>> {
+    public async getCMSSettings(): Promise<IResolve<ICMSSetting[]>> {
         const query = 'SELECT * FROM cms_settings ORDER BY category, setting_key';
         const response = await this.db.executeQuery(query, []);
-        return prep.response(response.success, response.message, response.data);
+        return prep.response(response.success, response.message, response.data as ICMSSetting[]);
     }
 
-    public async getCMSSetting(key: string): Promise<IResolve<any>> {
+    public async getCMSSetting(key: string): Promise<IResolve<ICMSSetting | null>> {
         const query = 'SELECT * FROM cms_settings WHERE setting_key = ?';
         const response = await this.db.executeQuery(query, [key]);
-        const setting = response.data?.[0];
-        return prep.response(response.success, response.message, setting);
+        const setting = response.data?.[0] as ICMSSetting | undefined;
+        return prep.response(response.success, response.message, setting || null);
     }
 
     public async setCMSSetting(key: string, value: string, type: string = 'string', updatedBy: string): Promise<IResolve<boolean>> {
-        const query = `INSERT OR REPLACE INTO cms_settings (setting_key, setting_value, setting_type, updated_at, updated_by) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)`;
-        const response = await this.db.executeQuery(query, [key, value, type, updatedBy]);
+        // Debug logging
+        console.log('[DEBUG setCMSSetting] Parameters:', { key, value, type, updatedBy, updatedByType: typeof updatedBy });
+        
+        // Validate updatedBy parameter
+        if (!updatedBy) {
+            console.error('[ERROR setCMSSetting] updatedBy is required but received:', updatedBy);
+            return prep.response(false, 'updatedBy parameter is required for CMS settings', false);
+        }
+        
+        // Check if setting exists to preserve description and category
+        const existingSetting = await this.getCMSSetting(key);
+        const description = existingSetting.success && existingSetting.data ? existingSetting.data.description : null;
+        const category = existingSetting.success && existingSetting.data ? existingSetting.data.category : 'general';
+        
+        const query = `INSERT OR REPLACE INTO cms_settings (setting_key, setting_value, setting_type, description, category, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)`;
+        const response = await this.db.executeQuery(query, [key, value, type, description || null, category, updatedBy]);
         return prep.response(response.success, response.message, response.success);
     }
 
-    public async getActiveWebsiteTheme(): Promise<IResolve<any>> {
+    public async getActiveWebsiteTheme(): Promise<IResolve<ITheme | null>> {
         // First try to get from CMS settings
         const themeIdSetting = await this.getCMSSetting('active_theme_id');
         if (themeIdSetting.success && themeIdSetting.data && themeIdSetting.data.setting_value) {
@@ -503,28 +654,28 @@ class Database {
     }
 
     // Invite management methods
-    public async createInvite(invite: any): Promise<IResolve<any>> {
+    public async createInvite(invite: Omit<IInvite, 'id'>): Promise<IResolve<IInvite>> {
         const columns = Object.keys(invite).join(', ');
         const placeholders = Object.keys(invite).map(() => '?').join(', ');
         const values = Object.values(invite);
         const query = `INSERT INTO invites (${columns}) VALUES (${placeholders})`;
         const response = await this.db.executeQuery(query, values);
-        return prep.response(response.success, response.message, invite);
+        return prep.response(response.success, response.message, invite as IInvite);
     }
 
-    public async getInviteById(inviteId: string): Promise<IResolve<any>> {
+    public async getInviteById(inviteId: string): Promise<IResolve<IInvite | null>> {
         const response = await this.db.executeQuery(`SELECT * FROM invites WHERE id = ?`, [inviteId]);
         const data = response.data && response.data.length > 0 ? response.data[0] : undefined;
-        return prep.response(response.success, response.message, data);
+        return prep.response(response.success, response.message, data as IInvite | null);
     }
 
-    public async getInviteByCode(code: string): Promise<IResolve<any>> {
+    public async getInviteByCode(code: string): Promise<IResolve<IInvite | null>> {
         const response = await this.db.executeQuery(`SELECT * FROM invites WHERE code = ?`, [code]);
         const data = response.data && response.data.length > 0 ? response.data[0] : undefined;
-        return prep.response(response.success, response.message, data);
+        return prep.response(response.success, response.message, data as IInvite | null);
     }
 
-    public async getAllInvitesWithInfo(): Promise<IResolve<any[]>> {
+    public async getAllInvitesWithInfo(): Promise<IResolve<IInviteWithCreatorInfo[]>> {
         const query = `
             SELECT 
                 i.*,
@@ -539,7 +690,7 @@ class Database {
         `;
         const response = await this.db.executeQuery(query, []);
         const invites = Array.isArray(response.data) ? response.data : [];
-        return prep.response(response.success, response.message, invites);
+        return prep.response(response.success, response.message, invites as IInviteWithCreatorInfo[]);
     }
 
     public async markInviteAsUsed(inviteId: string, userId: string): Promise<IResolve<boolean>> {
@@ -558,6 +709,20 @@ class Database {
         const query = `UPDATE users SET used_invite_code = ? WHERE id = ?`;
         const response = await this.db.executeQuery(query, [inviteCode, userId]);
         return prep.response(response.success, response.message, response.success);
+    }
+
+    // Прямой доступ к executeQuery для тестов
+    public async query(query: string, params: (string | number | boolean | null)[] = []): Promise<IResolve<unknown[]>> {
+        return await this.db.executeQuery(query, params);
+    }
+
+    // Методы очистки тестовых данных
+    public async cleanupTestUsers(): Promise<IResolve<number>> {
+        return await this.db.cleanupTestUsers();
+    }
+
+    public async cleanupAllTestData(): Promise<IResolve<string>> {
+        return await this.db.cleanupAllTestData();
     }
 }
 

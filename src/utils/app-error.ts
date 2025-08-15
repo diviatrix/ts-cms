@@ -26,7 +26,7 @@ interface ErrorContext {
     path?: string;
     method?: string;
     ip?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export class AppError extends Error {
@@ -35,7 +35,7 @@ export class AppError extends Error {
     public readonly isOperational: boolean;
     public readonly context: ErrorContext;
     public readonly timestamp: Date;
-    public readonly details?: any;
+    public readonly details?: unknown;
 
     constructor(
         code: ErrorCode,
@@ -43,7 +43,7 @@ export class AppError extends Error {
         statusCode: number = 500,
         isOperational: boolean = true,
         context: ErrorContext = {},
-        details?: any
+        details?: unknown
     ) {
         super(message);
         
@@ -67,7 +67,7 @@ export class AppError extends Error {
     /**
      * Factory methods for common error types
      */
-    static badRequest(message: string, context?: ErrorContext, details?: any): AppError {
+    static badRequest(message: string, context?: ErrorContext, details?: unknown): AppError {
         return new AppError(
             ErrorCode.BAD_REQUEST,
             message,
@@ -183,21 +183,34 @@ export class AppError extends Error {
      * Convert to response format
      */
     toResponse() {
-        return {
+        const response: {
+            success: false;
+            error: {
+                code: ErrorCode;
+                message: string;
+            };
+            errors?: unknown[];
+            timestamp: string;
+        } = {
             success: false,
             error: {
                 code: this.code,
                 message: this.message
             },
-            ...(this.details && { errors: this.details }),
             timestamp: this.timestamp.toISOString()
         };
+
+        if (this.details) {
+            response.errors = Array.isArray(this.details) ? this.details : [this.details];
+        }
+
+        return response;
     }
 
     /**
      * Check if error is an AppError instance
      */
-    static isAppError(error: any): error is AppError {
+    static isAppError(error: unknown): error is AppError {
         return error instanceof AppError;
     }
 

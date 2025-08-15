@@ -3,7 +3,7 @@
  * Replaces bcrypt with native scrypt for better performance and no dependencies
  */
 
-import { randomBytes, scrypt, timingSafeEqual } from 'crypto';
+import { randomBytes, scrypt, timingSafeEqual, createHash } from 'crypto';
 import { promisify } from 'util';
 
 const scryptAsync = promisify(scrypt);
@@ -11,9 +11,10 @@ const scryptAsync = promisify(scrypt);
 // Configuration for scrypt
 const SALT_LENGTH = 32;
 const KEY_LENGTH = 64;
-const SCRYPT_COST = 16384; // N parameter (must be power of 2)
-const SCRYPT_BLOCK_SIZE = 8; // r parameter
-const SCRYPT_PARALLELIZATION = 1; // p parameter
+// Unused configuration constants - kept for future use
+// const SCRYPT_COST = 16384; // N parameter (must be power of 2)
+// const SCRYPT_BLOCK_SIZE = 8; // r parameter
+// const SCRYPT_PARALLELIZATION = 1; // p parameter
 
 /**
  * Hash a password using scrypt
@@ -100,7 +101,6 @@ export function generateSecureCode(length: number = 9): string {
  * Hash data for integrity checks (not for passwords!)
  */
 export function hashData(data: string): string {
-    const { createHash } = require('crypto');
     return createHash('sha256').update(data).digest('hex');
 }
 

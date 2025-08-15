@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express';
 import config from '../data/config';
 import IJwtPayload from '../types/IJwtPayload';
 import IResolve from '../types/IResolve';
@@ -19,7 +20,7 @@ export async function generateToken(user: IJwtPayload): Promise<IResolve<string>
   });
 }
 
-export async function authenticateToken(req: any, res: any, next: any) {
+export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -37,7 +38,7 @@ export async function authenticateToken(req: any, res: any, next: any) {
     
     if (userCheck.success && userCheck.data && userCheck.data.base) {
       // User exists in database and token is valid
-      req.user = verificationResult.data;
+      req.user = verificationResult.data as unknown as import('../middleware/auth.middleware').AuthenticatedUser;
     } else {
       // Token is valid but user no longer exists in database
       console.warn(`Authentication failed: User ${userId} from valid JWT token does not exist in database`);

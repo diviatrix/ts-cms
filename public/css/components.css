@@ -257,6 +257,39 @@ textarea:focus {
   padding-top: calc(var(--spacing) * 0.5);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 0.875rem;
+  gap: var(--spacing);
+}
+
+.card-meta-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing);
+  flex: 1;
+}
+
+.card-tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.card-tags .tag-chip {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.card-tags .tag-chip:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
 }
 
 .card-date, .card-author {

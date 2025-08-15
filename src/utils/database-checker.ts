@@ -1,7 +1,8 @@
 import adapter from '../db-adapter/sqlite-adapter';
-import schemas from '../db-adapter/sql-schemas';
+import schemas, { defaultCMSSettings } from '../db-adapter/sql-schemas';
 import IResolve from '../types/IResolve';
 import prep from './prepare';
+import { TestDataGenerator } from './test-data-generator';
 
 interface TableSchema {
     name: string;
@@ -103,6 +104,12 @@ export class DatabaseChecker {
                 if (!settingsCheck.success) {
                     result.message = settingsCheck.message || 'Failed to check CMS settings';
                     return prep.response(false, result.message, result);
+                }
+                
+                // Create test data if database is properly initialized and empty
+                if (autoFix) {
+                    const testDataGenerator = new TestDataGenerator();
+                    await testDataGenerator.createTestDataIfNeeded();
                 }
             }
 
@@ -289,7 +296,7 @@ export class DatabaseChecker {
     private async checkCMSSettings(autoFix: boolean = false): Promise<IResolve<void>> {
         try {
             // Get default CMS settings from schema
-            const { defaultCMSSettings } = await import('../db-adapter/sql-schemas');
+            // defaultCMSSettings уже импортирован выше
             
             // Get system user ID for creating settings
             const systemUserResult = await this.db.executeQuery(
@@ -298,7 +305,7 @@ export class DatabaseChecker {
             );
             
             const systemUserId = systemUserResult.success && systemUserResult.data && systemUserResult.data.length > 0
-                ? (systemUserResult.data[0] as any).id
+                ? (systemUserResult.data[0] as { id: string }).id
                 : 'system';
             
             // Check each default setting

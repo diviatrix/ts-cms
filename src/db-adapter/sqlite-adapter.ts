@@ -1,10 +1,13 @@
 import * as sqlite3 from 'sqlite3';
+import * as fs from 'fs';
+import * as path from 'path';
 import config from '../data/config';
 import schemas, { defaultRoles, defaultThemeSettings, defaultTheme, defaultCMSSettings } from './sql-schemas';
 import messages from '../data/messages';
 import IResolve from '../types/IResolve';
 import prep from '../utils/prepare';
 import { ContextLogger } from '../utils/context-logger';
+import { generateGuid } from '../utils/guid';
 
 // For more detailed logs from the sqlite3 driver, you can uncomment the next line:
 // const sqlite = sqlite3.verbose();
@@ -17,9 +20,6 @@ export default class SQLiteAdapter {
     }
 
     public async connect() {
-        const fs = require('fs');
-        const path = require('path');
-        
         // Ensure directory exists
         const dbDir = path.dirname(config.db_path);
         if (!fs.existsSync(dbDir)) {
@@ -74,7 +74,29 @@ export default class SQLiteAdapter {
             await this.insertDefaultCMSSettings();
         }
 
+        // После создания всех таблиц, добавляем first_admin в группу admin если он существует
+        await this.ensureFirstAdminHasAdminRole();
+
         return prep.response(true, messages.success, tables);
+    }
+
+    private async ensureFirstAdminHasAdminRole(): Promise<void> {
+        try {
+            // Проверяем, существует ли пользователь first_admin
+            const adminQuery = `SELECT id FROM users WHERE login = 'first_admin' LIMIT 1`;
+            const adminResult = await this.executeQuery(adminQuery);
+            
+            if (adminResult.success && adminResult.data && Array.isArray(adminResult.data) && adminResult.data.length > 0) {
+                const firstAdmin = (adminResult.data as { id: string }[])[0];
+                
+                // Добавляем в группу admin
+                const addAdminRoleQuery = `INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)`;
+                await this.executeQuery(addAdminRoleQuery, [firstAdmin.id, 'admin']);
+                console.log('Ensured first_admin has admin role');
+            }
+        } catch (error) {
+            console.warn('Failed to ensure first_admin has admin role:', error);
+        }
     }
 
     private async insertDefaultRoles(): Promise<void> {
@@ -95,7 +117,6 @@ export default class SQLiteAdapter {
             return;
         }
 
-        const { generateGuid } = require('../utils/guid');
         
         // Try to get the first user, if no users exist, create a system user
         let createdBy = 'system-user';
@@ -103,7 +124,7 @@ export default class SQLiteAdapter {
         const adminQuery = `SELECT id FROM users LIMIT 1`;
         const adminResult = await this.executeQuery(adminQuery);
         if (adminResult.success && adminResult.data && Array.isArray(adminResult.data) && adminResult.data.length > 0) {
-            const firstUser = (adminResult.data as any[])[0];
+            const firstUser = (adminResult.data as { id: string }[])[0];
             createdBy = firstUser.id;
         } else {
             // Create a system user to satisfy foreign key constraint
@@ -116,8 +137,13 @@ export default class SQLiteAdapter {
                 'system-placeholder-hash',
                 false
             ]);
+            
+            // Add system user to admin group
+            const addAdminRoleQuery = `INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)`;
+            await this.executeQuery(addAdminRoleQuery, [systemUserId, 'admin']);
+            
             createdBy = systemUserId;
-            console.log('Created system user for theme creation');
+            console.log('Created system user with admin role for theme creation');
         }
         
         const themeData = {
@@ -166,7 +192,7 @@ export default class SQLiteAdapter {
         const userQuery = `SELECT id FROM users WHERE login = 'system' LIMIT 1`;
         const userResult = await this.executeQuery(userQuery);
         if (userResult.success && userResult.data && Array.isArray(userResult.data) && userResult.data.length > 0) {
-            const systemUser = (userResult.data as any[])[0];
+            const systemUser = (userResult.data as { id: string }[])[0];
             systemUserId = systemUser.id;
         }
 
@@ -188,7 +214,7 @@ export default class SQLiteAdapter {
 
     public async createTable(schema: string): Promise<IResolve<string[]>> {
         const response = await this.executeQuery(schema);
-        return prep.response(response.success, response.message, response.data);
+        return prep.response(response.success, response.message, response.data as string[]);
     }
 
     public async close() {
@@ -203,30 +229,30 @@ export default class SQLiteAdapter {
         }
     }
 
-    public async executeQuery(query: string, params: any[] = []): Promise<IResolve<string[]>> {
+    public async executeQuery(query: string, params: (string | number | boolean | null)[] = []): Promise<IResolve<unknown[]>> {
         if (query.trim() === '') {
             return prep.response(false, messages.sql_query_error, ["Query cannot be empty."]);
         } else {
             // Removed console.log here to prevent duplicate logging
         }
         return new Promise((resolve) => {
-            this.db?.all(query, params, (err, rows: any[]) => {
+            this.db?.all(query, params, (err, rows: unknown[]) => {
                 if (err) {
                     resolve(prep.response(false, messages.sql_query_error, [err.toString()]));
                 } else {
-                    resolve(prep.response(true, messages.sql_query_success, rows));
+                    resolve(prep.response(true, messages.sql_query_success, rows as unknown[]));
                 }
             });
         });
     }
 
-    public async getByTableColValue(table: string, col: string, value: any): Promise<IResolve<string>> {
+    public async getByTableColValue(table: string, col: string, value: string | number): Promise<IResolve<unknown>> {
         return new Promise((resolve) => {
             this.db?.get(`SELECT * FROM ${table} WHERE ${col} = ?`, [value], (err, row) => {
                 if (err) {
                     resolve(prep.response(false, messages.sql_query_error, err.toString()));
                 } else  {
-                    resolve(prep.response(true, messages.sql_query_success, row as unknown as string));
+                    resolve(prep.response(true, messages.sql_query_success, row));
                 }
             });
         });
@@ -259,5 +285,73 @@ export default class SQLiteAdapter {
         }
         
         return prep.response(true, `Deleted ${deletedCount} test users`, deletedCount);
+    }
+
+    // Enhanced test cleanup method for comprehensive data cleanup
+    public async cleanupAllTestData(): Promise<IResolve<string>> {
+        const tables = [
+            'user_theme_preferences',
+            'theme_settings',
+            'sessions',
+            'records',
+            'invites',
+            'user_groups',
+            'themes',
+            'users'
+        ];
+
+        const cleanupLog: string[] = [];
+
+        try {
+            for (const table of tables) {
+                // Skip system users and admin users for users table
+                if (table === 'users') {
+                    const deleteQuery = `DELETE FROM users WHERE login LIKE 'testuser_%' OR login LIKE 'test_%' OR (login != 'first_admin' AND login != 'system')`;
+                    const result = await this.executeQuery(deleteQuery);
+                    if (result.success) {
+                        cleanupLog.push(`Cleaned test users from ${table}`);
+                    }
+                } else if (table === 'themes') {
+                    // Keep default theme, remove test themes
+                    const deleteQuery = `DELETE FROM themes WHERE name LIKE '%Test Theme%' OR name LIKE '%test%' OR (is_default = 0 AND is_active = 0)`;
+                    const result = await this.executeQuery(deleteQuery);
+                    if (result.success) {
+                        cleanupLog.push(`Cleaned test themes from ${table}`);
+                    }
+                } else if (table === 'user_groups') {
+                    // Clean user_groups for non-existent users
+                    const deleteQuery = `DELETE FROM user_groups WHERE user_id NOT IN (SELECT id FROM users)`;
+                    const result = await this.executeQuery(deleteQuery);
+                    if (result.success) {
+                        cleanupLog.push(`Cleaned orphaned entries from ${table}`);
+                    }
+                } else {
+                    // For other tables, delete entries that reference non-existent users
+                    let deleteQuery = '';
+                    if (table === 'records') {
+                        deleteQuery = `DELETE FROM records WHERE user_id NOT IN (SELECT id FROM users)`;
+                    } else if (table === 'sessions') {
+                        deleteQuery = `DELETE FROM sessions WHERE user_id NOT IN (SELECT id FROM users)`;
+                    } else if (table === 'invites') {
+                        deleteQuery = `DELETE FROM invites WHERE created_by NOT IN (SELECT id FROM users)`;
+                    } else if (table === 'user_theme_preferences') {
+                        deleteQuery = `DELETE FROM user_theme_preferences WHERE user_id NOT IN (SELECT id FROM users)`;
+                    } else if (table === 'theme_settings') {
+                        deleteQuery = `DELETE FROM theme_settings WHERE theme_id NOT IN (SELECT id FROM themes)`;
+                    }
+                    
+                    if (deleteQuery) {
+                        const result = await this.executeQuery(deleteQuery);
+                        if (result.success) {
+                            cleanupLog.push(`Cleaned orphaned entries from ${table}`);
+                        }
+                    }
+                }
+            }
+
+            return prep.response(true, 'Test data cleanup completed', cleanupLog.join('; '));
+        } catch (error) {
+            return prep.response(false, `Test data cleanup failed: ${error}`, '');
+        }
     }
 };

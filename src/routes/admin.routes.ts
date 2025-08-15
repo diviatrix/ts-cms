@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { IThemeSetting } from '../types/ITheme';
 import { requireAuthAndAdmin } from '../middleware/auth.middleware';
 import { getAllBaseUsers } from '../functions/users';
 import { getUser } from '../functions/user';
@@ -6,7 +7,7 @@ import { ResponseUtils } from '../utils/response.utils';
 import { validateParams, ParameterSchemas } from '../middleware/validation.middleware';
 import { asyncHandler, Errors } from '../middleware/error.middleware';
 import logger from '../utils/logger';
-import { getActiveTheme, getThemeSettings } from '../functions/themes';
+import { getThemeSettings } from '../functions/themes';
 import { getActiveWebsiteTheme } from '../functions/cms-settings';
 import { createInvite, getAllInvitesWithInfo, deleteInvite } from '../functions/invites';
 import database from '../db';
@@ -15,7 +16,45 @@ import * as path from 'path';
 
 const router = express.Router();
 
-// Add the endpoint to get all users (for admin)
+/**
+ * @swagger
+ * /api/admin/users:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Получить всех пользователей
+ *     description: Возвращает список всех пользователей системы (только для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Список пользователей успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Нет прав администратора
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get('/admin/users', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
     logger.apiRequest('GET', '/api/admin/users', req.user?.id);
     const users = await getAllBaseUsers();
@@ -26,7 +65,57 @@ router.get('/admin/users', requireAuthAndAdmin, asyncHandler(async (req: Request
     ResponseUtils.success(res, users, 'Users retrieved successfully');
 }));
 
-// Add the endpoint to get specific user profile (admin only)
+/**
+ * @swagger
+ * /api/profile/{id}:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Получить профиль пользователя по ID
+ *     description: Возвращает профиль конкретного пользователя (только для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Уникальный идентификатор пользователя
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Профиль пользователя успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/UserProfile'
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Нет прав администратора
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Пользователь не найден
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get('/profile/:id', requireAuthAndAdmin, validateParams(ParameterSchemas.uuid), asyncHandler(async (req: Request, res: Response) => {
     const userId = req.params.id;
     logger.apiRequest('GET', `/api/profile/${userId}`, req.user?.id);
@@ -38,7 +127,54 @@ router.get('/profile/:id', requireAuthAndAdmin, validateParams(ParameterSchemas.
     ResponseUtils.success(res, user, 'User profile retrieved successfully');
 }));
 
-// Write theme config to frontend
+/**
+ * @swagger
+ * /api/admin/theme/write-config:
+ *   put:
+ *     tags: [Admin]
+ *     summary: Записать конфигурацию темы
+ *     description: Записывает конфигурацию темы в frontend файл (только для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ThemeConfigRequest'
+ *     responses:
+ *       200:
+ *         description: Конфигурация темы успешно записана
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/ThemeSettings'
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Нет прав администратора
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Тема не найдена
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.put('/admin/theme/write-config', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
     logger.apiRequest('PUT', '/api/admin/theme/write-config', req.user?.id);
     
@@ -75,7 +211,7 @@ router.put('/admin/theme/write-config', requireAuthAndAdmin, asyncHandler(async 
     const configObject: Record<string, string> = {};
     
     if (Array.isArray(settings)) {
-        settings.forEach((setting: any) => {
+        settings.forEach((setting: IThemeSetting) => {
             // Map old names to new CSS variable names
             const keyMap: Record<string, string> = {
                 'primary_color': 'primary',
@@ -100,7 +236,7 @@ router.put('/admin/theme/write-config', requireAuthAndAdmin, asyncHandler(async 
     }
     
     // Add custom CSS if present
-    const customCssSetting = settings.find((s: any) => s.setting_key === 'custom_css');
+    const customCssSetting = settings.find((s: IThemeSetting) => s.setting_key === 'custom_css');
     if (customCssSetting) {
         configObject['custom_css'] = customCssSetting.setting_value;
     }
@@ -118,7 +254,43 @@ router.put('/admin/theme/write-config', requireAuthAndAdmin, asyncHandler(async 
     ResponseUtils.success(res, configObject, `Theme "${themeName}" config written successfully`);
 }));
 
-// Invite management endpoints
+/**
+ * @swagger
+ * /api/admin/invites:
+ *   post:
+ *     tags: [Admin]
+ *     summary: Создать приглашение
+ *     description: Создает новое приглашение для регистрации (только для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Приглашение успешно создано
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Invite'
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Нет прав администратора
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post('/admin/invites', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
     logger.apiRequest('POST', '/api/admin/invites', req.user?.id);
     
@@ -131,6 +303,45 @@ router.post('/admin/invites', requireAuthAndAdmin, asyncHandler(async (req: Requ
     }
 }));
 
+/**
+ * @swagger
+ * /api/admin/invites:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Получить все приглашения
+ *     description: Возвращает список всех приглашений с информацией об использовании (только для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Список приглашений успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Invite'
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Нет прав администратора
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get('/admin/invites', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
     logger.apiRequest('GET', '/api/admin/invites', req.user?.id);
     
@@ -143,6 +354,67 @@ router.get('/admin/invites', requireAuthAndAdmin, asyncHandler(async (req: Reque
     }
 }));
 
+/**
+ * @swagger
+ * /api/admin/invites/{id}:
+ *   delete:
+ *     tags: [Admin]
+ *     summary: Удалить приглашение
+ *     description: Удаляет приглашение по ID (только неиспользованные, только для администраторов)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Уникальный идентификатор приглашения
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Приглашение успешно удалено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     deleted:
+ *                       type: boolean
+ *                       example: true
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Ошибка валидации (попытка удалить использованное приглашение)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
+ *       401:
+ *         description: Не авторизован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Нет прав администратора
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Приглашение не найдено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.delete('/admin/invites/:id', requireAuthAndAdmin, validateParams(ParameterSchemas.uuid), asyncHandler(async (req: Request, res: Response) => {
     const inviteId = req.params.id;
     logger.apiRequest('DELETE', `/api/admin/invites/${inviteId}`, req.user?.id);

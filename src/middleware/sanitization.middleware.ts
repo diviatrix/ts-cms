@@ -15,12 +15,12 @@ function stripDangerousTags(input: string): string {
 /**
  * Recursively sanitize an object (only string fields)
  */
-function sanitizeObject(obj: any): any {
+function sanitizeObject(obj: unknown): unknown {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === 'string') return stripDangerousTags(obj);
     if (Array.isArray(obj)) return obj.map(sanitizeObject);
     if (typeof obj === 'object') {
-        const sanitized: any = {};
+        const sanitized: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(obj)) {
             sanitized[key] = sanitizeObject(value);
         }

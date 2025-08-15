@@ -6,10 +6,9 @@ export default [
   // Configuration for vanilla JS in /public
   {
     files: ["public/**/*.{js,mjs,cjs}"],
-    plugins: { js },
-    extends: ["plugin:js/recommended"],
+    ...js.configs.recommended,
     languageOptions: {
-      sourceType: "script", // For vanilla JS (non-module)
+      sourceType: "module", // Change to module for ES6 imports
       globals: {
         ...globals.browser, // Browser globals like window, document
       },
@@ -24,9 +23,12 @@ export default [
     },
   },
   // Configuration for TypeScript backend files
+  ...tseslint.configs.recommended.map(config => ({
+    ...config,
+    files: ["**/*.ts"],
+  })),
   {
     files: ["**/*.ts"],
-    ...tseslint.configs.recommended,
     languageOptions: {
       globals: {
         ...globals.node, // Node.js globals for backend
