@@ -145,7 +145,7 @@ textarea:focus {
   flex-direction: row;
   align-items: stretch;
   cursor: pointer;
-  max-height: 50vh;
+  max-height: 75vh;
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   padding: var(--spacing);
