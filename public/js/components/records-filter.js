@@ -9,7 +9,7 @@ export class RecordsFilter {
   }
 
   async init(records, enableSearch = true) {
-    this.allRecords = records;
+    this.allRecords = records || [];
     this.enableSearch = enableSearch;
     this.extractFilters();
     this.render();

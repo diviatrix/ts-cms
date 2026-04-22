@@ -15,7 +15,7 @@ export async function createRecord(record: Omit<IRecord, 'id' | 'createdAt' | 'u
     };
 
     try {
-        const result = await database.createRecord(newRecord);
+        const result = await database.record.createRecord(newRecord);
         if (result.success) {
             return result.data;
         } else {
@@ -30,7 +30,7 @@ export async function createRecord(record: Omit<IRecord, 'id' | 'createdAt' | 'u
 
 export async function getRecordById(id: string, publishedOnly: boolean = false): Promise<IRecord | undefined> {
     try {
-        const dbRecordResult = await database.getRecordById(id, publishedOnly);
+        const dbRecordResult = await database.record.getRecordById(id, publishedOnly);
         if (!dbRecordResult.success || dbRecordResult.data === undefined) {
             return undefined;
         }
@@ -44,7 +44,7 @@ export async function getRecordById(id: string, publishedOnly: boolean = false):
 
 export async function updateRecord(id: string, updates: Partial<Omit<IRecord, 'id' | 'createdAt'>>): Promise<IRecord | undefined> {
     try {
-        const dbUpdateResult = await database.updateRecord(id, { ...updates, updated_at: new Date() });
+        const dbUpdateResult = await database.record.updateRecord(id, { ...updates, updated_at: new Date() });
 
         if (dbUpdateResult.success && dbUpdateResult.data) {
             return dbUpdateResult.data;
@@ -60,7 +60,7 @@ export async function updateRecord(id: string, updates: Partial<Omit<IRecord, 'i
 
 export async function deleteRecord(id: string): Promise<boolean> {
     try {
-        const dbDeleteResult = await database.deleteRecord(id);
+        const dbDeleteResult = await database.record.deleteRecord(id);
         return dbDeleteResult.success;
     } catch (error) {
         console.error(`Error deleting record ${id}:`, error);

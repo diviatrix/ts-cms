@@ -130,7 +130,7 @@ export default class ThemesManageController extends BasePageController {
                     <div class="theme-actions">
                         ${state === 'available' ? `
                             <button class="btn btn-sm" onclick="window.themesManager.previewTheme('${theme.id}')">Preview</button>
-                            <button class="btn btn-sm btn-primary" onclick="window.themesManager.writeThemeConfig('${theme.id}')">Write to Frontend</button>
+                            <button class="btn btn-sm btn-primary" onclick="window.themesManager.applyTheme('${theme.id}')">Apply to Site</button>
                         ` : ''}
                         
                         <button class="btn btn-sm" onclick="window.themesManager.editTheme('${theme.id}')">Edit</button>
@@ -302,44 +302,30 @@ export default class ThemesManageController extends BasePageController {
     );
   }
     
-  async writeThemeConfig(themeId) {
+  async applyTheme(themeId) {
     const theme = this.themes.find(t => t.id === themeId);
     if (!theme) {
       notifications.error('Theme not found');
       return;
     }
-        
+
     const themeName = theme.name;
-        
-    notifications.info(`Writing "${themeName}" theme to frontend...`);
-        
+
+    notifications.info(`Applying "${themeName}" to site...`);
+
     await this.safeApiCall(
-      () => apiFetch('/api/admin/theme/write-config', {
+      () => apiFetch('/api/admin/theme/apply', {
         method: 'PUT',
         data: { theme_id: themeId }
       }),
       {
         successCallback: async () => {
-          // Also update active_theme_id in CMS settings
-          await this.safeApiCall(
-            () => CmsSettingsAPI.update('active_theme_id', {
-              setting_value: themeId
-            }),
-            {
-              successCallback: () => {
-                notifications.success(`Theme "${themeName}" written to frontend and set as active!`);
-                // Reload to apply new theme
-                setTimeout(() => window.location.reload(), 1500);
-              },
-              errorCallback: () => {
-                notifications.error('Theme written but failed to update CMS settings');
-                setTimeout(() => window.location.reload(), 1500);
-              }
-            }
-          );
+          notifications.success(`Theme "${themeName}" applied successfully!`);
+          // Reload to apply new theme
+          setTimeout(() => window.location.reload(), 1500);
         },
         errorCallback: (response) => {
-          notifications.error('Failed to write theme config: ' + response.message);
+          notifications.error('Failed to apply theme: ' + response.message);
         }
       }
     );

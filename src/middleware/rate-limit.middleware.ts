@@ -1,13 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ResponseUtils } from '../utils/response.utils';
-
-// Rate limiting configuration
-interface RateLimitConfig {
-    windowMs: number;        // Time window in milliseconds
-    maxRequests: number;     // Max requests per window
-    banDurationMs: number;   // Ban duration in milliseconds
-    skipPublicGet?: boolean; // Skip rate limiting for public GET requests
-}
+import { CONFIGS } from '../constants/rate-limit';
+import type { RateLimitConfig } from '../constants/rate-limit';
 
 // Rate limit entry for tracking with sliding window
 interface RateLimitEntry {
@@ -17,35 +11,6 @@ interface RateLimitEntry {
 
 // In-memory store for rate limiting (in production, use Redis)
 const rateLimitStore = new Map<string, RateLimitEntry>();
-
-// Configuration for different types of endpoints
-const CONFIGS = {
-    // Critical auth endpoints - strict limits
-    AUTH: {
-        windowMs: 60 * 1000,      // 1 minute
-        maxRequests: 10,          // 10 attempts per minute
-        banDurationMs: 30 * 1000  // 30 seconds ban
-    },
-    // Data modification endpoints
-    WRITE: {
-        windowMs: 60 * 1000,      // 1 minute  
-        maxRequests: 50,          // 50 requests per minute
-        banDurationMs: 30 * 1000  // 30 seconds ban
-    },
-    // Authenticated read endpoints
-    READ_AUTH: {
-        windowMs: 60 * 1000,      // 1 minute
-        maxRequests: 300,         // 300 requests per minute
-        banDurationMs: 30 * 1000  // 30 seconds ban
-    },
-    // Global fallback for other endpoints
-    GLOBAL: {
-        windowMs: 60 * 1000,      // 1 minute
-        maxRequests: 200,         // 200 requests per minute
-        banDurationMs: 30 * 1000, // 30 seconds ban
-        skipPublicGet: true       // Don't rate limit public GET requests
-    }
-};
 
 /**
  * Get client identifier (IP address) with proxy support

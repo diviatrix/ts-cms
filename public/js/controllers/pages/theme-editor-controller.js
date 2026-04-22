@@ -287,7 +287,12 @@ export default class ThemeEditorController extends BasePageController {
 
   resetChanges() {
     // Convert editor format back to theme system format for preview
-    const resetSettings = {
+    applyThemeFromSettings(this.createResetSettings());
+    this.render();
+  }
+
+  createResetSettings() {
+    return {
       primary_color: this.originalSettings.primary,
       secondary_color: this.originalSettings.secondary,
       background_color: this.originalSettings.background,
@@ -304,8 +309,6 @@ export default class ThemeEditorController extends BasePageController {
       shadow: this.originalSettings.shadow,
       custom_css: this.originalSettings.custom_css
     };
-    applyThemeFromSettings(resetSettings);
-    this.render();
   }
 
   collectFormData() {

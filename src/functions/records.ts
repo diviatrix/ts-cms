@@ -7,7 +7,7 @@ export async function getAllRecords(
     paginationParams?: PaginationParams
 ): Promise<IRecord[] | PaginatedResponse<IRecord & { public_name: string }>> {
     try {
-        const dbRecordsResult = await database.getAllRecords(publishedOnly, paginationParams);
+        const dbRecordsResult = await database.record.getAllRecords(publishedOnly, paginationParams);
         if (!dbRecordsResult.success || !dbRecordsResult.data) {
             return paginationParams ?
                 { data: [], pagination: { page: 1, size: 0, total: 0, totalPages: 0, hasNext: false, hasPrev: false } } :

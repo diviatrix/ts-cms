@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint . --ext .ts",
     "start": "npx ts-node server.ts",
-    "dev": "nodemon --exec npx ts-node server.ts",
+    "dev": "npx ts-node server.ts",
     "test": "tsx node_modules/mocha/bin/_mocha --extensions ts --reporter allure-mocha --require \"tests/setup.ts\" \"tests/**/*.ts\"",
     "test:simple": "mocha tests/simple.test.js",
     "test:allure": "npm test && npm run allure:generate && npm run allure:open",

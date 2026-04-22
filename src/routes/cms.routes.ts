@@ -1,7 +1,5 @@
-import express, { Request, Response, NextFunction } from 'express';
-import { requireAuth } from '../middleware/auth.middleware';
-import { RoleCheck } from '../functions/roleCheck';
-import { UserRoles } from '../data/groups';
+import express, { Request, Response } from 'express';
+import { requireAuthAndAdmin } from '../middleware/auth.middleware';
 import { 
     getCMSSettings, 
     getCMSSetting, 
@@ -15,14 +13,6 @@ import { asyncHandler, Errors } from '../middleware/error.middleware';
 import { ContextLogger } from '../utils/context-logger';
 
 const router = express.Router();
-
-// Middleware to require admin access
-const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user?.roles || !RoleCheck.hasRole(req.user.roles, UserRoles.ADMIN)) {
-        throw Errors.forbidden('Admin access required');
-    }
-    next();
-};
 
 /**
  * @swagger
@@ -63,7 +53,7 @@ const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/settings', requireAuth, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.get('/settings', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
     const result = await getCMSSettings();
     
     if (result.success) {
@@ -120,7 +110,7 @@ router.get('/settings', requireAuth, requireAdmin, asyncHandler(async (req: Requ
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/settings/category/:category', requireAuth, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.get('/settings/category/:category', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
     const { category } = req.params;
     const result = await getCMSSettingsByCategory(category);
     
@@ -132,7 +122,7 @@ router.get('/settings/category/:category', requireAuth, requireAdmin, asyncHandl
 }));
 
 // Get specific CMS setting (admin only)
-router.get('/settings/:key', requireAuth, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.get('/settings/:key', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
     const { key } = req.params;
     const result = await getCMSSetting(key);
     
@@ -191,7 +181,7 @@ router.get('/settings/:key', requireAuth, requireAdmin, asyncHandler(async (req:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/settings/:key', requireAuth, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.put('/settings/:key', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
     const { key } = req.params;
     const { value, type = 'string' } = req.body;
     
@@ -295,7 +285,7 @@ router.get('/active-theme', asyncHandler(async (req: Request, res: Response) => 
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/active-theme', requireAuth, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.put('/active-theme', requireAuthAndAdmin, asyncHandler(async (req: Request, res: Response) => {
     const { theme_id } = req.body;
     
     if (!theme_id) {

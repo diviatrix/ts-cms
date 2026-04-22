@@ -30,7 +30,7 @@ class App {
       this.loadCMSSettings()
     ]);
         
-    this.updateAuthState();
+    await this.updateAuthState();
     this.setupEventListeners();
         
     await this.router.init();
@@ -77,36 +77,23 @@ class App {
   }
     
   async validateTokenWithServer() {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('session_token');
     if (!token) return;
         
-    // Check if token contains only valid characters for HTTP headers
     try {
-      // Try to encode the token - if it contains invalid characters, this will help detect it
-      const encoder = new TextEncoder();
-      encoder.encode(token);
-            
-      // Check if token contains only ASCII characters
-      if (!/^[\x00-\x7F]*$/.test(token)) {
-        localStorage.removeItem('token');
-        document.dispatchEvent(new CustomEvent('authChange'));
-        return;
-      }
-            
-      // Make a simple authenticated request to validate token
-      const response = await fetch('/api/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const res = await fetch('https://auth.hole.icu/session', {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
             
-      if (response.status === 401) {
-        localStorage.removeItem('token');
+      if (res.status === 401) {
+        localStorage.removeItem('session_token');
         document.dispatchEvent(new CustomEvent('authChange'));
+      } else if (res.ok) {
+        const userData = await res.json();
+        this.user.roles = [userData.role];
       }
-    } catch (error) {
-      // If any error occurs (including header encoding), remove the token
-      localStorage.removeItem('token');
+    } catch {
+      localStorage.removeItem('session_token');
       document.dispatchEvent(new CustomEvent('authChange'));
     }
   }
@@ -121,14 +108,12 @@ class App {
 
   setupEventListeners() {
     document.addEventListener('authChange', () => this.updateAuthState());
-    document.addEventListener('authSuccess', (e) => this.authManager.handleAuthSuccess(e));
+    document.addEventListener('authSuccess', () => this.updateAuthState());
   }
 
-  updateAuthState() {
-    // Check authentication first
-    this.user.isAuthenticated = isAuthenticated();
+  async updateAuthState() {
+    this.user.isAuthenticated = await isAuthenticated();
         
-    // Only get roles if still authenticated (token wasn't removed)
     if (this.user.isAuthenticated) {
       this.user.roles = getUserRoles();
     } else {

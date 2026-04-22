@@ -1,75 +1,92 @@
 import { Request, Response, NextFunction } from 'express';
-import { authenticateToken } from '../utils/jwt';
+import { authClient, AuthUser } from '../auth-client';
 
-// User type for authenticated requests
 export interface AuthenticatedUser {
     id: string;
     login: string;
     roles: string[];
 }
 
-// Extend Express Request interface to include user property
-declare global {
-    // eslint-disable-next-line @typescript-eslint/no-namespace
-    namespace Express {
-        interface Request {
-            user?: AuthenticatedUser;
-        }
-    }
-}
-
-// Centralized authentication middleware
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({
             status: 'error',
-            message: 'Authentication required - no token provided'
+            message: 'Authentication required - no session'
         });
     }
-    
-    authenticateToken(req, res, () => {
-        if (!req.user) {
-            return res.status(401).json({
-                status: 'error',
-                message: 'Authentication failed - invalid token'
-            });
-        }
-        next();
-    });
-};
 
-// Optional authentication middleware (for endpoints that work with or without auth)
+    const token = authHeader.replace('Bearer ', '');
+
+    authClient.validateToken(token)
+        .then((user: AuthUser | null) => {
+            if (!user) {
+                return res.status(401).json({
+                    status: 'error',
+                    message: 'Authentication failed - invalid session'
+                });
+            }
+
+const r = req as unknown as { user?: AuthenticatedUser };
+            r.user = {
+                id: user.id.toString(),
+                login: user.username,
+                roles: [user.role]
+            };
+            next();
+        })
+        .catch((error) => {
+            console.error('Auth validation error:', error);
+            res.status(500).json({
+                status: 'error',
+                message: 'Authentication error'
+            });
+        });
+}
+
 export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
-    // Try to authenticate, but don't fail if no token provided
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        // No token provided, continue without user
         return next();
     }
-    
-    // Token provided, try to authenticate
-    authenticateToken(req, res, next);
+
+    const token = authHeader.replace('Bearer ', '');
+
+    authClient.validateToken(token)
+        .then((user: AuthUser | null) => {
+if (user) {
+                const r = req as unknown as { user?: AuthenticatedUser };
+                r.user = {
+                    id: user.id.toString(),
+                    login: user.username,
+                    roles: [user.role]
+                };
+            }
+            next();
+        })
+        .catch(() => {
+            next();
+        });
 };
 
-// Admin role middleware (requires authentication first)
-export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-        return res.status(401).json({ 
-            status: 'error', 
-            message: 'Authentication required' 
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+    const r = req as unknown as { user?: AuthenticatedUser };
+    const user = r.user;
+    if (!user) {
+        return res.status(401).json({
+            status: 'error',
+            message: 'Authentication required'
         });
     }
-    
-    if (!req.user.roles || !req.user.roles.includes('admin')) {
-        return res.status(403).json({ 
-            status: 'error', 
-            message: 'Admin access required' 
+
+    if (!user.roles || !user.roles.includes('admin')) {
+        return res.status(403).json({
+            status: 'error',
+            message: 'Admin access required'
         });
     }
-    
+
     next();
-};
+}
 
-// Combined auth + admin middleware
 export const requireAuthAndAdmin = [requireAuth, requireAdmin];

@@ -12,21 +12,21 @@ import { ITheme } from '../types/ITheme';
  * Get all CMS settings
  */
 export async function getCMSSettings(): Promise<IResolve<ICMSSetting[]>> {
-    return await database.getCMSSettings();
+    return await database.settings.getCMSSettings();
 }
 
 /**
  * Get specific CMS setting by key
  */
 export async function getCMSSetting(key: string): Promise<IResolve<ICMSSetting | null>> {
-    return await database.getCMSSetting(key);
+    return await database.settings.getCMSSetting(key);
 }
 
 /**
  * Set CMS setting
  */
 export async function setCMSSetting(key: string, value: string, type: string = 'string', updatedBy: string): Promise<IResolve<boolean>> {
-    return await database.setCMSSetting(key, value, type, updatedBy);
+    return await database.settings.setCMSSetting(key, value, type, updatedBy);
 }
 
 /**
@@ -39,7 +39,7 @@ export async function getActiveWebsiteTheme(): Promise<IResolve<ITheme | null>> 
 /**
  * Set active website theme
  */
-export async function setActiveWebsiteTheme(themeId: string, updatedBy: string): Promise<IResolve<boolean>> {
+export async function setActiveWebsiteTheme(themeId: string, updatedBy: string) {
     return await database.setActiveWebsiteTheme(themeId, updatedBy);
 }
 

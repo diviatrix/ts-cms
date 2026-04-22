@@ -87,6 +87,10 @@ export const REGEX_PATTERNS = {
     EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     USERNAME: /^[a-zA-Z0-9_-]+$/,
     SLUG: /^[a-z0-9-]+$/,
+    PASSWORD_UPPERCASE: /[A-Z]/,
+    PASSWORD_LOWERCASE: /[a-z]/,
+    PASSWORD_NUMBER: /[0-9]/,
+    PASSWORD_SPECIAL: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
 } as const;
 
 // Environment constants

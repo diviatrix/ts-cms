@@ -4,7 +4,8 @@ import { createRecord, getRecordById, updateRecord, deleteRecord } from '../func
 import { getAllRecords } from '../functions/records';
 import { getCMSSetting } from '../functions/cms-settings';
 import { ResponseUtils } from '../utils/response.utils';
-import { validateBody, validateParams, ValidationSchemas, ParameterSchemas } from '../middleware/validation.middleware';
+import { validateBody, validateParams, ValidationSchemas } from '../middleware/validation.middleware';
+import { ParameterSchemas } from '../constants/validation-schemas';
 import { asyncHandler, Errors } from '../middleware/error.middleware';
 import IRecord from '../types/IRecord';
 

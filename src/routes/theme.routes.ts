@@ -6,7 +6,8 @@ import { Router, Request, Response } from 'express';
 import { IThemeSetting } from '../types/ITheme';
 import { IResolveWithStatus } from '../types/IResolve';
 import { requireAuth, requireAuthAndAdmin } from '../middleware/auth.middleware';
-import { validateParams, ValidationUtils } from '../middleware/validation.middleware';
+import { validateParams } from '../middleware/validation.middleware';
+import ValidationUtils from '../utils/validation-utils';
 import {
     createTheme,
     getTheme,
@@ -22,12 +23,10 @@ import {
 } from '../functions/themes';
 
 // User ID parameter validation schema
-const UserIdParameterSchema = {
-    userId: [
-        ValidationUtils.required,
-        ValidationUtils.uuid
-    ]
-};
+const UserIdParameterSchema = [
+    ValidationUtils.required,
+    ValidationUtils.uuid
+];
 
 const router = Router();
 
@@ -60,7 +59,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async function(req: Request, res: Response) {
     const result = await getThemes();
     if (result.success) {
         res.json({ success: true, data: result.data });
@@ -102,7 +101,7 @@ router.get('/', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/active', async (req: Request, res: Response) => {
+router.get('/active', async function(req: Request, res: Response) {
     const result = await getActiveTheme();
     if (result.success) {
         if (result.data) {
@@ -164,7 +163,7 @@ router.get('/active', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async function(req: Request, res: Response) {
     const result = await getTheme(req.params.id);
     if (result.success) {
         if (result.data) {
@@ -232,7 +231,7 @@ router.get('/:id', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/', requireAuthAndAdmin, async (req: Request, res: Response) => {
+router.post('/', requireAuthAndAdmin, async function(req: Request, res: Response) {
     // Add the authenticated user's ID as created_by
     const themeData = {
         ...req.body,
@@ -308,7 +307,7 @@ router.post('/', requireAuthAndAdmin, async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/:id', requireAuthAndAdmin, async (req: Request, res: Response) => {
+router.put('/:id', requireAuthAndAdmin, async function(req: Request, res: Response) {
     const result = await updateTheme(req.params.id, req.body);
     if (result.success) {
         if (result.data) {
@@ -374,7 +373,7 @@ router.put('/:id', requireAuthAndAdmin, async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete('/:id', requireAuthAndAdmin, async (req: Request, res: Response) => {
+router.delete('/:id', requireAuthAndAdmin, async function(req: Request, res: Response) {
     const result = await deleteTheme(req.params.id);
     if (result.success) {
         res.json({ success: true, message: 'Theme deleted successfully' });
@@ -433,7 +432,7 @@ router.delete('/:id', requireAuthAndAdmin, async (req: Request, res: Response) =
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/:id/activate', requireAuthAndAdmin, async (req: Request, res: Response) => {
+router.post('/:id/activate', requireAuthAndAdmin, async function(req: Request, res: Response) {
     const result = await setActiveTheme(req.params.id);
     if (result.success) {
         res.json({ success: true, message: 'Theme activated successfully' });
@@ -477,7 +476,7 @@ router.post('/:id/activate', requireAuthAndAdmin, async (req: Request, res: Resp
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/:id/settings', async (req: Request, res: Response) => {
+router.get('/:id/settings', async function(req: Request, res: Response) {
     const result = await getThemeSettings(req.params.id);
     if (result.success) {
         // Transform array of settings into key-value object
@@ -557,7 +556,7 @@ router.get('/:id/settings', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/:id/settings', requireAuthAndAdmin, async (req: Request, res: Response) => {
+router.post('/:id/settings', requireAuthAndAdmin, async function(req: Request, res: Response) {
     const { key, value, type = 'string' } = req.body;
     
     if (!key || value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
@@ -580,7 +579,7 @@ router.post('/:id/settings', requireAuthAndAdmin, async (req: Request, res: Resp
 });
 
 // Get user theme preference
-router.get('/user/:userId/preference', requireAuth, validateParams(UserIdParameterSchema), async (req: Request, res: Response) => {
+router.get('/user/:userId/preference', requireAuth, validateParams(UserIdParameterSchema, 'userId'), async function(req: Request, res: Response) {
     const { userId } = req.params;
     
     // Users can only get their own preferences unless they're admin
@@ -606,7 +605,7 @@ router.get('/user/:userId/preference', requireAuth, validateParams(UserIdParamet
 });
 
 // Set user theme preference
-router.post('/user/:userId/preference', requireAuth, validateParams(UserIdParameterSchema), async (req: Request, res: Response) => {
+router.post('/user/:userId/preference', requireAuth, validateParams(UserIdParameterSchema, 'userId'), async function(req: Request, res: Response) {
     const { userId } = req.params;
     
     const { theme_id, custom_settings = {} } = req.body;

@@ -2,7 +2,37 @@ import adapter from '../db-adapter/sqlite-adapter';
 
 export class TestDataGenerator {
     private db: adapter;
-    
+
+    private static readonly TITLE_TECHNOLOGY = [
+        'Latest Trends and Innovations',
+        'Future of Digital Transformation',
+        'Emerging Technologies in 2025',
+        'AI and Machine Learning Advances',
+        'Cloud Computing Revolution'
+    ];
+
+    private static readonly TITLE_PROGRAMMING = [
+        'Clean Code Principles',
+        'Design Patterns Explained',
+        'Performance Optimization Tips',
+        'Testing Strategies',
+        'API Development Best Practices'
+    ];
+
+    private static readonly TITLE_DESIGN = [
+        'User Experience Principles',
+        'Modern UI Trends',
+        'Color Theory in Practice',
+        'Typography Guidelines',
+        'Responsive Design Patterns'
+    ];
+
+    private static readonly TITLES: Record<string, string[]> = {
+        technology: TestDataGenerator.TITLE_TECHNOLOGY,
+        programming: TestDataGenerator.TITLE_PROGRAMMING,
+        design: TestDataGenerator.TITLE_DESIGN
+    };
+
     constructor() {
         this.db = new adapter();
     }
@@ -101,31 +131,7 @@ export class TestDataGenerator {
     }
     
     private generateTitle(category: string): string {
-        const titles = {
-            technology: [
-                'Latest Trends and Innovations',
-                'Future of Digital Transformation',
-                'Emerging Technologies in 2025',
-                'AI and Machine Learning Advances',
-                'Cloud Computing Revolution'
-            ],
-            programming: [
-                'Clean Code Principles',
-                'Design Patterns Explained',
-                'Performance Optimization Tips',
-                'Testing Strategies',
-                'API Development Best Practices'
-            ],
-            design: [
-                'User Experience Principles',
-                'Modern UI Trends',
-                'Color Theory in Practice',
-                'Typography Guidelines',
-                'Responsive Design Patterns'
-            ]
-        };
-        
-        const categoryTitles = titles[category as keyof typeof titles] || titles.technology;
+        const categoryTitles = TestDataGenerator.TITLES[category] || TestDataGenerator.TITLES.technology;
         return categoryTitles[Math.floor(Math.random() * categoryTitles.length)];
     }
     

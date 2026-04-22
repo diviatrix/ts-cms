@@ -1,9 +1,6 @@
 /* Markdown Content Styles */
 
-.card-content-preview {
-  line-height: 1.6;
-  color: var(--text);
-}
+
 
 /* Headings */
 .card-content-preview h1,
@@ -55,8 +52,8 @@
 /* Links */
 .card-content-preview a {
   color: var(--primary);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
+  text-decoration: var(--text-decoration-none);
+  border-bottom: var(--size-1px-solid-transparent);
 }
 
 .card-content-preview a:hover {
@@ -84,31 +81,31 @@
 
 /* Task Lists */
 .card-content-preview ul.task-list {
-  list-style: none;
+  list-style: var(--list-style-none);
   padding-left: 1.5em;
 }
 
 .card-content-preview .task-list-item {
-  position: relative;
+  position: var(--pos-relative);
 }
 
 .card-content-preview .task-list-item input[type="checkbox"] {
-  position: absolute;
+  position: var(--pos-absolute);
   left: -1.5em;
   top: 0.3em;
 }
 
 /* Blockquotes */
 .card-content-preview blockquote {
-  margin: 1em 0;
+  margin: 1em var(--zero);
   padding: 0.5em 1em;
-  border-left: 4px solid var(--primary);
-  background: rgba(255, 255, 255, 0.03);
-  font-style: italic;
+  border-left: var(--size-4px-solid) var(--primary);
+  background: var(--color-white-alpha);
+  font-style: var(--fs-italic);
 }
 
 .card-content-preview blockquote p:last-child {
-  margin-bottom: 0;
+  margin-bottom: var(--zero);
 }
 
 /* Code */
@@ -116,7 +113,7 @@
   background: var(--background);
   padding: 0.2em 0.4em;
   border-radius: 3px;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: 0.9em;
   color: var(--primary);
 }
@@ -126,31 +123,31 @@
   border: 1px solid var(--border);
   padding: 1em;
   border-radius: var(--radius);
-  overflow-x: auto;
-  margin: 1em 0;
+  overflow-x: var(--overflow-auto);
+  margin: 1em var(--zero);
 }
 
 .card-content-preview pre code {
-  background: none;
-  padding: 0;
+  background: var(--zero);
+  padding: var(--zero);
   color: inherit;
   font-size: 0.875em;
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 /* Tables */
 .card-content-preview table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1em 0;
-  overflow: auto;
+  width: var(--size-full);
+  border-collapse: var(--collapse);
+  margin: 1em var(--zero);
+  overflow: var(--overflow-auto);
 }
 
 .card-content-preview table th,
 .card-content-preview table td {
   padding: 0.5em 1em;
   border: 1px solid var(--border);
-  text-align: left;
+  text-align: var(--text-align-left);
 }
 
 .card-content-preview table th {
@@ -159,28 +156,28 @@
 }
 
 .card-content-preview table tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-overlay-hover);
 }
 
 /* Images */
 .card-content-preview img {
-  max-width: 100%;
-  height: auto;
+  max-width: var(--size-full);
+  height: var(--size-auto);
   border-radius: var(--radius);
-  margin: 1em 0;
-  display: block;
+  margin: 1em var(--zero);
+  display: var(--display-block);
 }
 
 /* Horizontal Rules */
 .card-content-preview hr {
-  border: none;
+  border: var(--border-none);
   border-top: 2px solid var(--border);
-  margin: 2em 0;
+  margin: 2em var(--zero);
 }
 
 /* Definition Lists */
 .card-content-preview dl {
-  margin: 1em 0;
+  margin: 1em var(--zero);
 }
 
 .card-content-preview dt {
@@ -199,13 +196,13 @@
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0.1em 0.4em;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: 0.9em;
 }
 
 /* Mark/Highlight */
 .card-content-preview mark {
-  background: rgba(255, 235, 59, 0.3);
+  background: var(--color-warning-markdown);
   color: inherit;
   padding: 0.2em;
 }
@@ -220,8 +217,8 @@
 .card-content-preview sub,
 .card-content-preview sup {
   font-size: 0.75em;
-  line-height: 0;
-  position: relative;
+  line-height: var(--zero);
+  position: var(--pos-relative);
   vertical-align: baseline;
 }
 
@@ -257,34 +254,34 @@
 .card-content-preview .note,
 .card-content-preview .tip {
   padding: 1em;
-  margin: 1em 0;
+  margin: 1em var(--zero);
   border-radius: var(--radius);
-  border-left: 4px solid;
+  border-left: var(--size-4px-solid);
 }
 
 .card-content-preview .note {
-  background: rgba(59, 130, 246, 0.1);
-  border-left-color: #3b82f6;
+  background: var(--color-note-bg);
+  border-left-color: var(--color-note-border);
 }
 
 .card-content-preview .tip {
-  background: rgba(34, 197, 94, 0.1);
-  border-left-color: #22c55e;
+  background: var(--color-tip-bg);
+  border-left-color: var(--color-tip-border);
 }
 
 .card-content-preview .warning {
-  background: rgba(251, 146, 60, 0.1);
-  border-left-color: #fb923c;
+  background: var(--color-warning-bg);
+  border-left-color: var(--color-warning-border);
 }
 
 .card-content-preview .alert {
-  background: rgba(239, 68, 68, 0.1);
-  border-left-color: #ef4444;
+  background: var(--color-alert-bg);
+  border-left-color: var(--color-alert-border);
 }
 
 /* Details/Summary */
 .card-content-preview details {
-  margin: 1em 0;
+  margin: 1em var(--zero);
   padding: 1em;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -292,9 +289,9 @@
 }
 
 .card-content-preview summary {
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
   font-weight: var(--font-bold);
-  user-select: none;
+  user-select: var(--user-select-none);
 }
 
 .card-content-preview details[open] summary {
@@ -303,37 +300,15 @@
 
 /* Video embeds */
 .card-content-preview video {
-  max-width: 100%;
-  height: auto;
-  margin: 1em 0;
+  max-width: var(--size-full);
+  height: var(--size-auto);
+  margin: 1em var(--zero);
   border-radius: var(--radius);
 }
 
 /* Emoji support */
 .card-content-preview .emoji {
-  font-family: apple color emoji, segoe ui emoji, noto color emoji, android emoji, emojisymbols, emojione mozilla, twemoji mozilla, segoe ui symbol;
+  font-family: var(--font-emoji);
 }
 
 /* Responsive adjustments */
-@media (max-width: 600px) {
-  .card-content-preview {
-    font-size: 0.95em;
-  }
-  
-  .card-content-preview h1 {
-    font-size: 1.75em;
-  }
-  
-  .card-content-preview h2 {
-    font-size: 1.35em;
-  }
-  
-  .card-content-preview pre {
-    padding: 0.75em;
-    font-size: 0.85em;
-  }
-  
-  .card-content-preview table {
-    font-size: 0.9em;
-  }
-}

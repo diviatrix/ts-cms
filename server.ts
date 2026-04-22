@@ -2,6 +2,7 @@ import { createExpressApp } from "./src/expressapi";
 import config from './src/data/config';
 import logger from './src/utils/logger';
 import { DatabaseChecker } from './src/utils/database-checker';
+import { MissingColumn } from './src/utils/checkers/ColumnChecker';
 
 // Add global error handlers
 process.on('uncaughtException', (err) => {
@@ -35,19 +36,19 @@ async function handleCLICommands() {
                 console.log('\n=== Database Consistency Check FAILED ===');
                 
                 if (result.data) {
-                    if (result.data.missingTables.length > 0) {
-                        console.log('\n❌ Missing Tables:');
-                        result.data.missingTables.forEach(table => {
-                            console.log(`   • ${table}`);
-                        });
-                    }
+                 if (result.data.missingTables.length > 0) {
+                     console.log('\n❌ Missing Tables:');
+                     result.data.missingTables.forEach((table: string) => {
+                         console.log(`   • ${table}`);
+                     });
+                 }
                     
-                    if (result.data.missingColumns.length > 0) {
-                        console.log('\n❌ Missing Columns:');
-                        result.data.missingColumns.forEach(mc => {
-                            console.log(`   • ${mc.table}.${mc.column}`);
-                        });
-                    }
+                     if (result.data.missingColumns.length > 0) {
+                         console.log('\n❌ Missing Columns:');
+                         result.data.missingColumns.forEach((mc: MissingColumn) => {
+                             console.log(`   • ${mc.table}.${mc.column}`);
+                         });
+                     }
                     
                     if (!autoFix) {
                         console.log('\n💡 Tip: Use --checkdb --fix to automatically create missing items');

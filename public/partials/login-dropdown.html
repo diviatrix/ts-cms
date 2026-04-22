@@ -1,9 +1,8 @@
-<!-- Premium Auth Dropdown with Modern Tab Switcher -->
+<!-- Premium Auth Dropdown - Login Only -->
 <div class="dropdown-menu-card" id="loginDropdownMenu" role="dialog" aria-labelledby="authModalTitle" aria-hidden="true">
   <div class="card premium-auth-card">
     <div class="tab-header">
       <div class="tab-container" id="tabContainer" role="tablist" aria-label="Authentication options">
-        <div class="tab-indicator" aria-hidden="true"></div>
         <button id="loginTabBtn" 
                 class="tab-button active" 
                 role="tab" 
@@ -12,15 +11,6 @@
                 tabindex="0">
           <span class="tab-icon">🔑</span>
           <span class="tab-text">Sign In</span>
-        </button>
-        <button id="registerTabBtn" 
-                class="tab-button" 
-                role="tab" 
-                aria-selected="false" 
-                aria-controls="registerTabPane"
-                tabindex="-1">
-          <span class="tab-icon">✨</span>
-          <span class="tab-text">Create Account</span>
         </button>
       </div>
     </div>
@@ -65,71 +55,6 @@
           </button>
         </div>
       </form>
-      <form id="registerForm" autocomplete="on" class="hidden" novalidate>
-        <div id="registerTabPane" role="tabpanel" aria-labelledby="registerTabBtn">
-          <div class="form-group">
-            <label for="registerLoginInput">Username</label>
-            <div class="input-container">
-              <input type="text" 
-                     id="registerLoginInput" 
-                     name="registerLoginInput" 
-                     required 
-                     autocomplete="username" 
-                     placeholder="Choose a username"
-                     aria-required="true"
-                     aria-describedby="registerError">
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="registerEmailInput">Email Address</label>
-            <div class="input-container">
-              <input type="email" 
-                     id="registerEmailInput" 
-                     name="registerEmailInput" 
-                     required 
-                     autocomplete="email" 
-                     placeholder="your@email.com"
-                     aria-required="true"
-                     aria-describedby="registerError">
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="registerPasswordInput">Password</label>
-            <div class="input-container">
-              <input type="password" 
-                     id="registerPasswordInput" 
-                     name="registerPasswordInput" 
-                     required 
-                     autocomplete="new-password" 
-                     placeholder="Create a strong password"
-                     aria-required="true"
-                     aria-describedby="registerError"
-                     minlength="8">
-            </div>
-          </div>
-          <div class="form-group" id="inviteCodeGroup" style="display: none;">
-            <label for="inviteCodeInput">Invite Code</label>
-            <div class="input-container">
-              <input type="text" 
-                     id="inviteCodeInput" 
-                     name="inviteCodeInput" 
-                     autocomplete="off" 
-                     placeholder="Enter your invite code"
-                     aria-describedby="registerError">
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary btn-block premium-button" id="registerSubmitBtn">
-            <span class="btn-content">
-              <span class="btn-icon">✨</span>
-              <span class="btn-text">Create Account</span>
-              <div class="btn-loading" aria-hidden="true">
-                <div class="spinner"></div>
-              </div>
-            </span>
-            <div class="btn-shine" aria-hidden="true"></div>
-          </button>
-        </div>
-      </form>
     </div>
   </div>
-</div> 
+</div>

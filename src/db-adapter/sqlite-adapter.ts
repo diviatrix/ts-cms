@@ -74,29 +74,7 @@ export default class SQLiteAdapter {
             await this.insertDefaultCMSSettings();
         }
 
-        // После создания всех таблиц, добавляем first_admin в группу admin если он существует
-        await this.ensureFirstAdminHasAdminRole();
-
         return prep.response(true, messages.success, tables);
-    }
-
-    private async ensureFirstAdminHasAdminRole(): Promise<void> {
-        try {
-            // Проверяем, существует ли пользователь first_admin
-            const adminQuery = `SELECT id FROM users WHERE login = 'first_admin' LIMIT 1`;
-            const adminResult = await this.executeQuery(adminQuery);
-            
-            if (adminResult.success && adminResult.data && Array.isArray(adminResult.data) && adminResult.data.length > 0) {
-                const firstAdmin = (adminResult.data as { id: string }[])[0];
-                
-                // Добавляем в группу admin
-                const addAdminRoleQuery = `INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)`;
-                await this.executeQuery(addAdminRoleQuery, [firstAdmin.id, 'admin']);
-                console.log('Ensured first_admin has admin role');
-            }
-        } catch (error) {
-            console.warn('Failed to ensure first_admin has admin role:', error);
-        }
     }
 
     private async insertDefaultRoles(): Promise<void> {
@@ -111,41 +89,15 @@ export default class SQLiteAdapter {
         // Check if a default theme already exists
         const existingThemeQuery = `SELECT id FROM themes WHERE is_default = 1 LIMIT 1`;
         const existingResult = await this.executeQuery(existingThemeQuery);
-        
+
         if (existingResult.success && existingResult.data && Array.isArray(existingResult.data) && existingResult.data.length > 0) {
             console.log('Default theme already exists, skipping creation');
             return;
         }
 
-        
-        // Try to get the first user, if no users exist, create a system user
-        let createdBy = 'system-user';
-        
-        const adminQuery = `SELECT id FROM users LIMIT 1`;
-        const adminResult = await this.executeQuery(adminQuery);
-        if (adminResult.success && adminResult.data && Array.isArray(adminResult.data) && adminResult.data.length > 0) {
-            const firstUser = (adminResult.data as { id: string }[])[0];
-            createdBy = firstUser.id;
-        } else {
-            // Create a system user to satisfy foreign key constraint
-            const systemUserId = generateGuid();
-            const systemUserQuery = `INSERT OR IGNORE INTO users (id, login, email, password_hash, is_active) VALUES (?, ?, ?, ?, ?)`;
-            await this.executeQuery(systemUserQuery, [
-                systemUserId,
-                'system',
-                'system@localhost',
-                'system-placeholder-hash',
-                false
-            ]);
-            
-            // Add system user to admin group
-            const addAdminRoleQuery = `INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)`;
-            await this.executeQuery(addAdminRoleQuery, [systemUserId, 'admin']);
-            
-            createdBy = systemUserId;
-            console.log('Created system user with admin role for theme creation');
-        }
-        
+        // Use 'system' as the created_by user (auth service will handle real users)
+        const createdBy = 'system';
+
         const themeData = {
             id: generateGuid(),
             ...defaultTheme,
@@ -181,30 +133,24 @@ export default class SQLiteAdapter {
         // Check if CMS settings already exist
         const existingQuery = `SELECT setting_key FROM cms_settings LIMIT 1`;
         const existingResult = await this.executeQuery(existingQuery);
-        
+
         if (existingResult.success && existingResult.data && Array.isArray(existingResult.data) && existingResult.data.length > 0) {
             console.log('CMS settings already exist, skipping creation');
             return;
         }
 
-        // Get system user ID for CMS settings
-        let systemUserId = 'system-user';
-        const userQuery = `SELECT id FROM users WHERE login = 'system' LIMIT 1`;
-        const userResult = await this.executeQuery(userQuery);
-        if (userResult.success && userResult.data && Array.isArray(userResult.data) && userResult.data.length > 0) {
-            const systemUser = (userResult.data as { id: string }[])[0];
-            systemUserId = systemUser.id;
-        }
+        // Use 'system' as the updated_by user (auth service will handle real users)
+        const systemUserId = 'system';
 
         // Insert default CMS settings
         for (const setting of defaultCMSSettings) {
             const settingQuery = `INSERT OR IGNORE INTO cms_settings (setting_key, setting_value, setting_type, description, category, updated_by) VALUES (?, ?, ?, ?, ?, ?)`;
             await this.executeQuery(settingQuery, [
-                setting.key, 
-                setting.value, 
-                setting.type, 
-                setting.description, 
-                setting.category, 
+                setting.key,
+                setting.value,
+                setting.type,
+                setting.description,
+                setting.category,
                 systemUserId
             ]);
         }
@@ -270,83 +216,31 @@ export default class SQLiteAdapter {
         });
     }
 
-    // Test-only method for cleaning up test users
-    public async cleanupTestUsers(): Promise<IResolve<number>> {
-        const testUserPatterns = ['testuser', 'debug_user', 'state_check_user'];
-        let deletedCount = 0;
-        
-        for (const pattern of testUserPatterns) {
-            const deleteQuery = `DELETE FROM users WHERE login = ? AND login != 'system'`;
-            const result = await this.executeQuery(deleteQuery, [pattern]);
-            if (result.success) {
-                deletedCount++;
-                ContextLogger.operation('TEST', 'Cleanup', pattern, 'DELETED', 0);
-            }
-        }
-        
-        return prep.response(true, `Deleted ${deletedCount} test users`, deletedCount);
-    }
-
+    
     // Enhanced test cleanup method for comprehensive data cleanup
     public async cleanupAllTestData(): Promise<IResolve<string>> {
-        const tables = [
-            'user_theme_preferences',
-            'theme_settings',
-            'sessions',
-            'records',
-            'invites',
-            'user_groups',
-            'themes',
-            'users'
-        ];
-
         const cleanupLog: string[] = [];
 
         try {
-            for (const table of tables) {
-                // Skip system users and admin users for users table
-                if (table === 'users') {
-                    const deleteQuery = `DELETE FROM users WHERE login LIKE 'testuser_%' OR login LIKE 'test_%' OR (login != 'first_admin' AND login != 'system')`;
-                    const result = await this.executeQuery(deleteQuery);
-                    if (result.success) {
-                        cleanupLog.push(`Cleaned test users from ${table}`);
-                    }
-                } else if (table === 'themes') {
-                    // Keep default theme, remove test themes
-                    const deleteQuery = `DELETE FROM themes WHERE name LIKE '%Test Theme%' OR name LIKE '%test%' OR (is_default = 0 AND is_active = 0)`;
-                    const result = await this.executeQuery(deleteQuery);
-                    if (result.success) {
-                        cleanupLog.push(`Cleaned test themes from ${table}`);
-                    }
-                } else if (table === 'user_groups') {
-                    // Clean user_groups for non-existent users
-                    const deleteQuery = `DELETE FROM user_groups WHERE user_id NOT IN (SELECT id FROM users)`;
-                    const result = await this.executeQuery(deleteQuery);
-                    if (result.success) {
-                        cleanupLog.push(`Cleaned orphaned entries from ${table}`);
-                    }
-                } else {
-                    // For other tables, delete entries that reference non-existent users
-                    let deleteQuery = '';
-                    if (table === 'records') {
-                        deleteQuery = `DELETE FROM records WHERE user_id NOT IN (SELECT id FROM users)`;
-                    } else if (table === 'sessions') {
-                        deleteQuery = `DELETE FROM sessions WHERE user_id NOT IN (SELECT id FROM users)`;
-                    } else if (table === 'invites') {
-                        deleteQuery = `DELETE FROM invites WHERE created_by NOT IN (SELECT id FROM users)`;
-                    } else if (table === 'user_theme_preferences') {
-                        deleteQuery = `DELETE FROM user_theme_preferences WHERE user_id NOT IN (SELECT id FROM users)`;
-                    } else if (table === 'theme_settings') {
-                        deleteQuery = `DELETE FROM theme_settings WHERE theme_id NOT IN (SELECT id FROM themes)`;
-                    }
-                    
-                    if (deleteQuery) {
-                        const result = await this.executeQuery(deleteQuery);
-                        if (result.success) {
-                            cleanupLog.push(`Cleaned orphaned entries from ${table}`);
-                        }
-                    }
-                }
+            // Clean test themes
+            const themesQuery = `DELETE FROM themes WHERE name LIKE '%Test Theme%' OR name LIKE '%test%' OR (is_default = 0 AND is_active = 0)`;
+            const themesResult = await this.executeQuery(themesQuery);
+            if (themesResult.success) {
+                cleanupLog.push('Cleaned test themes');
+            }
+
+            // Clean test records
+            const recordsQuery = `DELETE FROM records WHERE title LIKE '%Test%' OR description LIKE '%test%'`;
+            const recordsResult = await this.executeQuery(recordsQuery);
+            if (recordsResult.success) {
+                cleanupLog.push('Cleaned test records');
+            }
+
+            // Clean orphaned theme settings
+            const themeSettingsQuery = `DELETE FROM theme_settings WHERE theme_id NOT IN (SELECT id FROM themes)`;
+            const themeSettingsResult = await this.executeQuery(themeSettingsQuery);
+            if (themeSettingsResult.success) {
+                cleanupLog.push('Cleaned orphaned theme settings');
             }
 
             return prep.response(true, 'Test data cleanup completed', cleanupLog.join('; '));

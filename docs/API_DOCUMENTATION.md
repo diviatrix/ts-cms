@@ -754,8 +754,8 @@ Get all users (requires admin role).
 #### GET /api/profile/:id
 Get a specific user's profile (requires admin role).
 
-#### PUT /api/admin/theme/write-config
-Write theme configuration to frontend (requires admin role).
+#### PUT /api/admin/theme/apply
+Apply theme to site (writes config and sets as active, requires admin role).
 
 **Request Body (optional):**
 ```json

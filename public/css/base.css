@@ -1,5 +1,5 @@
 *, *::before, *::after {
-  box-sizing: border-box;
+  box-sizing: var(--box-border);
 }
 
 :root {
@@ -43,35 +43,35 @@ body {
   color: var(--text);
   font-family: var(--font-family);
   font-size: var(--font-size);
-  line-height: 1.5;
-  margin: 0;
-  padding: 0;
+  line-height: var(--line-height-normal);
+  margin: var(--zero);
+  padding: var(--zero);
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  display: var(--display-flex);
+  flex-direction: var(--flex-direction-column);
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-weight: var(--font-bold);
-  margin: 0 0 var(--spacing) 0;
+  margin: var(--zero) var(--zero) var(--spacing) var(--zero);
 }
 
 p {
-  margin: 0 0 var(--spacing) 0;
+  margin: var(--zero) var(--zero) var(--spacing) var(--zero);
 }
 
 p:last-child {
-  margin-bottom: 0;
+  margin-bottom: var(--zero);
 }
 
 label {
-  display: block;
+  display: var(--display-block);
   margin-bottom: var(--spacing);
   font-weight: var(--font-medium);
   letter-spacing: var(--letter-spacing);
 }
 
 .page-title {
-  text-align: center;
-  margin-bottom: 2rem;
+  text-align: var(--text-align-center);
+  margin-bottom: var(--spacing-6);
 }

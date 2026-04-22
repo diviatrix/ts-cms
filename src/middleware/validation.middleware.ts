@@ -1,256 +1,63 @@
 import { Request, Response, NextFunction } from 'express';
 import { ResponseUtils } from '../utils/response.utils';
-import { VALIDATION_CONSTANTS, AUTH_CONSTANTS, REGEX_PATTERNS } from '../utils/constants';
+import { ValidationSchemas } from '../constants/validation-schemas';
+import type { ValidationSchema, ValidationRule } from '../constants/validation-schemas';
+import ValidationUtils from '../utils/validation-utils';
 
-// Validation result interface
-interface ValidationResult {
-    isValid: boolean;
-    errors: string[];
-}
+export { ValidationSchemas };
 
-// Basic validation utility functions
-export class ValidationUtils {
-    
-    /**
-     * Check if value is required and not empty
-     */
-    static required(value: unknown, fieldName: string): string | null {
-        if (value === undefined || value === null || value === '') {
-            return `${fieldName} is required`;
-        }
-        return null;
-    }
-
-    /**
-     * Check string length constraints
-     */
-    static stringLength(value: string, fieldName: string, min?: number, max?: number): string | null {
-        if (typeof value !== 'string') return null;
-        
-        if (min && value.length < min) {
-            return `${fieldName} must be at least ${min} characters long`;
-        }
-        if (max && value.length > max) {
-            return `${fieldName} must be no more than ${max} characters long`;
-        }
-        return null;
-    }
-
-    /**
-     * Check if value is a valid email format
-     */
-    static email(value: string, fieldName: string): string | null {
-        if (typeof value !== 'string') return null;
-        
-        if (!REGEX_PATTERNS.EMAIL.test(value)) {
-            return `${fieldName} must be a valid email address`;
-        }
-        return null;
-    }
-
-    /**
-     * Check if value is a boolean
-     */
-    static boolean(value: unknown, fieldName: string): string | null {
-        if (typeof value !== 'boolean') {
-            return `${fieldName} must be a boolean value`;
-        }
-        return null;
-    }
-
-    /**
-     * Check if value is a valid UUID
-     */
-    static uuid(value: string, fieldName: string): string | null {
-        if (typeof value !== 'string') return null;
-        
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(value)) {
-            return `${fieldName} must be a valid UUID`;
-        }
-        return null;
-    }
-
-    /**
-     * Check if value matches username pattern
-     */
-    static usernamePattern(value: string, fieldName: string): string | null {
-        if (typeof value !== 'string') return null;
-        
-        if (!REGEX_PATTERNS.USERNAME.test(value)) {
-            return `${fieldName} can only contain letters, numbers, underscores, and hyphens`;
-        }
-        return null;
-    }
-
-    /**
-     * Validate object against schema
-     */
-    static validateObject(data: Record<string, unknown>, schema: ValidationSchema): ValidationResult {
+// Validation middleware for request body
+export function validateBody(schema: ValidationSchema) {
+    return (req: Request, res: Response, next: NextFunction) => {
         const errors: string[] = [];
-
-        for (const [fieldName, rules] of Object.entries(schema)) {
-            const value = data[fieldName];
-
+        
+        // Validate each field according to the schema
+        for (const field in schema) {
+            const rules = schema[field];
+            const value = req.body[field];
+            
             for (const rule of rules) {
-                const error = rule(value, fieldName);
+                const error = rule(value, field);
                 if (error) {
                     errors.push(error);
+                    break; // Stop checking rules for this field once an error is found
                 }
             }
         }
-
-        return {
-            isValid: errors.length === 0,
-            errors
-        };
-    }
-}
-
-// Validation schema type
-type ValidationRule = (value: unknown, fieldName: string) => string | null;
-type ValidationSchema = Record<string, ValidationRule[]>;
-
-// Predefined validation schemas
-export const ValidationSchemas = {
-    
-    // User registration validation
-    register: {
-        login: [
-            ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'login', VALIDATION_CONSTANTS.USERNAME_MIN_LENGTH, VALIDATION_CONSTANTS.USERNAME_MAX_LENGTH),
-            ValidationUtils.usernamePattern
-        ],
-        password: [
-            ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'password', AUTH_CONSTANTS.PASSWORD_MIN_LENGTH, AUTH_CONSTANTS.PASSWORD_MAX_LENGTH)
-        ],
-        email: [
-            (value: string) => value ? ValidationUtils.email(value, 'email') : null
-        ]
-    } as ValidationSchema,
-
-    // User login validation
-    login: {
-        login: [
-            ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'login', 1, VALIDATION_CONSTANTS.USERNAME_MAX_LENGTH)
-        ],
-        password: [
-            ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'password', 1, AUTH_CONSTANTS.PASSWORD_MAX_LENGTH)
-        ]
-    } as ValidationSchema,
-
-    // Profile update validation
-    profileUpdate: {
-        'profile.display_name': [
-            (value: string) => value ? ValidationUtils.stringLength(value, 'display_name', 1, 100) : null
-        ],
-        'profile.email': [
-            (value: string) => value ? ValidationUtils.email(value, 'email') : null
-        ],
-        'profile.bio': [
-            (value: string) => value ? ValidationUtils.stringLength(value, 'bio', 0, 500) : null
-        ]
-    } as ValidationSchema,
-
-    // Password change validation
-    passwordChange: {
-        newPassword: [
-            ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'newPassword', AUTH_CONSTANTS.PASSWORD_MIN_LENGTH, AUTH_CONSTANTS.PASSWORD_MAX_LENGTH)
-        ]
-    } as ValidationSchema,
-
-    // Record creation/update validation
-    record: {
-        title: [
-            ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'title', 1, 200)
-        ],
-        content: [
-            ValidationUtils.required,
-            (value: string) => ValidationUtils.stringLength(value, 'content', 1, 50000)
-        ],
-        excerpt: [
-            (value: string) => value ? ValidationUtils.stringLength(value, 'excerpt', 0, 500) : null
-        ],
-        published: [
-            (value: unknown) => value !== undefined ? ValidationUtils.boolean(value, 'published') : null
-        ]
-    } as ValidationSchema
-};
-
-// Validation middleware factory
-export function validateBody(schema: ValidationSchema) {
-    return (req: Request, res: Response, next: NextFunction) => {
-        const result = ValidationUtils.validateObject(req.body, schema);
         
-        if (!result.isValid) {
-            ResponseUtils.validationError(res, 'Validation failed', result.errors);
-            return;
+        if (errors.length > 0) {
+            return ResponseUtils.error(res, errors.join(', '), 400);
         }
         
         next();
     };
 }
 
-// Validation middleware factory for nested objects
-export function validateNestedBody(schema: ValidationSchema, flatten: boolean = true) {
-    return (req: Request, res: Response, next: NextFunction) => {
-        const flattenedData = flatten ? flattenObject(req.body) : req.body;
-        const result = ValidationUtils.validateObject(flattenedData, schema);
-        
-        if (!result.isValid) {
-            ResponseUtils.validationError(res, 'Validation failed', result.errors);
-            return;
-        }
-        
-        next();
-    };
+// Validation middleware for nested objects (same as validateBody for now)
+export function validateNestedBody(schema: ValidationSchema) {
+    return validateBody(schema);
 }
 
-// Parameter validation middleware factory
-export function validateParams(schema: ValidationSchema) {
+// Validation middleware for URL parameters
+export function validateParams(schema: ValidationRule[], paramName: string = 'id') {
     return (req: Request, res: Response, next: NextFunction) => {
-        const result = ValidationUtils.validateObject(req.params, schema);
+        const errors: string[] = [];
         
-        if (!result.isValid) {
-            ResponseUtils.validationError(res, 'Invalid parameters', result.errors);
-            return;
-        }
-        
-        next();
-    };
-}
-
-// Parameter validation schemas
-export const ParameterSchemas = {
-    // UUID parameter validation
-    uuid: {
-        id: [
-            ValidationUtils.required,
-            ValidationUtils.uuid
-        ]
-    } as ValidationSchema
-};
-
-// Helper function to flatten nested objects for validation
-function flattenObject(obj: Record<string, unknown>, prefix: string = ''): Record<string, unknown> {
-    const flattened: Record<string, unknown> = {};
-    
-    for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            const newKey = prefix ? `${prefix}.${key}` : key;
-            
-            if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-                Object.assign(flattened, flattenObject(obj[key] as Record<string, unknown>, newKey));
-            } else {
-                flattened[newKey] = obj[key];
+        // Validate each parameter according to the schema
+        for (const rule of schema) {
+            const error = rule(req.params[paramName], paramName);
+            if (error) {
+                errors.push(error);
+                break; // Stop checking rules once an error is found
             }
         }
-    }
-    
-    return flattened;
+        
+        if (errors.length > 0) {
+            return ResponseUtils.error(res, errors.join(', '), 400);
+        }
+        
+        next();
+    };
 }
+
+export default ValidationUtils;

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ResponseUtils } from '../utils/response.utils';
+export { Errors } from '../constants/error-factory';
 
 // Async handler wrapper type
 type AsyncHandler = (req: Request, res: Response, next: NextFunction) => Promise<void>;
@@ -83,8 +84,16 @@ export function createError(
 export function errorHandler(
     error: Error | AppError,
     req: Request,
-    res: Response
+    res: Response,
+    next: NextFunction
 ): void {
+    // Check if this is being called as regular middleware (error parameter missing/invalid)
+    if (!error || !req || !res) {
+        // This shouldn't happen, but if it does, call next() to continue
+        console.error('Error handler called with invalid parameters:', { error, req: !!req, res: !!res });
+        return next();
+    }
+
     let statusCode = 500;
     let message = 'Internal server error';
     let type = ErrorType.INTERNAL;
@@ -155,23 +164,3 @@ export function errorHandler(
     }
 }
 
-// Specialized error creators for common scenarios
-export const Errors = {
-    notFound: (resource: string = 'Resource') => 
-        createError(`${resource} not found`, ErrorType.NOT_FOUND),
-    
-    unauthorized: (message: string = 'Authentication required') => 
-        createError(message, ErrorType.AUTHENTICATION),
-    
-    forbidden: (message: string = 'Access forbidden') => 
-        createError(message, ErrorType.AUTHORIZATION),
-    
-    validation: (message: string = 'Validation failed') => 
-        createError(message, ErrorType.VALIDATION),
-    
-    conflict: (resource: string = 'Resource') => 
-        createError(`${resource} already exists`, ErrorType.CONFLICT),
-    
-    database: (operation: string = 'Database operation') => 
-        createError(`${operation} failed`, ErrorType.DATABASE)
-};

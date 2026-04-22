@@ -1,151 +1,103 @@
 /* Dropdown Menu Cards */
 .dropdown-menu-card {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  min-width: 360px;
-  max-width: 400px;
-  z-index: 1100;
-  margin-top: 0.75rem;
-  opacity: 1;
-  pointer-events: none;
+  display: var(--display-none);
+  position: var(--pos-absolute);
+  right: var(--zero);
+  top: var(--size-full);
+  min-width: var(--min-width-dropdown);
+  max-width: var(--max-width-dropdown);
+  z-index: var(--z-dropdown);
+  margin-top: var(--spacing-2);
+  opacity: var(--opacity-full);
+  pointer-events: var(--pointer-events-none);
+  box-shadow: 0 4px 12px var(--color-black-30);
+  border-radius: var(--radius);
 }
 
-@media (max-width: 480px) {
-  .dropdown-menu-card {
-    min-width: calc(100vw - 2rem);
-    max-width: calc(100vw - 2rem);
-    right: 1rem;
-    left: 1rem;
-  }
-}
 
 .dropdown-menu-card.show {
-  opacity: 1;
-  pointer-events: all;
+  opacity: var(--opacity-full);
+  pointer-events: var(--pointer-events-all);
+  display: var(--display-block);
 }
 
 .dropdown-menu-card .card {
-  margin: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(42, 42, 42, 0.95) 0%,
-    rgba(30, 30, 30, 0.95) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: calc(var(--radius) * 1);
-  box-shadow: 
-    0 20px 50px rgba(0, 0, 0, 0.3),
-    0 10px 20px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
-    0 1px 0 rgba(255, 255, 255, 0.05) inset;
-  overflow: hidden;
-}
-
-.dropdown-menu-card .card {
-  flex-direction: column;
-  cursor: default;
+  margin: var(--zero);
+  background: var(--gradient-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  overflow: var(--overflow-hidden);
+  flex-direction: var(--flex-direction-column);
+  cursor: var(--cursor-default);
   max-height: none;
 }
 
+
+
 .dropdown-menu-card form.hidden {
-  display: none;
+  display: var(--display-none);
 }
 
-.dropdown-menu-card {
-  display: none;
-  position: absolute;
-  right: 0;
-  top: 100%;
-  min-width: 320px;
-  z-index: 1100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  border-radius: var(--radius);
-  margin-top: 0.5rem;
-}
 
-.dropdown-menu-card.show {
-  display: block;
-}
 
-.dropdown-menu-card .card {
-  margin: 0;
-}
+
 
 /* Premium Auth Card Styling */
 .dropdown-menu-card .premium-auth-card {
-  background: linear-gradient(
-    135deg,
-    rgba(20, 20, 20, 0.98) 0%,
-    rgba(30, 30, 30, 0.96) 50%,
-    rgba(25, 25, 25, 0.98) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.4),
-    0 8px 24px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  border-radius: 1.25rem;
-  overflow: hidden;
+  background: var(--gradient-premium-auth);
+  border: 1px solid var(--color-border-subtle-alpha);
+  box-shadow: var(--shadow-dropdown);
+  border-radius: var(--radius-2xl);
+  overflow: var(--overflow-hidden);
 }
 
 /* Tab System */
 .dropdown-menu-card .tab-header {
-  padding: 1.5rem 1.5rem 1rem;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    transparent 100%
-  );
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  position: relative;
+  padding: var(--spacing-5) var(--spacing-5) var(--spacing-4);
+  background: var(--gradient-tab-header);
+  border-bottom: 1px solid var(--color-border-muted);
+  position: var(--pos-relative);
 }
 
 .dropdown-menu-card .tab-container {
-  display: flex;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.875rem;
-  padding: 0.25rem;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 
-    inset 0 2px 4px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  display: var(--display-flex);
+  background: var(--color-bg-tab);
+  border: 1px solid var(--color-border-subtle-alpha);
+  border-radius: var(--radius-4xl);
+  padding: var(--spacing-1);
+  position: var(--pos-relative);
+  overflow: var(--overflow-hidden);
+  box-shadow: inset 0 2px 4px var(--color-black-20), inset 0 1px 0 var(--color-border-muted);
 }
 
 .dropdown-menu-card .tab-container::before {
   content: '';
-  position: absolute;
+  position: var(--pos-absolute);
   top: 0.125rem;
   left: 0.125rem;
-  width: calc(50% - 0.125rem);
-  height: calc(100% - 0.25rem);
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.1) 0%, 
-    rgba(255, 255, 255, 0.05) 100%);
+  width: calc(var(--size-50) - 0.125rem);
+  height: calc(var(--size-full) - var(--spacing-1));
+  background: linear-gradient(135deg, var(--color-border-subtle) 0%, var(--color-border-muted) 100%);
   background-color: var(--surface);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: calc(var(--radius) * 0.625);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.15),
-    0 1px 2px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  z-index: 1;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-5xl);
+  box-shadow: 0 2px 8px var(--color-black-15), 0 1px 2px var(--color-black-20), inset 0 1px 0 var(--color-border-subtle);
+  z-index: var(--z-base);
 }
 
 .dropdown-menu-card .tab-container::after {
   content: '';
-  position: absolute;
+  position: var(--pos-absolute);
   top: 0.125rem;
   left: 0.125rem;
-  width: calc(50% - 0.125rem);
-  height: calc(100% - 0.25rem);
+  width: calc(var(--size-50) - 0.125rem);
+  height: calc(var(--size-full) - var(--spacing-1));
   background: var(--primary);
-  border-radius: calc(var(--radius) * 0.625);
-  opacity: 0.15;
+  border-radius: var(--radius-5xl);
+  opacity: var(--opacity-15);
   filter: blur(8px);
-  z-index: 0;
+  z-index: var(--z-behind);
 }
 
 .dropdown-menu-card .tab-container.register-active::before,
@@ -154,128 +106,120 @@
 }
 
 .dropdown-menu-card .tab-button {
-  flex: 1;
-  margin: 0;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+  flex: var(--opacity-full);
+  margin: var(--zero);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--fw-medium);
   background: transparent;
-  border: none;
-  border-radius: calc(var(--radius) * 0.625);
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  position: relative;
-  z-index: 2;
-  text-align: center;
-  letter-spacing: 0.01em;
-  user-select: none;
+  border: var(--border-none);
+  border-radius: var(--radius-5xl);
+  color: var(--color-white-50);
+  cursor: var(--cursor-pointer);
+  position: var(--pos-relative);
+  z-index: var(--z-overlay);
+  text-align: var(--text-align-center);
+  letter-spacing: var(--letter-spacing-01);
+  user-select: var(--user-select-none);
   -webkit-tap-highlight-color: transparent;
 }
 
 .dropdown-menu-card .tab-button.active {
   color: var(--text);
-  font-weight: 600;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  font-weight: var(--fw-semibold);
+  text-shadow: 0 0 20px var(--color-white-50);
 }
 
 .dropdown-menu-card .tab-button:not(.active):hover {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-label-muted);
 }
 
 .dropdown-menu-card .tab-button:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 4px;
-  border-radius: calc(var(--radius) * 0.625);
+  border-radius: var(--radius-5xl);
 }
 
 /* Card Body */
 .dropdown-menu-card .card-body {
-  padding: 0.75rem 1.5rem 1.5rem;
-  position: relative;
+  padding: var(--spacing-3) var(--spacing-5) var(--spacing-5);
+  position: var(--pos-relative);
 }
 
 .dropdown-menu-card .card-body::before {
   content: '';
-  position: absolute;
-  top: 0;
-  left: 1.5rem;
-  right: 1.5rem;
+  position: var(--pos-absolute);
+  top: var(--zero);
+  left: var(--spacing-5);
+  right: var(--spacing-5);
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.05) 20%,
-    rgba(255, 255, 255, 0.05) 80%,
-    transparent 100%
-  );
+  background: var(--gradient-divider);
 }
 
 .dropdown-menu-card form {
-  margin: 0;
+  margin: var(--zero);
 }
 
 .dropdown-menu-card .form-group {
-  margin-bottom: 1.125rem;
-  position: relative;
+  margin-bottom: var(--font-size-1125);
+  position: var(--pos-relative);
 }
 
 .dropdown-menu-card .form-group:last-of-type {
-  margin-bottom: 1.25rem;
+  margin-bottom: var(--spacing-5);
 }
 
 /* Form Inputs in Dropdown */
 .dropdown-menu-card input[type="text"],
 .dropdown-menu-card input[type="email"],
 .dropdown-menu-card input[type="password"] {
-  width: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: calc(var(--radius) * 0.5);
-  font-size: 0.9375rem;
-  padding: 0.75rem 1rem;
+  width: var(--size-full);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-5);
+  padding: var(--spacing-3) var(--spacing-4);
   color: var(--text);
-  margin: 0;
+  margin: var(--zero);
 }
 
 .dropdown-menu-card input[type="text"]::placeholder,
 .dropdown-menu-card input[type="email"]::placeholder,
 .dropdown-menu-card input[type="password"]::placeholder {
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 0.875rem;
+  color: var(--color-placeholder);
+  font-size: var(--font-size-sm);
 }
 
 .dropdown-menu-card input[type="text"]:hover:not(:focus),
 .dropdown-menu-card input[type="email"]:hover:not(:focus),
 .dropdown-menu-card input[type="password"]:hover:not(:focus) {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.4);
+  border-color: var(--color-border-light);
+  background: var(--color-bg-input-hover);
 }
 
 .dropdown-menu-card input[type="text"]:focus,
 .dropdown-menu-card input[type="email"]:focus,
 .dropdown-menu-card input[type="password"]:focus {
-  outline: none;
+  outline: var(--outline-none);
   border-color: var(--primary);
-  background: rgba(0, 0, 0, 0.5);
-  box-shadow: 
-    0 0 20px rgba(60, 255, 122, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: var(--color-bg-input-focus);
+  box-shadow: 0 0 20px var(--color-primary-tint), inset 0 1px 0 var(--color-border-muted);
 }
 
 .dropdown-menu-card input[type="text"]:focus::placeholder,
 .dropdown-menu-card input[type="email"]:focus::placeholder,
 .dropdown-menu-card input[type="password"]:focus::placeholder {
-  opacity: 1;
+  opacity: var(--opacity-full);
 }
 
 .dropdown-menu-card label {
-  display: block;
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
+  display: var(--display-block);
+  font-size: var(--font-size-xs);
+  color: var(--color-label-muted);
+  margin-bottom: var(--spacing-2);
+  text-transform: var(--text-transform-uppercase);
+  letter-spacing: var(--letter-spacing-08);
+  font-weight: var(--fw-semibold);
 }
 
 .dropdown-menu-card label:has(+ input:focus) {
@@ -284,36 +228,30 @@
 
 /* Dropdown Buttons */
 .dropdown-menu-card .btn-block {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  margin-top: 0.5rem;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  width: var(--size-full);
+  padding: var(--spacing-3) var(--spacing-4);
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-5);
+  font-weight: var(--fw-semibold);
   background: linear-gradient(135deg, var(--primary) 0%, var(--hover) 100%);
-  color: rgba(0, 0, 0, 0.9);
-  border: none;
-  border-radius: calc(var(--radius) * 0.5);
-  cursor: pointer;
-  letter-spacing: 0.02em;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 
-    0 2px 8px rgba(60, 255, 122, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  color: var(--color-black-alpha);
+  border: var(--border-none);
+  border-radius: var(--radius-md);
+  cursor: var(--cursor-pointer);
+  letter-spacing: var(--letter-spacing-02);
+  position: var(--pos-relative);
+  overflow: var(--overflow-hidden);
+  box-shadow: 0 2px 8px var(--color-primary-25), inset 0 1px 0 var(--color-border-light);
+  text-shadow: 0 1px 2px var(--color-black-10);
 }
 
 .dropdown-menu-card .btn-block:hover {
-  box-shadow: 
-    0 4px 12px rgba(60, 255, 122, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px var(--color-primary-35), inset 0 1px 0 var(--color-dashed-border);
   background: linear-gradient(135deg, var(--hover) 0%, var(--primary) 100%);
 }
 
 .dropdown-menu-card .btn-block:active {
-  box-shadow: 
-    0 1px 4px rgba(60, 255, 122, 0.2),
-    inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px var(--color-primary-20), inset 0 2px 4px var(--color-black-10);
 }
 
 .dropdown-menu-card .btn-block:focus-visible {
@@ -323,84 +261,74 @@
 
 .dropdown-menu-card .btn-block.loading {
   color: transparent;
-  pointer-events: none;
+  pointer-events: var(--pointer-events-none);
 }
 
 .dropdown-menu-card .btn-block.loading::after {
   content: '';
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  top: 50%;
-  left: 50%;
+  position: var(--pos-absolute);
+  width: var(--width-spinner);
+  height: var(--height-spinner);
+  top: var(--size-50);
+  left: var(--size-50);
   margin-left: -10px;
   margin-top: -10px;
-  border: 2px solid rgba(0, 0, 0, 0.3);
-  border-radius: 50%;
-  border-top-color: rgba(0, 0, 0, 0.8);
+  border: 2px solid var(--color-black-30);
+  border-radius: var(--radius-circle);
+  border-top-color: var(--color-black-80);
 }
 
 .dropdown-menu-card .btn-block:hover {
-  box-shadow: 0 4px 12px rgba(60, 255, 122, 0.3);
+  box-shadow: 0 4px 12px var(--color-primary-30);
 }
 
 /* Alert Messages in Dropdown */
 .dropdown-menu-card .alert-message {
-  margin-top: 1rem;
-  padding: 0.75rem;
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-3);
   border-radius: calc(var(--radius) * 0.75);
-  font-size: 0.8125rem;
-  text-align: center;
+  font-size: var(--font-size-6);
+  text-align: var(--text-align-center);
   background: var(--background);
   color: var(--muted);
   border: 1px solid var(--border);
-  min-height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  min-height: var(--spacing-6);
+  display: var(--display-flex);
+  align-items: var(--align-center);
+  justify-content: var(--justify-center);
 }
 
 .dropdown-menu-card .tab-indicator {
-  position: absolute;
-  top: 0.25rem;
-  left: 0.25rem;
-  width: calc(50% - 0.25rem);
-  height: calc(100% - 0.5rem);
-  background: linear-gradient(
-    135deg,
-    rgba(60, 255, 122, 0.12) 0%,
-    rgba(60, 255, 122, 0.08) 100%
-  );
-  border: 1px solid rgba(60, 255, 122, 0.15);
-  border-radius: 0.625rem;
-  box-shadow: 
-    0 2px 8px rgba(60, 255, 122, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  z-index: 1;
+  position: var(--pos-absolute);
+  top: var(--spacing-1);
+  left: var(--spacing-1);
+  width: calc(var(--size-50) - var(--spacing-1));
+  height: calc(var(--size-full) - var(--spacing-2));
+  background: linear-gradient(135deg, var(--color-primary-12) 0%, var(--color-primary-subtle) 100%);
+  border: 1px solid var(--color-primary-tint);
+  border-radius: var(--radius-5xl);
+  box-shadow: 0 2px 8px var(--color-primary-10), inset 0 1px 0 var(--color-border-subtle);
+  z-index: var(--z-base);
 }
 
 .dropdown-menu-card .tab-button .tab-icon {
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 }
 
 .dropdown-menu-card .tab-button.active .tab-icon {
-  filter: drop-shadow(0 0 8px rgba(60, 255, 122, 0.4));
+  filter: drop-shadow(0 0 8px var(--color-primary-40));
 }
 
 .dropdown-menu-card .input-container {
-  position: relative;
+  position: var(--pos-relative);
 }
 
 .dropdown-menu-card input:hover:not(:focus) {
-  box-shadow: 
-    inset 0 1px 3px rgba(0, 0, 0, 0.2),
-    0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 1px 3px var(--color-black-20), 0 4px 12px var(--color-black-15);
 }
 
 .dropdown-menu-card input:focus {
-  box-shadow: 
-    inset 0 1px 3px rgba(0, 0, 0, 0.3),
-    0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 3px var(--color-black-30), 0 8px 24px var(--color-black-20);
 }
 
 .dropdown-menu-card .form-group:focus-within label {
@@ -409,96 +337,73 @@
 
 /* Premium Button Styles */
 .dropdown-menu-card .premium-button {
-  width: 100%;
-  padding: 0;
-  margin-top: 0.75rem;
-  background: linear-gradient(
-    135deg,
-    var(--primary) 0%,
-    #2dd66a 50%,
-    var(--primary) 100%
-  );
-  border: none;
-  border-radius: 0.875rem;
-  color: #000;
-  font-weight: 700;
-  font-size: 0.9375rem;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 
-    0 4px 16px rgba(60, 255, 122, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  width: var(--size-full);
+  padding: var(--zero);
+  margin-top: var(--spacing-3);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--color-premium-green) 50%, var(--primary) 100%);
+  border: var(--border-none);
+  border-radius: var(--radius-4xl);
+  color: var(--color-black);
+  font-weight: var(--fw-bold);
+  font-size: var(--font-size-5);
+  cursor: var(--cursor-pointer);
+  position: var(--pos-relative);
+  overflow: var(--overflow-hidden);
+  box-shadow: 0 4px 16px var(--color-primary-25), inset 0 1px 0 var(--color-border-light), inset 0 -1px 0 var(--color-black-10);
 }
 
 .dropdown-menu-card .btn-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  position: relative;
-  z-index: 2;
+  display: var(--display-flex);
+  align-items: var(--align-center);
+  justify-content: var(--justify-center);
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  position: var(--pos-relative);
+  z-index: var(--z-overlay);
 }
 
 .dropdown-menu-card .btn-icon {
-  font-size: 1.125rem;
+  font-size: var(--font-size-1125);
 }
 
 .dropdown-menu-card .btn-loading {
-  position: absolute;
-  display: none;
-  align-items: center;
-  justify-content: center;
+  position: var(--pos-absolute);
+  display: var(--display-none);
+  align-items: var(--align-center);
+  justify-content: var(--justify-center);
   opacity: 0;
 }
 
 .dropdown-menu-card .spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(0, 0, 0, 0.2);
-  border-radius: 50%;
-  border-top-color: #000;
+  width: var(--width-spinner);
+  height: var(--height-spinner);
+  border: 2px solid var(--color-black-20);
+  border-radius: var(--radius-circle);
+  border-top-color: var(--color-black);
 }
 
 .dropdown-menu-card .btn.loading .btn-loading,
 .dropdown-menu-card button.loading .btn-loading {
-  display: flex;
-  opacity: 1;
+  display: var(--display-flex);
+  opacity: var(--opacity-full);
 }
 
 .dropdown-menu-card .btn-shine {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%
-  );
+  position: var(--pos-absolute);
+  top: var(--zero);
+  left: calc(-1 * var(--size-full));
+  width: var(--size-full);
+  height: var(--size-full);
+  background: linear-gradient(90deg, transparent 0%, var(--color-dashed-border) 50%, transparent 100%);
 }
 
 .dropdown-menu-card .premium-button:hover {
-  background: linear-gradient(
-    135deg,
-    #2dd66a 0%,
-    var(--primary) 50%,
-    #2dd66a 100%
-  );
-  box-shadow: 
-    0 8px 24px rgba(60, 255, 122, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, var(--color-premium-green) 0%, var(--primary) 50%, var(--color-premium-green) 100%);
+  box-shadow: 0 8px 24px var(--color-primary-35), inset 0 1px 0 var(--color-dashed-border), inset 0 -1px 0 var(--color-black-10);
 }
 
 .dropdown-menu-card .premium-button:active {
-  box-shadow: 
-    0 4px 12px rgba(60, 255, 122, 0.25),
-    inset 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--color-primary-25), inset 0 2px 4px var(--color-black-15);
 }
 
 .dropdown-menu-card .premium-button:focus-visible {
@@ -508,66 +413,48 @@
 
 .dropdown-menu-card .premium-button.loading .btn-text,
 .dropdown-menu-card .premium-button.loading .btn-icon {
-  opacity: 1;
+  opacity: var(--opacity-full);
 }
 
 .dropdown-menu-card .premium-button.loading .btn-loading {
-  display: flex;
-  opacity: 1;
+  display: var(--display-flex);
+  opacity: var(--opacity-full);
 }
 
 /* Premium Alerts */
 .dropdown-menu-card .premium-alert {
-  margin-top: 1.25rem;
-  padding: 1rem;
-  border-radius: 0.875rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  text-align: center;
-  border: 1px solid transparent;
-  opacity: 1;
-  letter-spacing: 0.02em;
+  margin-top: var(--spacing-5);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-4xl);
+  font-size: var(--font-size-6);
+  font-weight: var(--fw-medium);
+  text-align: var(--text-align-center);
+  border: var(--size-1px-solid-transparent);
+  opacity: var(--opacity-full);
+  letter-spacing: var(--letter-spacing-02);
 }
 
 .dropdown-menu-card .premium-alert:not(:empty) {
-  opacity: 1;
+  opacity: var(--opacity-full);
 }
 
 .dropdown-menu-card .premium-alert.success {
-  background: linear-gradient(
-    135deg,
-    rgba(60, 255, 122, 0.08) 0%,
-    rgba(60, 255, 122, 0.12) 100%
-  );
-  border-color: rgba(60, 255, 122, 0.2);
-  color: #4ade80;
-  box-shadow: 
-    0 4px 12px rgba(60, 255, 122, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, var(--color-primary-subtle) 0%, var(--color-primary-12) 100%);
+  border-color: var(--color-primary-20);
+  color: var(--color-success-light);
+  box-shadow: 0 4px 12px var(--color-primary-10), inset 0 1px 0 var(--color-border-subtle);
 }
 
 .dropdown-menu-card .premium-alert.error {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 60, 60, 0.08) 0%,
-    rgba(255, 60, 60, 0.12) 100%
-  );
-  border-color: rgba(255, 60, 60, 0.2);
-  color: #f87171;
-  box-shadow: 
-    0 4px 12px rgba(255, 60, 60, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, var(--color-error-08) 0%, var(--color-error-12) 100%);
+  border-color: var(--color-error-20);
+  color: var(--color-error-light);
+  box-shadow: 0 4px 12px rgba(255, 60, 60, 0.1), inset 0 1px 0 var(--color-border-subtle);
 }
 
 .dropdown-menu-card .premium-alert.info {
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.08) 0%,
-    rgba(59, 130, 246, 0.12) 100%
-  );
-  border-color: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  box-shadow: 
-    0 4px 12px rgba(59, 130, 246, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, var(--color-note-08) 0%, var(--color-note-12) 100%);
+  border-color: var(--color-note-20);
+  color: var(--color-info-light);
+  box-shadow: 0 4px 12px var(--color-note-bg), inset 0 1px 0 var(--color-border-subtle);
 }

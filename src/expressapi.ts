@@ -120,7 +120,9 @@ function createExpressApp(): express.Application {
     });
 
     // Centralized error handling middleware (must be last)
-    app.use(errorHandler);
+    app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+        errorHandler(err, req, res, next);
+    });
 
     return app;
 }

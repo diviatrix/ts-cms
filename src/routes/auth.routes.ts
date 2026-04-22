@@ -1,135 +1,61 @@
 import express, { Request, Response } from 'express';
-import { registerUser } from '../functions/register';
-import { loginUser } from '../functions/login';
-import { ResponseUtils } from '../utils/response.utils';
-import { validateBody, ValidationSchemas } from '../middleware/validation.middleware';
-import { asyncHandler, Errors } from '../middleware/error.middleware';
+import { authClient } from '../auth-client';
+import { requireAuth } from '../middleware/auth.middleware';
+import { AuthenticatedUser } from '../middleware/auth.middleware';
 import logger from '../utils/logger';
 
 const router = express.Router();
 
-/**
- * @swagger
- * /api/register:
- *   post:
- *     summary: Register a new user
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - login
- *               - email
- *               - password
- *             properties:
- *               login:
- *                 type: string
- *                 minLength: 4
- *                 description: Username for the account
- *               email:
- *                 type: string
- *                 format: email
- *                 description: Email address
- *               password:
- *                 type: string
- *                 minLength: 6
- *                 description: Password for the account
- *               inviteCode:
- *                 type: string
- *                 description: Invite code (required when registration_mode is INVITE_ONLY)
- *     responses:
- *       201:
- *         description: User registered successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
- *       403:
- *         description: Registration is closed
- *       422:
- *         description: Validation error or invalid invite code
- */
-router.post('/register', validateBody(ValidationSchemas.register), asyncHandler(async (req: Request, res: Response) => {
-    const userData = req.body;
-    const inviteCode = userData.inviteCode;
-    
-    logger.info('User registration attempt', { login: userData.login, email: userData.email, hasInvite: !!inviteCode });
-
-    // Hash the password before passing to registerUser
-    const userDataWithHash = {
-        ...userData,
-        password_hash: userData.password
-    };
-    delete userDataWithHash.password; // Remove plain password
-    delete userDataWithHash.inviteCode; // Remove invite code from user data
-
-    const result = await registerUser(userDataWithHash, inviteCode);
-    if (result.success && result.data) {
-        ResponseUtils.created(res, result.data, result.message || 'User registered successfully');
-    } else {
-        logger.warn('User registration failed', { login: userData.login, email: userData.email, error: result.message });
-        throw Errors.validation(result.message || 'Registration failed. Please check your information and try again.');
+router.post('/register', async (req: Request, res: Response) => {
+    try {
+        const { username, password, invite_code } = req.body;
+        const user = await authClient.register({ username, password, invite_code });
+        res.status(201).json(user);
+    } catch (error) {
+        const err = error as Error & { message?: string };
+        logger.warn('Registration failed', { error: err.message });
+        res.status(400).json({ error: err.message || 'registration failed' });
     }
-}));
+});
 
-/**
- * @swagger
- * /api/login:
- *   post:
- *     summary: Authenticate user and receive JWT token
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - login
- *               - password
- *             properties:
- *               login:
- *                 type: string
- *                 description: Username
- *               password:
- *                 type: string
- *                 description: Password
- *     responses:
- *       200:
- *         description: Login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     token:
- *                       type: string
- *                       description: JWT authentication token
- *                 message:
- *                   type: string
- *       401:
- *         description: Invalid credentials
- */
-router.post('/login', validateBody(ValidationSchemas.login), asyncHandler(async (req: Request, res: Response) => {
-    const { login, password } = req.body;
-    logger.info('User login attempt', { login });
-
-    const result = await loginUser(login, password);
-    if (result && result.success && result.data) {
-        logger.authAction('login', result.data.user.id, true);
-        ResponseUtils.success(res, { token: result.data?.token }, 'Login successful');
-    } else {
-        logger.authAction('login', login, false);
-        throw Errors.unauthorized(result.message || 'Login failed');
+router.post('/login', async (req: Request, res: Response) => {
+    try {
+        const { login, password } = req.body;
+        const user = await authClient.login({ login, password });
+        res.json(user);
+    } catch (error) {
+        const err = error as Error & { message?: string };
+        logger.authAction('login', req.body.login || 'unknown', false);
+        res.status(401).json({ error: err.message || 'invalid credentials' });
     }
-}));
+});
+
+router.post('/logout', requireAuth, async (req: Request, res: Response) => {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (token) {
+            await authClient.logout(token);
+        }
+        res.json({ ok: true });
+    } catch {
+        res.json({ ok: true });
+    }
+});
+
+router.get('/session', requireAuth, async (req: Request & { user?: AuthenticatedUser }, res: Response) => {
+    res.json(req.user);
+});
+
+router.post('/change-password', requireAuth, async (req: Request, res: Response) => {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        const { current_password, new_password } = req.body;
+        const result = await authClient.changePassword(token!, { current_password, new_password });
+        res.json(result);
+    } catch (error) {
+        const err = error as Error & { message?: string };
+        res.status(400).json({ error: err.message || 'password change failed' });
+    }
+});
 
 export default router;

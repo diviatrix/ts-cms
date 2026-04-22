@@ -1,4 +1,6 @@
 import { Response } from 'express';
+import { HTTP_STATUS } from '../constants/http-status';
+export { HTTP_STATUS } from '../constants/http-status';
 
 // Standard response interfaces
 export interface ApiResponse<T = unknown> {
@@ -18,28 +20,6 @@ export interface PaginatedResponse<T = unknown> extends ApiResponse<T> {
     };
 }
 
-// HTTP Status Code Constants
-export const HTTP_STATUS = {
-    // Success
-    OK: 200,
-    CREATED: 201,
-    NO_CONTENT: 204,
-    
-    // Client Errors
-    BAD_REQUEST: 400,
-    UNAUTHORIZED: 401,
-    FORBIDDEN: 403,
-    NOT_FOUND: 404,
-    CONFLICT: 409,
-    UNPROCESSABLE_ENTITY: 422,
-    TOO_MANY_REQUESTS: 429,
-    
-    // Server Errors
-    INTERNAL_SERVER_ERROR: 500,
-    NOT_IMPLEMENTED: 501,
-    SERVICE_UNAVAILABLE: 503,
-} as const;
-
 // Response utility functions
 export class ResponseUtils {
     
@@ -47,9 +27,9 @@ export class ResponseUtils {
      * Send standardized success response
      */
     static success<T>(
-        res: Response, 
-        data?: T, 
-        message?: string, 
+        res: Response,
+        data?: T,
+        message?: string,
         statusCode: number = HTTP_STATUS.OK
     ): void {
         const response: ApiResponse<T> = {
@@ -58,7 +38,17 @@ export class ResponseUtils {
             message,
             timestamp: new Date().toISOString(),
         };
-        
+
+        // Guard against invalid response object
+        if (!res || typeof res.status !== 'function' || typeof res.json !== 'function') {
+            console.error('ResponseUtils.success called with invalid response object:', { res, data, message, statusCode });
+            // Try to send a basic response if possible
+            if (res && typeof res.send === 'function') {
+                res.send(`Success: ${message}`);
+            }
+            return;
+        }
+
         res.status(statusCode).json(response);
     }
 
@@ -66,8 +56,8 @@ export class ResponseUtils {
      * Send standardized error response
      */
     static error(
-        res: Response, 
-        message: string, 
+        res: Response,
+        message: string,
         statusCode: number = HTTP_STATUS.INTERNAL_SERVER_ERROR,
         errors?: string[]
     ): void {
@@ -77,7 +67,17 @@ export class ResponseUtils {
             errors,
             timestamp: new Date().toISOString(),
         };
-        
+
+        // Guard against invalid response object
+        if (!res || typeof res.status !== 'function' || typeof res.json !== 'function') {
+            console.error('ResponseUtils.error called with invalid response object:', { res, message, statusCode });
+            // Try to send a basic response if possible
+            if (res && typeof res.send === 'function') {
+                res.send(`Error: ${message}`);
+            }
+            return;
+        }
+
         res.status(statusCode).json(response);
     }
 

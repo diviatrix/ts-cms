@@ -1,21 +1,21 @@
-import { jwtDecode } from '../utils/jwt-decode.js';
-import { requestBatcher } from '../utils/request-batcher.js';
+const AUTH_BASE = 'https://auth.hole.icu';
+
+let requestBatcher = null;
 
 export function getAuthToken() {
-  return localStorage.getItem('token');
+  return localStorage.getItem('session_token');
 }
 
 export function setAuthToken(token) {
   if (token) {
-    localStorage.setItem('token', token);
+    localStorage.setItem('session_token', token);
   } else {
-    localStorage.removeItem('token');
+    localStorage.removeItem('session_token');
   }
   document.dispatchEvent(new CustomEvent('authChange'));
 }
 
 export async function apiFetch(url, { method = 'GET', data, auth = true, batch = false } = {}) {
-  // If batching is enabled, use the request batcher
   if (batch) {
     const batchKey = `${method}:${url}:${JSON.stringify(data)}`;
     return requestBatcher.add(batchKey, () => apiFetch(url, { method, data, auth, batch: false }));
@@ -39,53 +39,44 @@ export async function apiFetch(url, { method = 'GET', data, auth = true, batch =
   } catch (error) {
     return {
       success: false,
-      message: error.message || 'A network error occurred. Please check your connection and try again.',
+      message: error.message || 'A network error occurred.',
       errors: [error.message || 'Network error'],
       status: 'network_error'
     };
   }
 
   if (res.status === 401) {
-    // Only clear token and show session expired for authenticated requests
-    // For login/register endpoints, this is just invalid credentials
     if (auth && !url.includes('/login') && !url.includes('/register')) {
       setAuthToken(null);
-      return { 
-        success: false, 
-        message: 'Your session has expired. Please log in again.', 
+      return {
+        success: false,
+        message: 'Your session has expired. Please log in again.',
         errors: ['401'],
-        status: 401 
+        status: 401
       };
     }
-    // For login/register, don't clear token or show session expired
-    // The actual error message will come from the server response
   }
 
   let json;
   try {
     json = await res.json();
   } catch {
-    json = { 
-      success: res.ok, 
-      data: null, 
+    json = {
+      success: res.ok,
+      data: null,
       message: res.statusText || `Server returned status ${res.status}`
     };
   }
 
-  // Enhance error messages with more descriptive information
   if (!res.ok) {
     const errorMessages = {
-      400: 'Invalid request data. Please check your input and try again.',
-      403: 'You do not have permission to perform this action.',
-      404: 'The requested resource was not found.',
-      500: 'An internal server error occurred. Please try again later.',
-      502: 'Bad gateway. The server received an invalid response.',
-      503: 'Service unavailable. Please try again later.'
+      400: 'Invalid request data.',
+      403: 'You do not have permission.',
+      404: 'Resource not found.',
+      500: 'Server error.'
     };
-        
     const defaultMessage = json.message || `Server returned status ${res.status}`;
     const message = errorMessages[res.status] || defaultMessage;
-        
     return {
       success: false,
       message,
@@ -98,22 +89,19 @@ export async function apiFetch(url, { method = 'GET', data, auth = true, batch =
   return { ...json, success: res.ok, status: res.status };
 }
 
-export function isAuthenticated() {
+export async function isAuthenticated() {
   const token = getAuthToken();
   if (!token) return false;
   try {
-    const payload = jwtDecode(token);
-    // Check if payload has required fields
-    if (!payload || typeof payload.exp !== 'number') {
+    const res = await fetch(`${AUTH_BASE}/session`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) {
       setAuthToken(null);
       return false;
     }
-    const isValid = payload.exp * 1000 > Date.now();
-    if (!isValid) {
-      setAuthToken(null);
-    }
-    return isValid;
-  } catch (error) {
+    return true;
+  } catch {
     setAuthToken(null);
     return false;
   }
@@ -124,22 +112,46 @@ export function getUserRoles() {
   if (!token) return [];
   try {
     const decoded = jwtDecode(token);
-    return decoded.roles || decoded.groups || [];
-  } catch (error) {
-    setAuthToken(null);
+    return decoded.roles || decoded.group || [];
+  } catch {
     return [];
   }
 }
 
-export function logout() {
+export async function logout() {
+  const token = getAuthToken();
+  if (token) {
+    try {
+      await fetch(`${AUTH_BASE}/logout`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch {}
+  }
   setAuthToken(null);
-  window.location.href = '/';
 }
 
 export const AuthAPI = {
-  login: (login, password) => apiFetch('/api/login', { method: 'POST', data: { login, password }, auth: false }),
-  register: (login, email, password, inviteCode) => apiFetch('/api/register', { method: 'POST', data: { login, email, password, inviteCode }, auth: false }),
-  getRegistrationMode: () => apiFetch('/api/cms/registration-mode', { auth: false }),
+  login: async (login, password) => {
+    const res = await fetch(`${AUTH_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login, password })
+    });
+    const data = await res.json();
+    if (res.ok && data.session_token) {
+      setAuthToken(data.session_token);
+    }
+    return { ...data, success: res.ok, status: res.status };
+  },
+  register: async (username, password) => {
+    const res = await fetch(`${AUTH_BASE}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    return { ...(await res.json()), success: res.ok, status: res.status };
+  },
   logout,
   isAuthenticated,
   getUserRoles
@@ -148,7 +160,6 @@ export const AuthAPI = {
 export const RecordsAPI = {
   getAll: async (params = {}, batch = false) => {
     const response = await apiFetch('/api/records' + (Object.keys(params).length ? `?${new URLSearchParams(params)}` : ''), { auth: false, batch });
-    // Reverse the order to show newest first
     if (response.success && Array.isArray(response.data)) {
       response.data.reverse();
     }
@@ -170,15 +181,10 @@ export const ProfileAPI = {
 export const AdminAPI = {
   getUsers: (batch = false) => apiFetch('/api/admin/users', { batch }),
   getUserProfile: (userId, batch = false) => apiFetch(`/api/profile/${userId}`, { batch }),
-  updateUserStatus: (userId, isActive) => apiFetch(`/api/admin/users/${userId}/status`, { 
-    method: 'PUT', 
-    data: { is_active: isActive } 
-  }),
-    
-  // Invite management
-  createInvite: () => apiFetch('/api/admin/invites', { method: 'POST' }),
-  getInvites: (batch = false) => apiFetch('/api/admin/invites', { batch }),
-  deleteInvite: (inviteId) => apiFetch(`/api/admin/invites/${inviteId}`, { method: 'DELETE' })
+  updateUserStatus: (userId, isActive) => apiFetch(`/api/admin/users/${userId}/status`, {
+    method: 'PUT',
+    data: { is_active: isActive }
+  })
 };
 
 export const ThemesAPI = {

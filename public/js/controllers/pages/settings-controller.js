@@ -71,21 +71,14 @@ export default class SettingsController extends BasePageController {
   }
 
   renderSetting(setting) {
-    // Special handling for registration_mode setting
+    // Registration is now handled by auth service
     if (setting.setting_key === 'registration_mode') {
       return `
                 <div class="box">
-                    <label>${setting.setting_key}</label>
-                    ${setting.description ? `<small class="form-hint">${setting.description}</small>` : ''}
+                    <label>registration_mode</label>
+                    <small class="form-hint">Registration is now managed by auth.hole.icu</small>
                     <div class="meta-row">
-                        <select data-key="${setting.setting_key}" 
-                                data-type="${setting.setting_type}"
-                                id="setting-${setting.setting_key}">
-                            <option value="OPEN" ${setting.setting_value === 'OPEN' ? 'selected' : ''}>Open Registration</option>
-                            <option value="INVITE_ONLY" ${setting.setting_value === 'INVITE_ONLY' ? 'selected' : ''}>Invite Only</option>
-                            <option value="CLOSED" ${setting.setting_value === 'CLOSED' ? 'selected' : ''}>Closed</option>
-                        </select>
-                        <button class="btn" onclick="window.settingsManager.saveSetting('${setting.setting_key}')">Save</button>
+                        <span>Managed externally</span>
                     </div>
                 </div>
             `;
