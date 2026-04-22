@@ -1,0 +1,23 @@
+name: Deploy Garage Sale
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: webservers
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update Repository and Restart Service
+        run: |
+          echo "🔄 Navigating to project directory..."
+          cd /home/webservers/repo/ts-cms
+
+          echo "📥 Pulling latest changes..."
+          git pull
+
+          echo "🔁 Restarting cms.1337.plus service..."
+          sudo systemctl restart 1337-cms
+
+          echo "✅ Deployment complete."
